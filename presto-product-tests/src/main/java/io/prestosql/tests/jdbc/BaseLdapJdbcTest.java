@@ -41,7 +41,6 @@ import static io.prestosql.tests.ImmutableLdapObjectDefinitions.PARENT_GROUP;
 import static io.prestosql.tests.ImmutableLdapObjectDefinitions.PARENT_GROUP_USER;
 import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.fail;
 
 public abstract class BaseLdapJdbcTest
         extends ProductTest
@@ -83,12 +82,17 @@ public abstract class BaseLdapJdbcTest
 
     protected void expectQueryToFail(String user, String password, String message)
     {
+        assertEquals(getQueryFailureMessage(user, password), message);
+    }
+
+    protected String getQueryFailureMessage(String user, String password)
+    {
         try {
             executeLdapQuery(NATION_SELECT_ALL_QUERY, user, password);
-            fail();
+            throw new AssertionError("Query failure expected");
         }
         catch (SQLException exception) {
-            assertEquals(exception.getMessage(), message);
+            return exception.getMessage();
         }
     }
 

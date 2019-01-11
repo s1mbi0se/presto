@@ -32,6 +32,7 @@ import static io.prestosql.tests.TestGroups.PROFILE_SPECIFIC_TESTS;
 import static io.prestosql.tests.TpchTableResults.PRESTO_NATION_RESULT;
 import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class TestLdapPrestoJdbc
@@ -81,7 +82,7 @@ public class TestLdapPrestoJdbc
     @Test(groups = {LDAP, PRESTO_JDBC, PROFILE_SPECIFIC_TESTS}, timeOut = TIMEOUT)
     public void shouldFailQueryForWrongLdapUser()
     {
-        expectQueryToFail("invalid_user", ldapUserPassword, "Authentication failed: Access Denied: Invalid credentials");
+        assertTrue(getQueryFailureMessage("invalid_user", ldapUserPassword).startsWith("Authentication failed"));
     }
 
     @Test(groups = {LDAP, PRESTO_JDBC, PROFILE_SPECIFIC_TESTS}, timeOut = TIMEOUT)

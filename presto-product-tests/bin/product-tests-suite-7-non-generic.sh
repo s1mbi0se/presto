@@ -40,4 +40,9 @@ presto-product-tests/bin/run_on_docker.sh \
     -g two_hives \
     || exit_code=1
 
+presto-product-tests/bin/run_on_docker.sh \
+    singlenode-ldap-bind-dn \
+    -g ldap -x simba_jdbc \
+    || exit_code=1
+
 exit "${exit_code}"
