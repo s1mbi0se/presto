@@ -390,7 +390,7 @@ public class BackgroundHiveSplitLoader
         // Bucketed partitions are fully loaded immediately since all files must be loaded to determine the file to bucket mapping
         if (tableBucketInfo.isPresent()) {
             if (AcidUtils.isTransactionalTable(table.getParameters())) {
-                throw new PrestoException(NOT_SUPPORTED, "Presto cannot read bucketted hive transactional tables");
+                throw new PrestoException(NOT_SUPPORTED, "Presto cannot read bucketed hive transactional tables");
             }
             return hiveSplitSource.addToQueue(getBucketedSplits(path, fs, splitFactory, tableBucketInfo.get(), bucketConversion));
         }
