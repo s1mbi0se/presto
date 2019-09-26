@@ -105,6 +105,8 @@ public class BackgroundHiveSplitLoader
     private static final Iterable<Pattern> BUCKET_PATTERNS = ImmutableList.of(
             // Hive naming pattern per `org.apache.hadoop.hive.ql.exec.Utilities#getBucketIdFromFile()`
             Pattern.compile("(0\\d+)_\\d+.*"),
+            // Hive ACID
+            Pattern.compile("bucket_(\\d+)"),
             // legacy Presto naming pattern (current version matches Hive)
             Pattern.compile("\\d{8}_\\d{6}_\\d{5}_[a-z0-9]{5}_bucket-(\\d+)(?:[-_.].*)?"));
 
@@ -387,21 +389,9 @@ public class BackgroundHiveSplitLoader
             return addSplitsToSource(splits, splitFactory);
         }
 
-        // Bucketed partitions are fully loaded immediately since all files must be loaded to determine the file to bucket mapping
-        if (tableBucketInfo.isPresent()) {
-            if (AcidUtils.isTransactionalTable(table.getParameters())) {
-                throw new PrestoException(NOT_SUPPORTED, "Presto cannot read bucketed hive transactional tables");
-            }
-            return hiveSplitSource.addToQueue(getBucketedSplits(path, fs, splitFactory, tableBucketInfo.get(), bucketConversion));
-        }
-
-        // S3 Select pushdown works at the granularity of individual S3 objects,
-        // therefore we must not split files when it is enabled.
-        boolean splittable = getHeaderCount(schema) == 0 && getFooterCount(schema) == 0 && !s3SelectPushdownEnabled;
-        if (!AcidUtils.isTransactionalTable(table.getParameters())) {
-            fileIterators.addLast(createInternalHiveSplitIterator(path, fs, splitFactory, splittable, Optional.empty()));
-        }
-        else {
+        List<Path> readPaths;
+        Optional<DeleteDeltaLocations> deleteDeltaLocations;
+        if (AcidUtils.isTransactionalTable(table.getParameters())) {
             AcidUtils.Directory directory = AcidUtils.getAcidState(
                     path,
                     configuration,
@@ -409,28 +399,53 @@ public class BackgroundHiveSplitLoader
                             .getTableValidWriteIdList(table.getDatabaseName() + "." + table.getTableName()),
                     false,
                     true);
-            // delta directories
 
-            // First create Delete Deltas registry
+            readPaths = new ArrayList<>();
+
+            // base
+            if (directory.getBaseDirectory() != null) {
+                readPaths.add(directory.getBaseDirectory());
+            }
+
+            // delta directories
+            for (AcidUtils.ParsedDelta delta : directory.getCurrentDirectories()) {
+                if (!delta.isDeleteDelta()) {
+                    readPaths.add(delta.getPath());
+                }
+            }
+
+            // delete delta directories
             DeleteDeltaLocations.Builder deleteDeltaLocationsBuilder = new DeleteDeltaLocations.Builder(path);
             for (AcidUtils.ParsedDelta delta : directory.getCurrentDirectories()) {
                 if (delta.isDeleteDelta()) {
                     deleteDeltaLocationsBuilder.addDeleteDelta(delta.getPath(), delta.getMinWriteId(), delta.getMaxWriteId(), delta.getStatementId());
                 }
             }
-            DeleteDeltaLocations deleteDeltaLocations = deleteDeltaLocationsBuilder.build();
 
-            for (AcidUtils.ParsedDelta delta : directory.getCurrentDirectories()) {
-                if (!delta.isDeleteDelta()) {
-                    fileIterators.addLast(createInternalHiveSplitIterator(delta.getPath(), fs, splitFactory, splittable, Optional.of(deleteDeltaLocations)));
-                }
-            }
-
-            // base
-            if (directory.getBaseDirectory() != null) {
-                fileIterators.addLast(createInternalHiveSplitIterator(directory.getBaseDirectory(), fs, splitFactory, splittable, Optional.of(deleteDeltaLocations)));
-            }
+            deleteDeltaLocations = Optional.of(deleteDeltaLocationsBuilder.build());
         }
+        else {
+            readPaths = ImmutableList.of(path);
+            deleteDeltaLocations = Optional.empty();
+        }
+
+        // Bucketed partitions are fully loaded immediately since all files must be loaded to determine the file to bucket mapping
+        if (tableBucketInfo.isPresent()) {
+            ListenableFuture<?> lastResult = immediateFuture(null); // TODO it should be documented that we can keep only about last result of addToQueue()
+            for (Path readPath : readPaths) {
+                lastResult = hiveSplitSource.addToQueue(getBucketedSplits(readPath, fs, splitFactory, tableBucketInfo.get(), bucketConversion, deleteDeltaLocations));
+            }
+            return lastResult;
+        }
+
+        // S3 Select pushdown works at the granularity of individual S3 objects,
+        // therefore we must not split files when it is enabled.
+        boolean splittable = getHeaderCount(schema) == 0 && getFooterCount(schema) == 0 && !s3SelectPushdownEnabled;
+
+        for (Path readPath : readPaths) {
+            fileIterators.addLast(createInternalHiveSplitIterator(readPath, fs, splitFactory, splittable, deleteDeltaLocations));
+        }
+
         return COMPLETED_FUTURE;
     }
 
@@ -467,7 +482,7 @@ public class BackgroundHiveSplitLoader
                 .iterator();
     }
 
-    private List<InternalHiveSplit> getBucketedSplits(Path path, FileSystem fileSystem, InternalHiveSplitFactory splitFactory, BucketSplitInfo bucketSplitInfo, Optional<BucketConversion> bucketConversion)
+    private List<InternalHiveSplit> getBucketedSplits(Path path, FileSystem fileSystem, InternalHiveSplitFactory splitFactory, BucketSplitInfo bucketSplitInfo, Optional<BucketConversion> bucketConversion, Optional<DeleteDeltaLocations> deleteDeltaLocations)
     {
         int readBucketCount = bucketSplitInfo.getReadBucketCount();
         int tableBucketCount = bucketSplitInfo.getTableBucketCount();
@@ -553,7 +568,8 @@ public class BackgroundHiveSplitLoader
             }
             if (containsEligibleTableBucket) {
                 for (LocatedFileStatus file : bucketFiles.get(partitionBucketNumber)) {
-                    splitFactory.createInternalHiveSplit(file, readBucketNumber)
+                    // TODO from deleteDeltaLocations we should read only relevant bucket files
+                    splitFactory.createInternalHiveSplit(file, readBucketNumber, deleteDeltaLocations)
                             .ifPresent(splitList::add);
                 }
             }
