@@ -14,11 +14,13 @@
 package io.prestosql.plugin.hive.metastore.glue.converter;
 
 import com.amazonaws.services.glue.model.DatabaseInput;
+import com.amazonaws.services.glue.model.Order;
 import com.amazonaws.services.glue.model.PartitionInput;
 import com.amazonaws.services.glue.model.SerDeInfo;
 import com.amazonaws.services.glue.model.StorageDescriptor;
 import com.amazonaws.services.glue.model.TableInput;
 import com.google.common.collect.ImmutableMap;
+import io.prestosql.plugin.hive.HiveBucketProperty;
 import io.prestosql.plugin.hive.PartitionStatistics;
 import io.prestosql.plugin.hive.metastore.Column;
 import io.prestosql.plugin.hive.metastore.Database;
@@ -29,7 +31,9 @@ import io.prestosql.plugin.hive.metastore.Table;
 import io.prestosql.spi.PrestoException;
 
 import java.util.List;
+import java.util.Optional;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.prestosql.plugin.hive.metastore.thrift.ThriftMetastoreUtil.updateStatisticsParameters;
 import static io.prestosql.spi.StandardErrorCode.NOT_SUPPORTED;
 import static java.util.stream.Collectors.toList;
@@ -99,9 +103,15 @@ public final class GlueInputConverter
         sd.setOutputFormat(storage.getStorageFormat().getOutputFormatNullable());
         sd.setParameters(ImmutableMap.of());
 
+        Optional<HiveBucketProperty> bucketProperty = storage.getBucketProperty();
         if (storage.getBucketProperty().isPresent()) {
             sd.setNumberOfBuckets(storage.getBucketProperty().get().getBucketCount());
             sd.setBucketColumns(storage.getBucketProperty().get().getBucketedBy());
+            if (!bucketProperty.get().getSortedBy().isEmpty()) {
+                sd.setSortColumns(bucketProperty.get().getSortedBy().stream()
+                        .map(column -> new Order().withColumn(column.getColumnName()).withSortOrder(column.getOrder().getHiveOrder()))
+                        .collect(toImmutableList()));
+            }
         }
 
         return sd;
