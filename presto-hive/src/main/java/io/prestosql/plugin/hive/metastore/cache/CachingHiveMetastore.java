@@ -73,7 +73,7 @@ import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.ImmutableSetMultimap.toImmutableSetMultimap;
 import static com.google.common.collect.Streams.stream;
 import static com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService;
-import static io.prestosql.plugin.hive.HiveErrorCode.HIVE_PARTITION_DROPPED_DURING_QUERY;
+import static io.prestosql.plugin.hive.HivePartitionManager.extractPartitionValues;
 import static io.prestosql.plugin.hive.metastore.HivePartitionName.hivePartitionName;
 import static io.prestosql.plugin.hive.metastore.HiveTableName.hiveTableName;
 import static io.prestosql.plugin.hive.metastore.MetastoreUtil.makePartitionName;
@@ -355,18 +355,11 @@ public class CachingHiveMetastore
                     .map(partitionName -> partitionName.getKey().getPartitionName().get())
                     .collect(toImmutableSet());
             Table table = getExistingTable(tableName.getIdentity(), tableName.getKey().getDatabaseName(), tableName.getKey().getTableName());
-            List<Partition> partitions = getPartitionsByNames(tableName.getIdentity(), table, ImmutableList.copyOf(partitionNameStrings)).values().stream()
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .collect(toImmutableList());
+            List<Partition> partitions = getExistingPartitionsByNames(tableName.getIdentity(), table, ImmutableList.copyOf(partitionNameStrings));
             Map<String, PartitionStatistics> statisticsByPartitionName = delegate.getPartitionStatistics(tableName.getIdentity(), table, partitions);
             for (WithIdentity<HivePartitionName> partitionName : partitionNames) {
                 String stringNameForPartition = partitionName.getKey().getPartitionName().get();
-                PartitionStatistics partitionStatistics = statisticsByPartitionName.get(stringNameForPartition);
-                if (partitionStatistics == null) {
-                    throw new PrestoException(HIVE_PARTITION_DROPPED_DURING_QUERY, "Statistics result does not contain entry for partition: " + stringNameForPartition);
-                }
-                result.put(partitionName, partitionStatistics);
+                result.put(partitionName, statisticsByPartitionName.get(stringNameForPartition));
             }
         });
         return result.build();
@@ -605,6 +598,22 @@ public class CachingHiveMetastore
     {
         return getPartition(identity, table, partitionValues)
                 .orElseThrow(() -> new PartitionNotFoundException(table.getSchemaTableName(), partitionValues));
+    }
+
+    private List<Partition> getExistingPartitionsByNames(HiveIdentity identity, Table table, List<String> partitionNames)
+    {
+        Map<String, Partition> partitions = getPartitionsByNames(identity, table, partitionNames).entrySet().stream()
+                .peek(entry -> {
+                    // make sure every partition is present
+                    if (!entry.getValue().isPresent()) {
+                        throw new PartitionNotFoundException(table.getSchemaTableName(), extractPartitionValues(entry.getKey()));
+                    }
+                })
+                .collect(toImmutableMap(Map.Entry::getKey, entry -> entry.getValue().get()));
+
+        return partitionNames.stream()
+                .map(partitions::get)
+                .collect(toImmutableList());
     }
 
     @Override
