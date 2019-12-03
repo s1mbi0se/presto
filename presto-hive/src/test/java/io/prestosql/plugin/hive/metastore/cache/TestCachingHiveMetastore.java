@@ -15,7 +15,6 @@ package io.prestosql.plugin.hive.metastore.cache;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import io.airlift.units.Duration;
@@ -50,6 +49,7 @@ import static io.prestosql.plugin.hive.metastore.thrift.MockThriftMetastoreClien
 import static io.prestosql.plugin.hive.metastore.thrift.MockThriftMetastoreClient.TEST_DATABASE;
 import static io.prestosql.plugin.hive.metastore.thrift.MockThriftMetastoreClient.TEST_PARTITION1;
 import static io.prestosql.plugin.hive.metastore.thrift.MockThriftMetastoreClient.TEST_PARTITION2;
+import static io.prestosql.plugin.hive.metastore.thrift.MockThriftMetastoreClient.TEST_PARTITION_VALUES1;
 import static io.prestosql.plugin.hive.metastore.thrift.MockThriftMetastoreClient.TEST_ROLES;
 import static io.prestosql.plugin.hive.metastore.thrift.MockThriftMetastoreClient.TEST_TABLE;
 import static io.prestosql.testing.TestingConnectorSession.SESSION;
@@ -261,7 +261,11 @@ public class TestCachingHiveMetastore
     public void testGetTableStatistics()
     {
         assertEquals(mockClient.getAccessCount(), 0);
-        assertEquals(metastore.getTableStatistics(IDENTITY, TEST_DATABASE, TEST_TABLE), TEST_STATS);
+
+        Table table = metastore.getTable(IDENTITY, TEST_DATABASE, TEST_TABLE).get();
+        assertEquals(mockClient.getAccessCount(), 1);
+
+        assertEquals(metastore.getTableStatistics(IDENTITY, table), TEST_STATS);
         assertEquals(mockClient.getAccessCount(), 2);
     }
 
@@ -269,7 +273,14 @@ public class TestCachingHiveMetastore
     public void testGetPartitionStatistics()
     {
         assertEquals(mockClient.getAccessCount(), 0);
-        assertEquals(metastore.getPartitionStatistics(IDENTITY, TEST_DATABASE, TEST_TABLE, ImmutableSet.of(TEST_PARTITION1)), ImmutableMap.of(TEST_PARTITION1, TEST_STATS));
+
+        Table table = metastore.getTable(IDENTITY, TEST_DATABASE, TEST_TABLE).get();
+        assertEquals(mockClient.getAccessCount(), 1);
+
+        Partition partition = metastore.getPartition(IDENTITY, table, TEST_PARTITION_VALUES1).get();
+        assertEquals(mockClient.getAccessCount(), 2);
+
+        assertEquals(metastore.getPartitionStatistics(IDENTITY, table, ImmutableList.of(partition)), ImmutableMap.of(TEST_PARTITION1, TEST_STATS));
         assertEquals(mockClient.getAccessCount(), 3);
     }
 

@@ -317,14 +317,7 @@ public class ThriftHiveMetastore
     }
 
     @Override
-    public PartitionStatistics getTableStatistics(HiveIdentity identity, String databaseName, String tableName)
-    {
-        Table table = getTable(identity, databaseName, tableName)
-                .orElseThrow(() -> new TableNotFoundException(new SchemaTableName(databaseName, tableName)));
-        return getPartitionStatistics(identity, table);
-    }
-
-    private PartitionStatistics getPartitionStatistics(HiveIdentity identity, Table table)
+    public PartitionStatistics getTableStatistics(HiveIdentity identity, Table table)
     {
         List<String> dataColumns = table.getSd().getCols().stream()
                 .map(FieldSchema::getName)
@@ -358,16 +351,8 @@ public class ThriftHiveMetastore
     }
 
     @Override
-    public Map<String, PartitionStatistics> getPartitionStatistics(HiveIdentity identity, String databaseName, String tableName, Set<String> partitionNames)
+    public Map<String, PartitionStatistics> getPartitionStatistics(HiveIdentity identity, Table table, List<Partition> partitions)
     {
-        List<Partition> partitions = getPartitionsByNames(identity, databaseName, tableName, ImmutableList.copyOf(partitionNames));
-        return getPartitionStatistics(identity, databaseName, tableName, partitions);
-    }
-
-    private Map<String, PartitionStatistics> getPartitionStatistics(HiveIdentity identity, String databaseName, String tableName, List<Partition> partitions)
-    {
-        Table table = getTable(identity, databaseName, tableName)
-                .orElseThrow(() -> new TableNotFoundException(new SchemaTableName(databaseName, tableName)));
         List<String> dataColumns = table.getSd().getCols().stream()
                 .map(FieldSchema::getName)
                 .collect(toImmutableList());
@@ -383,8 +368,8 @@ public class ThriftHiveMetastore
                 .collect(toImmutableMap(Map.Entry::getKey, entry -> entry.getValue().getRowCount()));
         Map<String, Map<String, HiveColumnStatistics>> partitionColumnStatistics = getPartitionColumnStatistics(
                 identity,
-                databaseName,
-                tableName,
+                table.getDbName(),
+                table.getTableName(),
                 partitionBasicStatistics.keySet(),
                 dataColumns,
                 partitionRowCounts);
@@ -472,7 +457,7 @@ public class ThriftHiveMetastore
         Table originalTable = getTable(identity, databaseName, tableName)
                 .orElseThrow(() -> new TableNotFoundException(new SchemaTableName(databaseName, tableName)));
 
-        PartitionStatistics currentStatistics = getPartitionStatistics(identity, originalTable);
+        PartitionStatistics currentStatistics = getTableStatistics(identity, originalTable);
         PartitionStatistics updatedStatistics = update.apply(currentStatistics);
 
         Table modifiedTable = originalTable.deepCopy();
@@ -551,8 +536,10 @@ public class ThriftHiveMetastore
         }
         Partition originalPartition = getOnlyElement(partitions);
 
+        Table table = getTable(identity, databaseName, tableName)
+                .orElseThrow(() -> new TableNotFoundException(new SchemaTableName(databaseName, tableName)));
         PartitionStatistics currentStatistics = requireNonNull(
-                getPartitionStatistics(identity, databaseName, tableName, partitions).get(partitionName), "getPartitionStatistics() did not return statistics for partition");
+                getPartitionStatistics(identity, table, partitions).get(partitionName), "getPartitionStatistics() did not return statistics for partition");
         PartitionStatistics updatedStatistics = update.apply(currentStatistics);
 
         Partition modifiedPartition = originalPartition.deepCopy();
