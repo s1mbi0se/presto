@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.Warehouse;
+import org.apache.hadoop.hive.metastore.api.ColumnStatisticsData;
 import org.apache.hadoop.hive.metastore.api.ColumnStatisticsObj;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
@@ -26,6 +27,7 @@ import org.apache.hadoop.hive.metastore.api.HiveObjectPrivilege;
 import org.apache.hadoop.hive.metastore.api.HiveObjectRef;
 import org.apache.hadoop.hive.metastore.api.LockRequest;
 import org.apache.hadoop.hive.metastore.api.LockResponse;
+import org.apache.hadoop.hive.metastore.api.LongColumnStatsData;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.Partition;
@@ -52,6 +54,7 @@ public class MockThriftMetastoreClient
     public static final String BAD_DATABASE = "baddb";
     public static final String TEST_TABLE = "testtbl";
     public static final String TEST_PARTITION1 = "key=testpartition1";
+    public static final String TEST_COLUMN = "column";
     public static final String TEST_PARTITION2 = "key=testpartition2";
     public static final String BAD_PARTITION = "key=badpartition1";
     public static final List<String> TEST_PARTITION_VALUES1 = ImmutableList.of("testpartition1");
@@ -62,7 +65,15 @@ public class MockThriftMetastoreClient
             new RolePrincipalGrant("role2", "role1", ROLE, true, 0, "grantor2", ROLE));
 
     private static final StorageDescriptor DEFAULT_STORAGE_DESCRIPTOR =
-            new StorageDescriptor(ImmutableList.of(), "", null, null, false, 0, new SerDeInfo(TEST_TABLE, null, ImmutableMap.of()), null, null, ImmutableMap.of());
+            new StorageDescriptor(ImmutableList.of(new FieldSchema(TEST_COLUMN, "bigint", "")), "", null, null, false, 0, new SerDeInfo(TEST_TABLE, null, ImmutableMap.of()), null, null, ImmutableMap.of());
+    private static final ColumnStatisticsObj TEST_STATS = new ColumnStatisticsObj();
+
+    {
+        ColumnStatisticsData data = new ColumnStatisticsData();
+        data.setLongStats(new LongColumnStatsData());
+        TEST_STATS.setStatsData(data);
+        TEST_STATS.setColName(TEST_COLUMN);
+    }
 
     private final AtomicInteger accessCount = new AtomicInteger();
     private boolean throwException;
@@ -134,7 +145,7 @@ public class MockThriftMetastoreClient
                 0,
                 DEFAULT_STORAGE_DESCRIPTOR,
                 ImmutableList.of(new FieldSchema("key", "string", null)),
-                null,
+                ImmutableMap.of(),
                 "",
                 "",
                 TableType.MANAGED_TABLE.name());
@@ -155,8 +166,20 @@ public class MockThriftMetastoreClient
 
     @Override
     public List<ColumnStatisticsObj> getTableColumnStatistics(String databaseName, String tableName, List<String> columnNames)
+            throws TException
     {
-        throw new UnsupportedOperationException();
+        accessCount.incrementAndGet();
+        if (throwException) {
+            throw new RuntimeException();
+        }
+
+        if (!databaseName.equals(TEST_DATABASE)
+                || !tableName.equals(TEST_TABLE)
+                || !columnNames.equals(ImmutableList.of(TEST_COLUMN))) {
+            throw new NoSuchObjectException();
+        }
+
+        return ImmutableList.of(TEST_STATS);
     }
 
     @Override
@@ -173,8 +196,22 @@ public class MockThriftMetastoreClient
 
     @Override
     public Map<String, List<ColumnStatisticsObj>> getPartitionColumnStatistics(String databaseName, String tableName, List<String> partitionNames, List<String> columnNames)
+            throws TException
     {
-        throw new UnsupportedOperationException();
+        accessCount.incrementAndGet();
+        if (throwException) {
+            throw new RuntimeException();
+        }
+
+        if (!databaseName.equals(TEST_DATABASE)
+                || !tableName.equals(TEST_TABLE)
+                || !partitionNames.equals(ImmutableList.of(TEST_PARTITION1))
+                || !columnNames.equals(ImmutableList.of(TEST_COLUMN))) {
+            throw new NoSuchObjectException();
+        }
+
+        return ImmutableMap.of(
+                TEST_PARTITION1, ImmutableList.of(TEST_STATS));
     }
 
     @Override
