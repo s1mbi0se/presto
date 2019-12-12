@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 
 import static io.prestosql.spi.block.BlockUtil.checkArrayRange;
 import static io.prestosql.spi.block.BlockUtil.checkValidRegion;
+import static io.prestosql.spi.block.SelectedPositions.positionsRange;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
@@ -40,8 +41,13 @@ public class LazyBlock
 
     public LazyBlock(int positionCount, LazyBlockLoader loader)
     {
+        this(positionCount, toSelectiveLazyBlockLoader(positionCount, loader));
+    }
+
+    public LazyBlock(int positionCount, SelectiveLazyBlockLoader loader)
+    {
         this.positionCount = positionCount;
-        this.lazyData = new LazyData(loader);
+        this.lazyData = new LazyData(positionCount, loader);
     }
 
     @Override
@@ -275,6 +281,15 @@ public class LazyBlock
         return lazyData.getFullyLoadedBlock();
     }
 
+    @Override
+    public Block getLoadedBlock(SelectedPositions selectedPositions)
+    {
+        if (isLoaded()) {
+            return getBlock().getLoadedBlock(selectedPositions);
+        }
+        return lazyData.getFullyLoadedBlock(selectedPositions);
+    }
+
     public static void listenForLoads(Block block, Consumer<Block> listener)
     {
         requireNonNull(block, "block is null");
@@ -329,15 +344,17 @@ public class LazyBlock
 
     private static class LazyData
     {
+        private final int positionsCount;
         @Nullable
-        private LazyBlockLoader loader;
+        private SelectiveLazyBlockLoader loader;
         @Nullable
         private Block block;
         @Nullable
         private List<Consumer<Block>> listeners;
 
-        public LazyData(LazyBlockLoader loader)
+        public LazyData(int positionsCount, SelectiveLazyBlockLoader loader)
         {
+            this.positionsCount = positionsCount;
             this.loader = requireNonNull(loader, "loader is null");
         }
 
@@ -348,14 +365,17 @@ public class LazyBlock
 
         public Block getBlock()
         {
-            load(false);
-            return block;
+            return load(positionsRange(0, positionsCount), false);
         }
 
         public Block getFullyLoadedBlock()
         {
-            load(true);
-            return block;
+            return load(positionsRange(0, positionsCount), true);
+        }
+
+        public Block getFullyLoadedBlock(SelectedPositions selectedPositions)
+        {
+            return load(selectedPositions, true);
         }
 
         private void addListeners(List<Consumer<Block>> listeners)
@@ -369,13 +389,17 @@ public class LazyBlock
             this.listeners.addAll(listeners);
         }
 
-        private void load(boolean recursive)
+        private Block load(SelectedPositions selectedPositions, boolean recursive)
         {
             if (loader == null) {
-                return;
+                if (block == null) {
+                    throw new IllegalStateException("Selected positions have already been loaded");
+                }
+
+                return block;
             }
 
-            block = requireNonNull(loader.load(), "loader returned null");
+            block = requireNonNull(loader.load(selectedPositions), "loader returned null");
 
             if (recursive) {
                 block = block.getLoadedBlock();
@@ -401,6 +425,15 @@ public class LazyBlock
                     addListenersRecursive(block, listeners);
                 }
             }
+
+            if (!allPositionsSelected(positionsCount, selectedPositions)) {
+                // don't cache block for selected positions
+                Block result = block;
+                block = null;
+                return result;
+            }
+
+            return block;
         }
 
         /**
@@ -421,5 +454,29 @@ public class LazyBlock
                 addListenersRecursive(child, listeners);
             }
         }
+    }
+
+    private static SelectiveLazyBlockLoader toSelectiveLazyBlockLoader(int positionsCount, LazyBlockLoader lazyBlockLoader)
+    {
+        return selectedPositions -> {
+            Block loadedBlock = lazyBlockLoader.load();
+
+            if (allPositionsSelected(positionsCount, selectedPositions)) {
+                return loadedBlock;
+            }
+
+            if (selectedPositions.isList()) {
+                return loadedBlock.getPositions(selectedPositions.getPositions(), selectedPositions.getOffset(), selectedPositions.size());
+            }
+
+            return loadedBlock.getRegion(selectedPositions.getOffset(), selectedPositions.size());
+        };
+    }
+
+    private static boolean allPositionsSelected(int positionsCount, SelectedPositions selectedPositions)
+    {
+        return selectedPositions.isRange()
+                && selectedPositions.getOffset() == 0
+                && selectedPositions.size() == positionsCount;
     }
 }

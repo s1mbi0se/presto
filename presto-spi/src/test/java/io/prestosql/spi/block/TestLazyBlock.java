@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static io.prestosql.spi.block.SelectedPositions.positionsRange;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 
@@ -48,6 +49,27 @@ public class TestLazyBlock
 
         List<Block> expectedNotifications = new ArrayList<>();
         assertNotificationsRecursive(5, lazyBlock, actualNotifications, expectedNotifications);
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "Selected positions have already been loaded")
+    public void testSelectiveLoader()
+    {
+        LazyBlock lazyBlock = new LazyBlock(100, selectedPositions -> {
+            assertEquals(selectedPositions.size(), 10);
+            return createMultipleValueBlock(10);
+        });
+
+        assertEquals(lazyBlock.getLoadedBlock(positionsRange(10, 10)).getPositionCount(), 10);
+        lazyBlock.getLoadedBlock(positionsRange(42, 10));
+    }
+
+    @Test
+    public void testSelectiveLoaderAllPositionsSelected()
+    {
+        LazyBlock lazyBlock = new LazyBlock(100, selectedPositions -> createMultipleValueBlock(100));
+
+        assertEquals(lazyBlock.getLoadedBlock(positionsRange(0, 100)).getPositionCount(), 100);
+        assertEquals(lazyBlock.getLoadedBlock(positionsRange(42, 10)).getPositionCount(), 10);
     }
 
     private static void assertNotificationsRecursive(int depth, Block lazyBlock, List<Block> actualNotifications, List<Block> expectedNotifications)
@@ -91,6 +113,11 @@ public class TestLazyBlock
     private static Block createSingleValueBlock(int value)
     {
         return new IntArrayBlock(1, Optional.empty(), new int[] {value});
+    }
+
+    private static Block createMultipleValueBlock(int count)
+    {
+        return new IntArrayBlock(count, Optional.empty(), new int[count]);
     }
 
     private static Block createInfiniteRecursiveRowBlock()
