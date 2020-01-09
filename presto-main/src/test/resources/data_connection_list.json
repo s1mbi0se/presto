@@ -1,0 +1,45 @@
+{
+  "response-time": 0.245,
+  "content": [
+    {
+      "id": 1,
+      "status": "available",
+      "updated": {"by": "john", "at": "2019-05-19T14:27:47"},
+      "created": {"by": "doe", "at": "2019-05-19T14:27:47"},
+      "last-connection": "2019-01-01T00:00:00Z",
+      "name": "",
+      "description": "",
+      "labels": [],
+      "type-id": 1,
+      "availability": "",
+      "role": "",
+      "ssh-id": "",
+      "metadata": {
+        "datacenter": "x"
+      },
+      "settings": {
+        "host": "127.0.0.1"
+      }
+    },
+    {
+      "id": 2,
+      "status": "available",
+      "updated": {"by": "john", "at": "2019-05-19T14:27:47"},
+      "created": {"by": "doe", "at": "2019-05-19T14:27:47"},
+      "last-connection": "2019-01-01T00:00:00Z",
+      "name": "",
+      "description": "",
+      "labels": [],
+      "type-id": 1,
+      "availability": "",
+      "role": "",
+      "ssh-id": "",
+      "metadata": {
+        "datacenter": "x"
+      },
+      "settings": {
+        "host": "127.0.0.1"
+      }
+    }
+  ]
+}
