@@ -1,44 +1,93 @@
 {
-  "response-time": 0.245,
   "content": [
     {
       "id": 1,
-      "status": "available",
-      "updated": {"by": "john", "at": "2019-05-19T14:27:47"},
-      "created": {"by": "doe", "at": "2019-05-19T14:27:47"},
-      "last-connection": "2019-01-01T00:00:00Z",
-      "name": "",
-      "description": "",
-      "labels": [],
+      "name": "Sample",
+      "friendly-name": "Sample_friendly_name",
       "type-id": 1,
-      "availability": "",
-      "role": "",
-      "ssh-id": "",
-      "metadata": {
-        "datacenter": "x"
-      },
+      "availability": "all",
+      "role": "source",
+      "organization-id": 2,
+      "created-by-type": "user",
+      "created-by-user-id": 1,
+      "created-at": "09/13/2019, 12:04:13",
+      "status": "active",
       "settings": {
-        "host": "127.0.0.1"
+        "host": "localhost",
+        "username": "root",
+        "password": "root"
       }
     },
     {
       "id": 2,
-      "status": "available",
-      "updated": {"by": "john", "at": "2019-05-19T14:27:47"},
-      "created": {"by": "doe", "at": "2019-05-19T14:27:47"},
-      "last-connection": "2019-01-01T00:00:00Z",
-      "name": "",
-      "description": "",
-      "labels": [],
+      "name": "Sample2",
+      "friendly-name": "Sample_friendly_name",
       "type-id": 1,
-      "availability": "",
-      "role": "",
-      "ssh-id": "",
-      "metadata": {
-        "datacenter": "x"
-      },
+      "availability": "all",
+      "role": "destination",
+      "organization-id": 2,
+      "created-by-type": "user",
+      "created-by-user-id": 1,
+      "created-at": "09/13/2019, 12:04:13",
+      "status": "active",
       "settings": {
-        "host": "127.0.0.1"
+        "host": "localhost",
+        "username": "root",
+        "password": "root"
+      }
+    },
+    {
+      "id": 3,
+      "name": "Sample3",
+      "friendly-name": "Sample_friendly_name",
+      "type-id": 1,
+      "availability": "data-acess",
+      "role": "destination",
+      "organization-id": 1,
+      "created-by-type": "user",
+      "created-by-user-id": 1,
+      "created-at": "09/13/2019, 12:04:13",
+      "status": "active",
+      "settings": {
+        "host": "localhost",
+        "username": "root",
+        "password": "root"
+      }
+    },
+    {
+      "id": 4,
+      "name": "Sample4",
+      "friendly-name": "Sample_friendly_name",
+      "type-id": 1,
+      "availability": "all",
+      "role": "source",
+      "organization-id": 3,
+      "created-by-type": "user",
+      "created-by-user-id": 3,
+      "created-at": "09/13/2019, 12:04:13",
+      "status": "active",
+      "settings": {
+        "host": "localhost",
+        "username": "root",
+        "password": "root"
+      }
+    },
+    {
+      "id": 5,
+      "name": "Saemple4",
+      "friendly-name": "Sample_friendly_name",
+      "type-id": 1,
+      "availability": "all",
+      "role": "source",
+      "organization-id": 3,
+      "created-by-type": "user",
+      "created-by-user-id": 3,
+      "created-at": "09/13/2019, 12:04:13",
+      "status": "active",
+      "settings": {
+        "host": "localhost",
+        "username": "root",
+        "password": "root"
       }
     }
   ]

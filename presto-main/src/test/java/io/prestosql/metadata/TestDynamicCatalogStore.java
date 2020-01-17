@@ -37,8 +37,7 @@ import java.util.List;
 
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.prepareGet;
-import static io.airlift.http.client.Request.Builder.preparePost;
-import static io.airlift.json.JsonCodec.listJsonCodec;
+import static io.airlift.json.JsonCodec.jsonCodec;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TestDynamicCatalogStore
@@ -46,7 +45,7 @@ public class TestDynamicCatalogStore
 
     private HttpClient client;
     private TestingHttpServer server;
-    private final JsonCodec<List<Object>> listCodec = listJsonCodec(Object.class);
+    private final JsonCodec<DataConnectionResponse> jsonCodec = jsonCodec(DataConnectionResponse.class);
     private LifeCycleManager liceCycleManager;
 
     @BeforeMethod
@@ -75,13 +74,21 @@ public class TestDynamicCatalogStore
     public void shouldRetrieveDataConnectionResponse()
             throws IOException
     {
-        List<Object> expected = listCodec.fromJson(Resources.toString(Resources.getResource("data_connection_list.json"), UTF_8));
+        DataConnectionResponse expected = jsonCodec.fromJson(Resources.toString(Resources.getResource("data_connection_list.json"), UTF_8));
 
-        List<Object> response = client.execute(
-                prepareGet().setUri(uriFor("/data_connections")).build(),
-                createJsonResponseHandler(listCodec));
+        DataConnectionResponse response = client.execute(
+                prepareGet().setUri(uriFor("/v1/data_connections/all"))
+                        .setHeader("authorization", "")
+                        .build(),
+                createJsonResponseHandler(jsonCodec));
 
-        Assertions.assertEqualsIgnoreOrder(expected, response);
+        Assertions.assertEqualsIgnoreOrder(expected.getContent(), response.getContent());
+    }
+
+    @Test
+    public void shouldParseDataConnection()
+    {
+
     }
 
     private URI uriFor(String path)

@@ -16,36 +16,49 @@ package io.prestosql.metadata;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.Files;
-import io.airlift.http.client.HttpClient;
-import io.airlift.http.client.jetty.JettyHttpClient;
+import com.google.common.io.CharStreams;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 import io.prestosql.connector.ConnectorManager;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.http.HttpStatus;
+import org.weakref.jmx.internal.guava.base.Charsets;
 
 import javax.inject.Inject;
 
-import java.io.File;
-import java.util.HashMap;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
-import static io.prestosql.util.PropertiesUtil.loadProperties;
+import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 
 public class DynamicCatalogStore
 {
-    private HttpClient client;
     private static final Logger log = Logger.get(DynamicCatalogStore.class);
     private final ConnectorManager connectorManager;
     private final String catalogDataConnectionEndpoint;
     private final Set<String> disabledCatalogs;
     private final AtomicBoolean catalogsLoading = new AtomicBoolean();
     private final JsonCodec<Map<String, Object>> mapCodec = mapJsonCodec(String.class, Object.class);
+    private final HttpClient httpClient;
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
 
     @Inject
     public DynamicCatalogStore(ConnectorManager connectorManager, DynamicCatalogStoreConfig config)
@@ -60,7 +73,7 @@ public class DynamicCatalogStore
         this.connectorManager = connectorManager;
         this.catalogDataConnectionEndpoint = catalogDataConnectionEndpoint;
         this.disabledCatalogs = ImmutableSet.copyOf(disabledCatalogs);
-        client = new JettyHttpClient();
+        this.httpClient = new HttpClient();
     }
 
     public void loadCatalogs()
@@ -70,40 +83,79 @@ public class DynamicCatalogStore
             return;
         }
 
-        for (File file : listFiles(catalogConfigurationDir)) {
-            if (file.isFile() && file.getName().endsWith(".properties")) {
-                loadCatalog(file);
-            }
+        for (DataConnection dataConnection : listDataConnections(catalogDataConnectionEndpoint)) {
+            loadCatalog(dataConnection);
         }
     }
 
-    private void loadCatalog(File file)
+    private void loadCatalog(DataConnection dataConnection)
             throws Exception
     {
-        String catalogName = Files.getNameWithoutExtension(file.getName());
+        String catalogName = dataConnection.getName();
         if (disabledCatalogs.contains(catalogName)) {
             log.info("Skipping disabled catalog %s", catalogName);
             return;
         }
 
-        log.info("-- Loading catalog %s --", file);
-        Map<String, String> properties = new HashMap<>(loadProperties(file));
+        log.info("-- Loading catalog %s --", dataConnection);
+        Map<String, String> properties = dataConnection.getSettings();
 
         String connectorName = properties.remove("connector.name");
-        checkState(connectorName != null, "Catalog configuration %s does not contain connector.name", file.getAbsoluteFile());
+        checkState(connectorName != null, "Catalog configuration %s does not contain connector.name", dataConnection.getName());
 
         connectorManager.createCatalog(catalogName, connectorName, ImmutableMap.copyOf(properties));
         log.info("-- Added catalog %s using connector %s --", catalogName, connectorName);
     }
 
-    private static List<File> listFiles(File installedPluginsDir)
+    private List<DataConnection> listDataConnections(String catalogDataConnectionEndpoint)
+            throws URISyntaxException, IOException, InterruptedException, ExecutionException, TimeoutException
     {
-        if (installedPluginsDir != null && installedPluginsDir.isDirectory()) {
-            File[] files = installedPluginsDir.listFiles();
-            if (files != null) {
-                return ImmutableList.copyOf(files);
+//        URI uri = HttpUriBuilder.uriBuilderFrom(new URI(catalogDataConnectionEndpoint)).build();
+//        Request request = prepareGet()
+//                .setUri(uri)
+//                .setHeader(CONTENT_TYPE, JSON_UTF_8.toString())
+//                .setHeader(AUTHORIZATION, "4")
+//                .build();
+//
+//        HttpClient.HttpResponseFuture<HttpPageBufferClient.PagesResponse> resultFuture = httpClient.executeAsync(
+//                request,
+//                new HttpPageBufferClient.PageResponseHandler());
+
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        httpClient.newRequest(catalogDataConnectionEndpoint)
+                .header(CONTENT_TYPE, JSON_UTF_8.toString())
+                .header(AUTHORIZATION, "4")
+                .send(listener);
+
+        // Wait for the response headers to arrive
+        Response response = listener.get(5, TimeUnit.SECONDS);
+
+        // Look at the response
+        if (response.getStatus() == HttpStatus.OK_200)
+        {
+            // Use try-with-resources to close input stream.
+            try (InputStream responseContent = listener.getInputStream())
+            {
+                // Your logic here
+                return parseDataConnectionRequest(responseContent);
             }
         }
+
+//        if (installedPluginsDir != null && installedPluginsDir.isDirectory()) {
+//            File[] files = installedPluginsDir.listFiles();
+//            if (files != null) {
+//                return ImmutableList.copyOf(files);
+//            }
+//        }
+        return ImmutableList.of();
+    }
+
+    private List<DataConnection> parseDataConnectionRequest(InputStream responseContent)
+            throws IOException
+    {
+        String data = CharStreams.toString(new InputStreamReader(responseContent, Charsets.UTF_8));
+        System.out.println(data);
+
         return ImmutableList.of();
     }
 }
