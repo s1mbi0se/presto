@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.net.MediaType.JSON_UTF_8;
-import static io.airlift.json.JsonCodec.mapJsonCodec;
+import static io.airlift.json.JsonCodec.jsonCodec;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 
@@ -53,25 +53,35 @@ public class DynamicCatalogStore
 {
     private static final Logger log = Logger.get(DynamicCatalogStore.class);
     private final ConnectorManager connectorManager;
-    private final String catalogDataConnectionEndpoint;
+    private final String dataConnectionEndpoint;
+    private final String dataConnectionUrl;
+    private final String dataConnectionApiKey;
     private final Set<String> disabledCatalogs;
     private final AtomicBoolean catalogsLoading = new AtomicBoolean();
-    private final JsonCodec<Map<String, Object>> mapCodec = mapJsonCodec(String.class, Object.class);
     private final HttpClient httpClient;
-    private final ExecutorService executorService = Executors.newCachedThreadPool();
+    private final JsonCodec<DataConnectionResponse> jsonCodec = jsonCodec(DataConnectionResponse.class);
 
     @Inject
     public DynamicCatalogStore(ConnectorManager connectorManager, DynamicCatalogStoreConfig config)
     {
         this(connectorManager,
-                config.getCatalogDataConnectionEndpoint(),
+                config.getDataConnectionsEndpoint(),
+                config.getDataConnectionsUrl(),
+                config.getDataConnectionsApiKey(),
                 firstNonNull(config.getDisabledCatalogs(), ImmutableList.of()));
     }
 
-    public DynamicCatalogStore(ConnectorManager connectorManager, String catalogDataConnectionEndpoint, List<String> disabledCatalogs)
+    public DynamicCatalogStore(
+            ConnectorManager connectorManager,
+            String dataConnectionEndpoint,
+            String dataConnectionUrl,
+            String dataConnectionApiKey,
+            List<String> disabledCatalogs)
     {
         this.connectorManager = connectorManager;
-        this.catalogDataConnectionEndpoint = catalogDataConnectionEndpoint;
+        this.dataConnectionEndpoint = dataConnectionEndpoint;
+        this.dataConnectionUrl = dataConnectionUrl;
+        this.dataConnectionApiKey = dataConnectionApiKey;
         this.disabledCatalogs = ImmutableSet.copyOf(disabledCatalogs);
         this.httpClient = new HttpClient();
     }
@@ -83,7 +93,7 @@ public class DynamicCatalogStore
             return;
         }
 
-        for (DataConnection dataConnection : listDataConnections(catalogDataConnectionEndpoint)) {
+        for (DataConnection dataConnection : listDataConnections(dataConnectionEndpoint)) {
             loadCatalog(dataConnection);
         }
     }
@@ -98,7 +108,7 @@ public class DynamicCatalogStore
         }
 
         log.info("-- Loading catalog %s --", dataConnection);
-        Map<String, String> properties = dataConnection.getSettings();
+        Map<String, String> properties = DataConnectionParser.getCatalogProperties(dataConnection.getSettings());
 
         String connectorName = properties.remove("connector.name");
         checkState(connectorName != null, "Catalog configuration %s does not contain connector.name", dataConnection.getName());
@@ -131,22 +141,12 @@ public class DynamicCatalogStore
         Response response = listener.get(5, TimeUnit.SECONDS);
 
         // Look at the response
-        if (response.getStatus() == HttpStatus.OK_200)
-        {
-            // Use try-with-resources to close input stream.
-            try (InputStream responseContent = listener.getInputStream())
-            {
-                // Your logic here
+        if (response.getStatus() == HttpStatus.OK_200) {
+            try (InputStream responseContent = listener.getInputStream()) {
                 return parseDataConnectionRequest(responseContent);
             }
         }
 
-//        if (installedPluginsDir != null && installedPluginsDir.isDirectory()) {
-//            File[] files = installedPluginsDir.listFiles();
-//            if (files != null) {
-//                return ImmutableList.copyOf(files);
-//            }
-//        }
         return ImmutableList.of();
     }
 
@@ -156,6 +156,13 @@ public class DynamicCatalogStore
         String data = CharStreams.toString(new InputStreamReader(responseContent, Charsets.UTF_8));
         System.out.println(data);
 
+        if (data != null && !"".isEmpty()) {
+            DataConnectionResponse response = jsonCodec.fromJson(data);
+
+            if (response.getContent() != null && response.getContent().size() > 0) {
+                return response.getContent();
+            }
+        }
         return ImmutableList.of();
     }
 }

@@ -3,11 +3,13 @@ package io.prestosql.metadata;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
+import io.airlift.json.JsonCodec;
 
 import java.math.BigInteger;
 import java.util.Map;
 import java.util.Objects;
 
+import static io.airlift.json.JsonCodec.jsonCodec;
 import static java.util.Objects.requireNonNull;
 
 public class DataConnection
@@ -112,6 +114,12 @@ public class DataConnection
     public Map<String, String> getSettings()
     {
         return settings;
+    }
+
+    public static DataConnection from(String json)
+    {
+        JsonCodec<DataConnection> jsonCodec = jsonCodec(DataConnection.class);
+        return jsonCodec.fromJson(json);
     }
 
     @Override
