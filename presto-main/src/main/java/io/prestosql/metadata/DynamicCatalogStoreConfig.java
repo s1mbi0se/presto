@@ -17,7 +17,6 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.configuration.Config;
-import io.airlift.configuration.LegacyConfig;
 
 import javax.validation.constraints.NotNull;
 
@@ -57,16 +56,18 @@ public class DynamicCatalogStoreConfig
         return dataConnectionsApiKey;
     }
 
-    @LegacyConfig("plugin.config-dir")
-    @Config("catalog.config-dir")
-    public DynamicCatalogStoreConfig setCatalogDataConnectionEndpoint()
-            throws IOException
+    public DynamicCatalogStoreConfig()
     {
-        Map<String, String> properties = this.readApiConfigFile();
-        this.dataConnectionsEndpoint = properties.get("data-connections-endpoint");
-        this.dataConnectionsUrl = properties.get("data-connections-url");
-        this.dataConnectionsApiKey = properties.get("data-connections-api-key");
-        return this;
+        Map<String, String> properties = null;
+        try {
+            properties = this.readApiConfigFile();
+            this.dataConnectionsEndpoint = properties.get("data-connections-endpoint");
+            this.dataConnectionsUrl = properties.get("data-connections-url");
+            this.dataConnectionsApiKey = properties.get("data-connections-api-key");
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public List<String> getDisabledCatalogs()

@@ -17,37 +17,34 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharStreams;
+import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 import io.prestosql.connector.ConnectorManager;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.http.HttpStatus;
-import org.weakref.jmx.internal.guava.base.Charsets;
 
 import javax.inject.Inject;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.net.MediaType.JSON_UTF_8;
+import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
+import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.json.JsonCodec.jsonCodec;
+import static java.util.Locale.ENGLISH;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
-import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 
 public class DynamicCatalogStore
 {
@@ -83,7 +80,7 @@ public class DynamicCatalogStore
         this.dataConnectionUrl = dataConnectionUrl;
         this.dataConnectionApiKey = dataConnectionApiKey;
         this.disabledCatalogs = ImmutableSet.copyOf(disabledCatalogs);
-        this.httpClient = new HttpClient();
+        this.httpClient = new JettyHttpClient();
     }
 
     public void loadCatalogs()
@@ -93,7 +90,7 @@ public class DynamicCatalogStore
             return;
         }
 
-        for (DataConnection dataConnection : listDataConnections(dataConnectionEndpoint)) {
+        for (DataConnection dataConnection : listDataConnections()) {
             loadCatalog(dataConnection);
         }
     }
@@ -101,59 +98,54 @@ public class DynamicCatalogStore
     private void loadCatalog(DataConnection dataConnection)
             throws Exception
     {
-        String catalogName = dataConnection.getName();
+        String catalogName = dataConnection.getName().toLowerCase(ENGLISH);
         if (disabledCatalogs.contains(catalogName)) {
             log.info("Skipping disabled catalog %s", catalogName);
             return;
         }
 
-        log.info("-- Loading catalog %s --", dataConnection);
-        Map<String, String> properties = DataConnectionParser.getCatalogProperties(dataConnection.getSettings());
-
-        String connectorName = properties.remove("connector.name");
+        String connectorName = DataConnectionType.valueOf(dataConnection.getTypeId()).toString();
         checkState(connectorName != null, "Catalog configuration %s does not contain connector.name", dataConnection.getName());
+        connectorName = connectorName.toLowerCase(ENGLISH);
+
+        log.info("-- Loading catalog %s --", dataConnection);
+        Map<String, String> properties = DataConnectionParser.getCatalogProperties(connectorName, dataConnection.getSettings());
 
         connectorManager.createCatalog(catalogName, connectorName, ImmutableMap.copyOf(properties));
         log.info("-- Added catalog %s using connector %s --", catalogName, connectorName);
     }
 
-    private List<DataConnection> listDataConnections(String catalogDataConnectionEndpoint)
+    private List<DataConnection> listDataConnections()
             throws URISyntaxException, IOException, InterruptedException, ExecutionException, TimeoutException
     {
-//        URI uri = HttpUriBuilder.uriBuilderFrom(new URI(catalogDataConnectionEndpoint)).build();
-//        Request request = prepareGet()
-//                .setUri(uri)
-//                .setHeader(CONTENT_TYPE, JSON_UTF_8.toString())
-//                .setHeader(AUTHORIZATION, "4")
-//                .build();
-//
-//        HttpClient.HttpResponseFuture<HttpPageBufferClient.PagesResponse> resultFuture = httpClient.executeAsync(
-//                request,
-//                new HttpPageBufferClient.PageResponseHandler());
+        DataConnectionResponse response = httpClient.execute(
+                prepareGet().setUri(uriFor(dataConnectionUrl, dataConnectionEndpoint))
+                        .setHeader(AUTHORIZATION, dataConnectionApiKey)
+                        .build(),
+                createJsonResponseHandler(jsonCodec));
 
-        InputStreamResponseListener listener = new InputStreamResponseListener();
-        httpClient.newRequest(catalogDataConnectionEndpoint)
-                .header(CONTENT_TYPE, JSON_UTF_8.toString())
-                .header(AUTHORIZATION, "4")
-                .send(listener);
-
-        // Wait for the response headers to arrive
-        Response response = listener.get(5, TimeUnit.SECONDS);
-
-        // Look at the response
-        if (response.getStatus() == HttpStatus.OK_200) {
-            try (InputStream responseContent = listener.getInputStream()) {
-                return parseDataConnectionRequest(responseContent);
-            }
+        if (response.getContent() != null && response.getContent().size() > 0) {
+            return ImmutableList.copyOf(response.getContent());
         }
 
         return ImmutableList.of();
     }
 
+    private URI uriFor(String dataConnectionUrl, String dataConnectionEndpoint)
+    {
+        try {
+            URI uri = new URI("http", null, dataConnectionUrl, 8080, null, null, null);
+            return uri.resolve(dataConnectionEndpoint);
+        }
+        catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
     private List<DataConnection> parseDataConnectionRequest(InputStream responseContent)
             throws IOException
     {
-        String data = CharStreams.toString(new InputStreamReader(responseContent, Charsets.UTF_8));
+        String data = CharStreams.toString(new InputStreamReader(responseContent, StandardCharsets.UTF_8));
         System.out.println(data);
 
         if (data != null && !"".isEmpty()) {

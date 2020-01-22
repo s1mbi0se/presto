@@ -41,7 +41,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TestDynamicCatalogStore
 {
-
     private HttpClient client;
     private TestingHttpServer server;
     private final JsonCodec<DataConnectionResponse> jsonCodec = jsonCodec(DataConnectionResponse.class);
@@ -55,9 +54,7 @@ public class TestDynamicCatalogStore
                 new InMemoryEventModule(),
                 new TestingHttpServerModule(),
                 new JsonModule(),
-                new JaxrsModule()
-//                new MainModule()
-        );
+                new JaxrsModule());
 
         Injector injector = app
                 .strictConfig()
@@ -87,7 +84,6 @@ public class TestDynamicCatalogStore
     @Test
     public void shouldParseDataConnection()
     {
-
     }
 
     private URI uriFor(String path)
