@@ -19,17 +19,13 @@ import java.util.concurrent.TimeUnit;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
-public class ScheduledCatalogDeltaRetriever
+public class CatalogDeltaRetrieverScheduler
 {
-    private final ScheduledExecutorService updateScheduledExecutor;
+    private static final ScheduledExecutorService updateScheduledExecutor = newSingleThreadScheduledExecutor(daemonThreadsNamed("catalog-list-update-scheduler-%s"));
 
-    public ScheduledCatalogDeltaRetriever(Runnable runnable)
-    {
-        this.updateScheduledExecutor = newSingleThreadScheduledExecutor(daemonThreadsNamed("catalog-list-update-scheduler-%s"));
-        updateCatalogDeltaOnSchedule(runnable);
-    }
+    public CatalogDeltaRetrieverScheduler() {}
 
-    public void updateCatalogDeltaOnSchedule(Runnable runnable)
+    public void schedule(Runnable runnable)
     {
         final int delay = 5;
         updateScheduledExecutor.scheduleWithFixedDelay(runnable, delay, delay, TimeUnit.SECONDS);

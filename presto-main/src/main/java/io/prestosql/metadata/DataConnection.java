@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static io.airlift.json.JsonCodec.jsonCodec;
+import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 
 public class DataConnection
@@ -37,7 +38,7 @@ public class DataConnection
 //    private final String createdByType;
 //    private final BigInteger createdByUserId;
 //    private final DateTime createdAt;
-//    private final String status;
+    private final String status;
     private final Map<String, String> settings;
 
     @JsonCreator
@@ -52,7 +53,7 @@ public class DataConnection
 //            @JsonProperty("created-by-type") String createdByType,
 //            @JsonProperty("created-by-user-id") BigInteger createdByUserId,
 //            @JsonProperty("created-at") DateTime createdAt,
-//            @JsonProperty("status") String status,
+            @JsonProperty("status") String status,
             @JsonProperty("settings") Map<String, String> settings)
     {
         this.id = requireNonNull(id, "id is null");
@@ -65,7 +66,7 @@ public class DataConnection
 //        this.createdByType = requireNonNull(createdByType, "createdByType is null");
 //        this.createdByUserId = requireNonNull(createdByUserId, "createdByUserId is null");
 //        this.createdAt = requireNonNull(createdAt, "createdAt is null");
-//        this.status = requireNonNull(status, "status is null");
+        this.status = requireNonNull(status, "status is null");
         this.settings = ImmutableMap.copyOf(requireNonNull(settings, "properties is null"));
     }
 
@@ -76,7 +77,7 @@ public class DataConnection
 
     public String getName()
     {
-        return name;
+        return name.toLowerCase(ENGLISH);
     }
 
 //    public String getFriendlyName()
@@ -119,10 +120,10 @@ public class DataConnection
 //        return createdAt;
 //    }
 //
-//    public String getStatus()
-//    {
-//        return status;
-//    }
+    public String getStatus()
+    {
+        return status;
+    }
 
     public Map<String, String> getSettings()
     {

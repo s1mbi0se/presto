@@ -22,6 +22,9 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 import io.prestosql.connector.ConnectorManager;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import javax.inject.Inject;
 
@@ -45,11 +48,16 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static java.util.Locale.ENGLISH;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static org.joda.time.DateTimeZone.UTC;
 
 public class DynamicCatalogStore
 {
     private static final Logger log = Logger.get(DynamicCatalogStore.class);
+    private static DateTime lastCatalogDeltaDateTime;
+    private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd");
+    private final String baseDeltaQueryParameters = "?created-after=%s&updated-after=%s";
     private final ConnectorManager connectorManager;
+    private final CatalogDeltaRetrieverScheduler scheduler;
     private final String dataConnectionEndpoint;
     private final String dataConnectionUrl;
     private final String dataConnectionApiKey;
@@ -59,13 +67,13 @@ public class DynamicCatalogStore
     private final JsonCodec<DataConnectionResponse> jsonCodec = jsonCodec(DataConnectionResponse.class);
 
     @Inject
-    public DynamicCatalogStore(ConnectorManager connectorManager, DynamicCatalogStoreConfig config)
+    public DynamicCatalogStore(ConnectorManager connectorManager, DynamicCatalogStoreConfig config, CatalogDeltaRetrieverScheduler scheduler)
     {
         this(connectorManager,
                 config.getDataConnectionsEndpoint(),
                 config.getDataConnectionsUrl(),
                 config.getDataConnectionsApiKey(),
-                firstNonNull(config.getDisabledCatalogs(), ImmutableList.of()));
+                firstNonNull(config.getDisabledCatalogs(), ImmutableList.of()), scheduler);
     }
 
     public DynamicCatalogStore(
@@ -73,13 +81,15 @@ public class DynamicCatalogStore
             String dataConnectionEndpoint,
             String dataConnectionUrl,
             String dataConnectionApiKey,
-            List<String> disabledCatalogs)
+            List<String> disabledCatalogs,
+            CatalogDeltaRetrieverScheduler scheduler)
     {
         this.connectorManager = connectorManager;
         this.dataConnectionEndpoint = dataConnectionEndpoint;
         this.dataConnectionUrl = dataConnectionUrl;
         this.dataConnectionApiKey = dataConnectionApiKey;
         this.disabledCatalogs = ImmutableSet.copyOf(disabledCatalogs);
+        this.scheduler = scheduler;
         this.httpClient = new JettyHttpClient();
     }
 
@@ -90,9 +100,19 @@ public class DynamicCatalogStore
             return;
         }
 
-        for (DataConnection dataConnection : listDataConnections()) {
+        for (DataConnection dataConnection : listAllDataConnections()) {
             loadCatalog(dataConnection);
         }
+
+        scheduler.schedule(() -> {
+            try {
+                updateCatalogDelta();
+            }
+            catch (Exception e) {
+                log.error(e.getMessage());
+                e.printStackTrace();
+            }
+        });
     }
 
     private void loadCatalog(DataConnection dataConnection)
@@ -115,11 +135,63 @@ public class DynamicCatalogStore
         log.info("-- Added catalog %s using connector %s --", catalogName, connectorName);
     }
 
-    private List<DataConnection> listDataConnections()
+    private void updateCatalogDelta()
+            throws Exception
+    {
+        log.info("updating catalogs");
+        List<DataConnection> delta = listCatalogDelta();
+        if (delta.size() > 0) {
+            for (DataConnection dataConnection : delta) {
+                log.debug(dataConnection.toString());
+                if (!dataConnection.getStatus().equals("active")) {
+                    if (connectorManager.getCatalogManager().getCatalog(dataConnection.getName()).isPresent()) {
+                        log.info(String.format("Decommissioning data connection %s.", dataConnection.getName()));
+                        connectorManager.dropConnection(dataConnection.getName());
+                    }
+                }
+                else {
+                    if (!connectorManager.getCatalogManager().getCatalog(dataConnection.getName()).isPresent()) {
+                        log.info(String.format("Found new data connection %s. Loading...", dataConnection.getName()));
+                        loadCatalog(dataConnection);
+                    }
+                }
+            }
+        }
+    }
+
+    private List<DataConnection> listAllDataConnections()
             throws URISyntaxException, IOException, InterruptedException, ExecutionException, TimeoutException
     {
+        return getDataConnections(dataConnectionEndpoint, "?status=active");
+    }
+
+    private List<DataConnection> listCatalogDelta()
+    {
+        return getDataConnections(dataConnectionEndpoint, resolveDeltaQueryParameter());
+    }
+
+    private String resolveDeltaQueryParameter()
+    {
+        if (lastCatalogDeltaDateTime == null) {
+            lastCatalogDeltaDateTime = DateTime.now(UTC);
+        }
+
+        try {
+            String result = String.format(baseDeltaQueryParameters, dateTimeFormatter.print(lastCatalogDeltaDateTime), dateTimeFormatter.print(lastCatalogDeltaDateTime));
+            lastCatalogDeltaDateTime = DateTime.now(UTC);
+            return result;
+        }
+        catch (Exception e) {
+            log.error(e.getMessage());
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    private List<DataConnection> getDataConnections(String dataConnectionEndpoint, String queryParameters)
+    {
         DataConnectionResponse response = httpClient.execute(
-                prepareGet().setUri(uriFor(dataConnectionUrl, dataConnectionEndpoint))
+                prepareGet().setUri(uriFor(dataConnectionUrl, dataConnectionEndpoint + queryParameters))
                         .setHeader(AUTHORIZATION, dataConnectionApiKey)
                         .build(),
                 createJsonResponseHandler(jsonCodec));
