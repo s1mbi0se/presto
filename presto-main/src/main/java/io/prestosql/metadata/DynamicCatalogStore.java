@@ -16,7 +16,6 @@ package io.prestosql.metadata;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.CharStreams;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.json.JsonCodec;
@@ -29,11 +28,8 @@ import org.joda.time.format.DateTimeFormatter;
 import javax.inject.Inject;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,7 +63,8 @@ public class DynamicCatalogStore
     private final JsonCodec<DataConnectionResponse> jsonCodec = jsonCodec(DataConnectionResponse.class);
 
     @Inject
-    public DynamicCatalogStore(ConnectorManager connectorManager, DynamicCatalogStoreConfig config, CatalogDeltaRetrieverScheduler scheduler)
+    public DynamicCatalogStore(ConnectorManager connectorManager, DynamicCatalogStoreConfig config,
+            CatalogDeltaRetrieverScheduler scheduler)
     {
         this(connectorManager,
                 config.getDataConnectionsEndpoint(),
@@ -112,10 +109,10 @@ public class DynamicCatalogStore
                 log.error(e.getMessage());
                 e.printStackTrace();
             }
-        });
+        }, 5);
     }
 
-    private void loadCatalog(DataConnection dataConnection)
+    public void loadCatalog(DataConnection dataConnection)
             throws Exception
     {
         String catalogName = dataConnection.getName().toLowerCase(ENGLISH);
@@ -196,6 +193,11 @@ public class DynamicCatalogStore
                         .build(),
                 createJsonResponseHandler(jsonCodec));
 
+        return getDataConnectionsFromResponse(response);
+    }
+
+    private List<DataConnection> getDataConnectionsFromResponse(DataConnectionResponse response)
+    {
         if (response.getContent() != null && response.getContent().size() > 0) {
             return ImmutableList.copyOf(response.getContent());
         }
@@ -214,19 +216,8 @@ public class DynamicCatalogStore
         }
     }
 
-    private List<DataConnection> parseDataConnectionRequest(InputStream responseContent)
-            throws IOException
+    public ConnectorManager getConnectorManager()
     {
-        String data = CharStreams.toString(new InputStreamReader(responseContent, StandardCharsets.UTF_8));
-        System.out.println(data);
-
-        if (data != null && !"".isEmpty()) {
-            DataConnectionResponse response = jsonCodec.fromJson(data);
-
-            if (response.getContent() != null && response.getContent().size() > 0) {
-                return response.getContent();
-            }
-        }
-        return ImmutableList.of();
+        return connectorManager;
     }
 }

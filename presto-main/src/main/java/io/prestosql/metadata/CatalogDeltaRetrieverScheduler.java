@@ -25,9 +25,8 @@ public class CatalogDeltaRetrieverScheduler
 
     public CatalogDeltaRetrieverScheduler() {}
 
-    public void schedule(Runnable runnable)
+    public void schedule(Runnable runnable, final int delay)
     {
-        final int delay = 5;
         updateScheduledExecutor.scheduleWithFixedDelay(runnable, delay, delay, TimeUnit.SECONDS);
     }
 }
