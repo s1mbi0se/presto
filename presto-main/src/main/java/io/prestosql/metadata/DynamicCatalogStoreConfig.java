@@ -18,8 +18,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.configuration.Config;
 
-import javax.validation.constraints.NotNull;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -38,19 +36,16 @@ public class DynamicCatalogStoreConfig
     private String dataConnectionsApiKey;
     private List<String> disabledCatalogs;
 
-    @NotNull
     public String getDataConnectionsEndpoint()
     {
         return dataConnectionsEndpoint;
     }
 
-    @NotNull
     public String getDataConnectionsUrl()
     {
         return dataConnectionsUrl;
     }
 
-    @NotNull
     public String getDataConnectionsApiKey()
     {
         return dataConnectionsApiKey;

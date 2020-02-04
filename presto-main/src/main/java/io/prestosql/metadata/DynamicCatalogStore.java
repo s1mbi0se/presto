@@ -43,6 +43,7 @@ import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandl
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static java.util.Locale.ENGLISH;
+import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static org.joda.time.DateTimeZone.UTC;
 
@@ -82,9 +83,9 @@ public class DynamicCatalogStore
             CatalogDeltaRetrieverScheduler scheduler)
     {
         this.connectorManager = connectorManager;
-        this.dataConnectionEndpoint = dataConnectionEndpoint;
-        this.dataConnectionUrl = dataConnectionUrl;
-        this.dataConnectionApiKey = dataConnectionApiKey;
+        this.dataConnectionEndpoint = requireNonNull(dataConnectionEndpoint, "dataConnectionEndpoint is null.");
+        this.dataConnectionUrl = requireNonNull(dataConnectionUrl, "dataConnectionUrl is null.");
+        this.dataConnectionApiKey = requireNonNull(dataConnectionApiKey, "dataConnectionApiKey is null.");
         this.disabledCatalogs = ImmutableSet.copyOf(disabledCatalogs);
         this.scheduler = scheduler;
         this.httpClient = new JettyHttpClient();
