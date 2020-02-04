@@ -355,6 +355,11 @@ public class ConnectorManager
         }
     }
 
+    public CatalogManager getCatalogManager()
+    {
+        return catalogManager;
+    }
+
     private static class InternalConnectorFactory
     {
         private final ConnectorFactory connectorFactory;
