@@ -20,6 +20,7 @@ import io.airlift.configuration.Config;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,10 @@ import static io.prestosql.util.PropertiesUtil.loadProperties;
 public class DynamicCatalogStoreConfig
 {
     private static final Splitter SPLITTER = Splitter.on(',').trimResults().omitEmptyStrings();
-
+    private static final String API_CONFIG_FILE = "api-config.properties";
+    private static final String SHANNONDB_CONFIG_FILE = "shannondb.properties";
+    protected static DataConnection shannondbone;
+    protected static DataConnection shannondbtwo;
     private File catalogConfigurationDir = new File("etc/catalog/");
     private String dataConnectionsEndpoint;
     private String dataConnectionsUrl;
@@ -55,10 +59,35 @@ public class DynamicCatalogStoreConfig
     {
         Map<String, String> properties = null;
         try {
-            properties = this.readApiConfigFile();
+            properties = this.readConfigFile(API_CONFIG_FILE);
             this.dataConnectionsEndpoint = properties.get("data-connections-endpoint");
             this.dataConnectionsUrl = properties.get("data-connections-url");
             this.dataConnectionsApiKey = properties.get("data-connections-api-key");
+
+            Map<String, String> shannonDbConfig = this.readConfigFile(SHANNONDB_CONFIG_FILE);
+            String ports = shannonDbConfig.get(ShannonDbConfigProperties.PORT.getConfigName());
+
+            HashMap<String, String> shannonDbConfigOne = new HashMap<>();
+            shannonDbConfigOne.put(ShannonDbConfigProperties.HOST.getConfigName(), shannonDbConfig.get(ShannonDbConfigProperties.HOST.getConfigName()));
+            shannonDbConfigOne.put(ShannonDbConfigProperties.PORT.getConfigName(), ports.split(",")[0]);
+
+            shannondbone = new DataConnection(
+                    BigInteger.ONE,
+                    ShannonDbInstances.SHANNONDB_ONE.getName(),
+                    0,
+                    "active",
+                    shannonDbConfigOne);
+
+            HashMap<String, String> shannonDbConfigTwo = new HashMap<>();
+            shannonDbConfigTwo.put(ShannonDbConfigProperties.HOST.getConfigName(), shannonDbConfig.get(ShannonDbConfigProperties.HOST.getConfigName()));
+            shannonDbConfigTwo.put(ShannonDbConfigProperties.PORT.getConfigName(), ports.split(",")[1]);
+
+            shannondbtwo = new DataConnection(
+                    BigInteger.ONE,
+                    ShannonDbInstances.SHANNONDB_TWO.getName(),
+                    0,
+                    "active",
+                    shannonDbConfigTwo);
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -83,11 +112,11 @@ public class DynamicCatalogStoreConfig
         return this;
     }
 
-    private Map<String, String> readApiConfigFile()
+    private Map<String, String> readConfigFile(String propertyFileName)
             throws IOException
     {
         for (File file : listFiles(catalogConfigurationDir)) {
-            if (file.isFile() && file.getName().equals("api-config.properties")) {
+            if (file.isFile() && file.getName().equals(propertyFileName)) {
                 return loadApiConfigFile(file);
             }
         }
@@ -109,5 +138,42 @@ public class DynamicCatalogStoreConfig
             throws IOException
     {
         return new HashMap<>(loadProperties(file));
+    }
+
+    protected static enum ShannonDbInstances
+    {
+        CONNECTOR_NAME("shannondb"),
+        SHANNONDB_ONE("shannondb_one"),
+        SHANNONDB_TWO("shannondb_two");
+
+        private String name;
+
+        ShannonDbInstances(String name)
+        {
+            this.name = name;
+        }
+
+        public String getName()
+        {
+            return name;
+        }
+    }
+
+    public static enum ShannonDbConfigProperties
+    {
+        HOST("connection-host"),
+        PORT("connection-port");
+
+        private String configName;
+
+        ShannonDbConfigProperties(String configName)
+        {
+            this.configName = configName;
+        }
+
+        public String getConfigName()
+        {
+            return configName;
+        }
     }
 }
