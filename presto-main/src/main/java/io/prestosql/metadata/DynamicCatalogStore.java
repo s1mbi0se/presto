@@ -102,11 +102,8 @@ public class DynamicCatalogStore
             loadCatalog(dataConnection);
         }
 
-        if (!connectorManager.getCatalogManager().getCatalog(DynamicCatalogStoreConfig.ShannonDbInstances.SHANNONDB_ONE.getName()).isPresent()) {
-            loadCatalog(DynamicCatalogStoreConfig.shannondbone);
-        }
-        else if (!connectorManager.getCatalogManager().getCatalog(DynamicCatalogStoreConfig.ShannonDbInstances.SHANNONDB_TWO.getName()).isPresent()) {
-            loadCatalog(DynamicCatalogStoreConfig.shannondbtwo);
+        if (!connectorManager.getCatalogManager().getCatalog(DynamicCatalogStoreConfig.SHANNONDB_CONNECTOR_NAME).isPresent()) {
+            loadCatalog(DynamicCatalogStoreConfig.SHANNONDB_DATA_CONNECTION);
         }
 
         scheduler.schedule(() -> {

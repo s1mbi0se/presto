@@ -32,8 +32,8 @@ public class DynamicCatalogStoreConfig
     private static final Splitter SPLITTER = Splitter.on(',').trimResults().omitEmptyStrings();
     private static final String API_CONFIG_FILE = "api-config.properties";
     private static final String SHANNONDB_CONFIG_FILE = "shannondb.properties";
-    protected static DataConnection shannondbone;
-    protected static DataConnection shannondbtwo;
+    protected static final String SHANNONDB_CONNECTOR_NAME = "shannondb";
+    protected static DataConnection SHANNONDB_DATA_CONNECTION;
     private File catalogConfigurationDir = new File("etc/catalog/");
     private String dataConnectionsEndpoint;
     private String dataConnectionsUrl;
@@ -71,23 +71,12 @@ public class DynamicCatalogStoreConfig
             shannonDbConfigOne.put(ShannonDbConfigProperties.HOST.getConfigName(), shannonDbConfig.get(ShannonDbConfigProperties.HOST.getConfigName()));
             shannonDbConfigOne.put(ShannonDbConfigProperties.PORT.getConfigName(), ports.split(",")[0]);
 
-            shannondbone = new DataConnection(
+            SHANNONDB_DATA_CONNECTION = new DataConnection(
                     BigInteger.ONE,
-                    ShannonDbInstances.SHANNONDB_ONE.getName(),
+                    SHANNONDB_CONNECTOR_NAME,
                     0,
                     "active",
                     shannonDbConfigOne);
-
-            HashMap<String, String> shannonDbConfigTwo = new HashMap<>();
-            shannonDbConfigTwo.put(ShannonDbConfigProperties.HOST.getConfigName(), shannonDbConfig.get(ShannonDbConfigProperties.HOST.getConfigName()));
-            shannonDbConfigTwo.put(ShannonDbConfigProperties.PORT.getConfigName(), ports.split(",")[1]);
-
-            shannondbtwo = new DataConnection(
-                    BigInteger.ONE,
-                    ShannonDbInstances.SHANNONDB_TWO.getName(),
-                    0,
-                    "active",
-                    shannonDbConfigTwo);
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -138,25 +127,6 @@ public class DynamicCatalogStoreConfig
             throws IOException
     {
         return new HashMap<>(loadProperties(file));
-    }
-
-    protected static enum ShannonDbInstances
-    {
-        CONNECTOR_NAME("shannondb"),
-        SHANNONDB_ONE("shannondb_one"),
-        SHANNONDB_TWO("shannondb_two");
-
-        private String name;
-
-        ShannonDbInstances(String name)
-        {
-            this.name = name;
-        }
-
-        public String getName()
-        {
-            return name;
-        }
     }
 
     public static enum ShannonDbConfigProperties

@@ -25,7 +25,7 @@ public class DataConnectionParser
     {
         ImmutableMap.Builder<String, String> catalog = ImmutableMap.builder();
 
-        if (connectorName.equals(DynamicCatalogStoreConfig.ShannonDbInstances.CONNECTOR_NAME.getName())) {
+        if (connectorName.equals(DynamicCatalogStoreConfig.SHANNONDB_CONNECTOR_NAME)) {
             catalog.put(DynamicCatalogStoreConfig.ShannonDbConfigProperties.HOST.getConfigName(),
                     dataConnectionsProperties.get(DynamicCatalogStoreConfig.ShannonDbConfigProperties.HOST.getConfigName()));
             catalog.put(DynamicCatalogStoreConfig.ShannonDbConfigProperties.PORT.getConfigName(),
