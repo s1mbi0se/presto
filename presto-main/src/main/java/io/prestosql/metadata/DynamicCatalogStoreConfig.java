@@ -65,18 +65,13 @@ public class DynamicCatalogStoreConfig
             this.dataConnectionsApiKey = properties.get("data-connections-api-key");
 
             Map<String, String> shannonDbConfig = this.readConfigFile(SHANNONDB_CONFIG_FILE);
-            String ports = shannonDbConfig.get(ShannonDbConfigProperties.PORT.getConfigName());
-
-            HashMap<String, String> shannonDbConfigOne = new HashMap<>();
-            shannonDbConfigOne.put(ShannonDbConfigProperties.HOST.getConfigName(), shannonDbConfig.get(ShannonDbConfigProperties.HOST.getConfigName()));
-            shannonDbConfigOne.put(ShannonDbConfigProperties.PORT.getConfigName(), ports.split(",")[0]);
 
             shannondbDataConnection = new DataConnection(
                     BigInteger.ONE,
                     SHANNONDB_CONNECTOR_NAME,
                     0,
                     "active",
-                    shannonDbConfigOne);
+                    shannonDbConfig);
         }
         catch (IOException e) {
             e.printStackTrace();
