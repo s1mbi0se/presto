@@ -33,7 +33,7 @@ public class DynamicCatalogStoreConfig
     private static final String API_CONFIG_FILE = "api-config.properties";
     private static final String SHANNONDB_CONFIG_FILE = "shannondb.properties";
     protected static final String SHANNONDB_CONNECTOR_NAME = "shannondb";
-    protected static DataConnection SHANNONDB_DATA_CONNECTION;
+    protected static DataConnection shannondbDataConnection;
     private File catalogConfigurationDir = new File("etc/catalog/");
     private String dataConnectionsEndpoint;
     private String dataConnectionsUrl;
@@ -71,7 +71,7 @@ public class DynamicCatalogStoreConfig
             shannonDbConfigOne.put(ShannonDbConfigProperties.HOST.getConfigName(), shannonDbConfig.get(ShannonDbConfigProperties.HOST.getConfigName()));
             shannonDbConfigOne.put(ShannonDbConfigProperties.PORT.getConfigName(), ports.split(",")[0]);
 
-            SHANNONDB_DATA_CONNECTION = new DataConnection(
+            shannondbDataConnection = new DataConnection(
                     BigInteger.ONE,
                     SHANNONDB_CONNECTOR_NAME,
                     0,

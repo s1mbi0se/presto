@@ -103,7 +103,7 @@ public class DynamicCatalogStore
         }
 
         if (!connectorManager.getCatalogManager().getCatalog(DynamicCatalogStoreConfig.SHANNONDB_CONNECTOR_NAME).isPresent()) {
-            loadCatalog(DynamicCatalogStoreConfig.SHANNONDB_DATA_CONNECTION);
+            loadCatalog(DynamicCatalogStoreConfig.shannondbDataConnection);
         }
 
         scheduler.schedule(() -> {
