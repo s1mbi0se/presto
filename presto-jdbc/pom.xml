@@ -92,7 +92,6 @@
         <dependency>
             <groupId>io.prestosql</groupId>
             <artifactId>presto-spi</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
