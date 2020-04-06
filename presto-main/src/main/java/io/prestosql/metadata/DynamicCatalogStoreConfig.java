@@ -20,6 +20,7 @@ import io.airlift.configuration.Config;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,11 +30,14 @@ import static io.prestosql.util.PropertiesUtil.loadProperties;
 public class DynamicCatalogStoreConfig
 {
     private static final Splitter SPLITTER = Splitter.on(',').trimResults().omitEmptyStrings();
-
+    private static final String API_CONFIG_FILE = "api-config.properties";
+    private static final String SHANNONDB_CONFIG_FILE = "shannondb.properties";
+    protected static final String SHANNONDB_CONNECTOR_NAME = "shannondb";
+    protected static DataConnection shannondbDataConnection;
     private File catalogConfigurationDir = new File("etc/catalog/");
-    private String dataConnectionsEndpoint;
-    private String dataConnectionsUrl;
-    private String dataConnectionsApiKey;
+    private String dataConnectionsEndpoint = "/v1/data_connections/all";
+    private String dataConnectionsUrl = "localhost";
+    private String dataConnectionsApiKey = "apikey";
     private List<String> disabledCatalogs;
 
     public String getDataConnectionsEndpoint()
@@ -55,10 +59,24 @@ public class DynamicCatalogStoreConfig
     {
         Map<String, String> properties = null;
         try {
-            properties = this.readApiConfigFile();
-            this.dataConnectionsEndpoint = properties.get("data-connections-endpoint");
-            this.dataConnectionsUrl = properties.get("data-connections-url");
-            this.dataConnectionsApiKey = properties.get("data-connections-api-key");
+            properties = this.readConfigFile(API_CONFIG_FILE);
+
+            if (properties.size() > 0) {
+                this.dataConnectionsEndpoint = properties.get("data-connections-endpoint");
+                this.dataConnectionsUrl = properties.get("data-connections-url");
+                this.dataConnectionsApiKey = properties.get("data-connections-api-key");
+            }
+
+            Map<String, String> shannonDbConfig = this.readConfigFile(SHANNONDB_CONFIG_FILE);
+
+            if (shannonDbConfig.size() > 0) {
+                shannondbDataConnection = new DataConnection(
+                        BigInteger.ONE,
+                        SHANNONDB_CONNECTOR_NAME,
+                        0,
+                        "active",
+                        shannonDbConfig);
+            }
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -83,11 +101,11 @@ public class DynamicCatalogStoreConfig
         return this;
     }
 
-    private Map<String, String> readApiConfigFile()
+    private Map<String, String> readConfigFile(String propertyFileName)
             throws IOException
     {
         for (File file : listFiles(catalogConfigurationDir)) {
-            if (file.isFile() && file.getName().equals("api-config.properties")) {
+            if (file.isFile() && file.getName().equals(propertyFileName)) {
                 return loadApiConfigFile(file);
             }
         }
@@ -109,5 +127,23 @@ public class DynamicCatalogStoreConfig
             throws IOException
     {
         return new HashMap<>(loadProperties(file));
+    }
+
+    public static enum ShannonDbConfigProperties
+    {
+        HOST("connection-host"),
+        PORT("connection-port");
+
+        private String configName;
+
+        ShannonDbConfigProperties(String configName)
+        {
+            this.configName = configName;
+        }
+
+        public String getConfigName()
+        {
+            return configName;
+        }
     }
 }

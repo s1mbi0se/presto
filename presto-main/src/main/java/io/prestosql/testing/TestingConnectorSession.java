@@ -138,6 +138,12 @@ public class TestingConnectorSession
     }
 
     @Override
+    public <T> Optional<T> getQueryRequestMetadata()
+    {
+        return SESSION.getQueryRequestMetadata();
+    }
+
+    @Override
     public String toString()
     {
         return toStringHelper(this)
