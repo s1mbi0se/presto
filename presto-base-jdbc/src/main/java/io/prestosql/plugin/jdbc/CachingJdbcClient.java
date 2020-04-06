@@ -115,9 +115,9 @@ public class CachingJdbcClient
     }
 
     @Override
-    public ConnectorSplitSource getSplits(JdbcIdentity identity, JdbcTableHandle tableHandle)
+    public ConnectorSplitSource getSplits(ConnectorSession session, JdbcTableHandle tableHandle)
     {
-        return delegate.getSplits(identity, tableHandle);
+        return delegate.getSplits(session, tableHandle);
     }
 
     @Override
@@ -232,6 +232,13 @@ public class CachingJdbcClient
     public void createSchema(JdbcIdentity identity, String schemaName)
     {
         delegate.createSchema(identity, schemaName);
+        invalidateSchemasCache();
+    }
+
+    @Override
+    public void dropSchema(JdbcIdentity identity, String schemaName)
+    {
+        delegate.dropSchema(identity, schemaName);
         invalidateSchemasCache();
     }
 

@@ -50,11 +50,9 @@ import io.prestosql.testing.DistributedQueryRunner;
 import io.prestosql.testing.MaterializedResult;
 import io.prestosql.testing.MaterializedRow;
 import io.prestosql.testing.QueryRunner;
-import io.prestosql.testing.sql.TestTable;
 import io.prestosql.type.TypeDeserializer;
 import org.apache.hadoop.fs.Path;
 import org.intellij.lang.annotations.Language;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -84,6 +82,7 @@ import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static io.prestosql.SystemSessionProperties.COLOCATED_JOIN;
 import static io.prestosql.SystemSessionProperties.CONCURRENT_LIFESPANS_PER_NODE;
 import static io.prestosql.SystemSessionProperties.DYNAMIC_SCHEDULE_FOR_GROUPED_EXECUTION;
+import static io.prestosql.SystemSessionProperties.ENABLE_DYNAMIC_FILTERING;
 import static io.prestosql.SystemSessionProperties.GROUPED_EXECUTION;
 import static io.prestosql.SystemSessionProperties.JOIN_DISTRIBUTION_TYPE;
 import static io.prestosql.plugin.hive.HiveColumnHandle.BUCKET_COLUMN_NAME;
@@ -127,6 +126,7 @@ import static io.prestosql.tpch.TpchTable.ORDERS;
 import static io.prestosql.transaction.TransactionBuilder.transaction;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -157,17 +157,348 @@ public class TestHiveIntegrationSmokeTest
     protected QueryRunner createQueryRunner()
             throws Exception
     {
-        return HiveQueryRunner.createQueryRunner(ORDERS, CUSTOMER);
+        return HiveQueryRunner.builder()
+                .setHiveProperties(ImmutableMap.of("hive.allow-register-partition-procedure", "true"))
+                .setInitialTables(ImmutableList.of(ORDERS, CUSTOMER))
+                .build();
     }
 
-    @Override
-    protected TestTable createTableWithDefaultColumns()
+    @Test
+    public void testLackOfPartitionFilterNotAllowed()
     {
-        throw new SkipException("Hive connector does not support column default values");
+        Session session = Session.builder(getQueryRunner().getDefaultSession())
+                .setIdentity(Identity.forUser("hive")
+                    .withRole("hive", new SelectedRole(ROLE, Optional.of("admin")))
+                    .build())
+                .setCatalogSessionProperty("hive", "query_partition_filter_required", "true")
+                .build();
+
+        assertUpdate(
+                session,
+                "create table partition_test1(\n"
+                + "id integer,\n"
+                + "a varchar,\n"
+                + "b varchar,\n"
+                + "ds varchar)"
+                + "WITH (format='PARQUET', partitioned_by = ARRAY['ds'])");
+        assertUpdate(session, "insert into partition_test1(id,a,ds) values(1, 'a','a')", 1);
+        String query = "select id from partition_test1 where a = 'a'";
+        String msgRegExp = "Filter required on tpch\\.partition_test1 for at least one partition column:.*";
+        assertQueryFails(session, query, msgRegExp);
+        assertQueryFails(session, "explain " + query, msgRegExp);
+        assertUpdate(session, "DROP TABLE partition_test1");
+    }
+
+    @Test
+    public void testPartitionFilterRemoved()
+    {
+        Session session = Session.builder(getQueryRunner().getDefaultSession())
+                .setIdentity(Identity.forUser("hive")
+                    .withRole("hive", new SelectedRole(ROLE, Optional.of("admin")))
+                    .build())
+                .setCatalogSessionProperty("hive", "query_partition_filter_required", "true")
+                .build();
+
+        assertUpdate(
+                session,
+                "create table partition_test2(\n"
+                + "id integer,\n"
+                + "a varchar,\n"
+                + "b varchar,\n"
+                + "ds varchar)"
+                + "WITH (format='PARQUET', partitioned_by = ARRAY['ds'])");
+        assertUpdate(session, "insert into partition_test2(id,a,ds) values(1, 'a','a')", 1);
+        assertQueryFails(session, "select id from partition_test2 where ds is not null or true", "Filter required on tpch\\.partition_test2 for at least one partition column:.*");
+        assertUpdate(session, "DROP TABLE partition_test2");
+    }
+
+    @Test
+    public void testPartitionFilterIncluded()
+    {
+        Session session = Session.builder(getQueryRunner().getDefaultSession())
+                .setIdentity(Identity.forUser("hive")
+                    .withRole("hive", new SelectedRole(ROLE, Optional.of("admin")))
+                    .build())
+                .setCatalogSessionProperty("hive", "query_partition_filter_required", "true")
+                .build();
+
+        assertUpdate(
+                session,
+                "create table partition_test3(\n"
+                + "id integer,\n"
+                + "a varchar,\n"
+                + "b varchar,\n"
+                + "ds varchar)"
+                + "WITH (format='PARQUET', partitioned_by = ARRAY['ds'])");
+        assertUpdate(session, "insert into partition_test3(id,a,ds) values(1, 'a','a')", 1);
+        String query = "select id from partition_test3 where ds = 'a'";
+        assertQuery(session, query, "select 1");
+        computeActual(session, "explain " + query);
+        assertUpdate(session, "DROP TABLE partition_test3");
+    }
+
+    @Test
+    public void testPartitionFilterIncluded2()
+    {
+        Session session = Session.builder(getQueryRunner().getDefaultSession())
+                .setIdentity(Identity.forUser("hive")
+                    .withRole("hive", new SelectedRole(ROLE, Optional.of("admin")))
+                    .build())
+                .setCatalogSessionProperty("hive", "query_partition_filter_required", "true")
+                .build();
+
+        assertUpdate(
+                session,
+                "create table partition_test4(\n"
+                + "id integer,\n"
+                + "a varchar,\n"
+                + "b varchar,\n"
+                + "ds varchar)"
+                + "WITH (format='PARQUET', partitioned_by = ARRAY['ds'])");
+        assertUpdate(session, "insert into partition_test4(id,a,ds) values(1, 'a','a')", 1);
+        assertQuery(session, "select id from partition_test4 where ds is not null", "select 1");
+        assertUpdate(session, "DROP TABLE partition_test4");
+    }
+
+    @Test
+    public void testPartitionFilterInferred()
+    {
+        Session session = Session.builder(getQueryRunner().getDefaultSession())
+                .setIdentity(Identity.forUser("hive")
+                    .withRole("hive", new SelectedRole(ROLE, Optional.of("admin")))
+                    .build())
+                .setCatalogSessionProperty("hive", "query_partition_filter_required", "true")
+                .build();
+
+        assertUpdate(
+                session,
+                "create table partition_test5(\n"
+                + "id integer,\n"
+                + "a varchar,\n"
+                + "b varchar,\n"
+                + "ds varchar)"
+                + "WITH (format='PARQUET', partitioned_by = ARRAY['ds'])");
+        assertUpdate(
+                session,
+                "create table partition_test6(\n"
+                + "id integer,\n"
+                + "a varchar,\n"
+                + "b varchar,\n"
+                + "ds varchar)"
+                + "WITH (format='PARQUET', partitioned_by = ARRAY['ds'])");
+        assertUpdate(session, "insert into partition_test5(id,a,ds) values(1, 'a','a')", 1);
+        assertUpdate(session, "insert into partition_test6(id,a,ds) values(1, 'a','a')", 1);
+        assertQuery(session, "select a.id, b.id from partition_test5 a join partition_test6 b on (a.ds = b.ds) where a.ds = 'a'", "select 1,1");
+        assertUpdate(session, "DROP TABLE partition_test5");
+        assertUpdate(session, "DROP TABLE partition_test6");
+    }
+
+    @Test
+    public void testJoinPartitionedWithMissingPartitionFilter()
+    {
+        Session session = Session.builder(getQueryRunner().getDefaultSession())
+                .setIdentity(Identity.forUser("hive")
+                    .withRole("hive", new SelectedRole(ROLE, Optional.of("admin")))
+                    .build())
+                .setCatalogSessionProperty("hive", "query_partition_filter_required", "true")
+                .build();
+
+        assertUpdate(
+                session,
+                "create table partition_test7(\n"
+                + "id integer,\n"
+                + "a varchar,\n"
+                + "b varchar,\n"
+                + "ds varchar)"
+                + "WITH (format='PARQUET', partitioned_by = ARRAY['ds'])");
+        assertUpdate(
+                session,
+                "create table partition_test8(\n"
+                + "id integer,\n"
+                + "a varchar,\n"
+                + "b varchar,\n"
+                + "ds varchar)"
+                + "WITH (format='PARQUET', partitioned_by = ARRAY['ds'])");
+        assertUpdate(session, "insert into partition_test7(id,a,ds) values(1, 'a','a')", 1);
+        assertUpdate(session, "insert into partition_test8(id,a,ds) values(1, 'a','a')", 1);
+        assertQueryFails(session, "select a.id, b.id from partition_test7 a join partition_test8 b on (a.id = b.id) where a.ds = 'a'", "Filter required on tpch\\.partition_test8 for at least one partition column:.*");
+        assertUpdate(session, "DROP TABLE partition_test7");
+        assertUpdate(session, "DROP TABLE partition_test8");
+    }
+
+    @Test
+    public void testJoinWithPartitionFilterOnPartionedTable()
+    {
+        Session session = Session.builder(getQueryRunner().getDefaultSession())
+                .setIdentity(Identity.forUser("hive")
+                    .withRole("hive", new SelectedRole(ROLE, Optional.of("admin")))
+                    .build())
+                .setCatalogSessionProperty("hive", "query_partition_filter_required", "true")
+                .build();
+
+        assertUpdate(
+                session,
+                "create table partition_test9(\n"
+                + "id integer,\n"
+                + "a varchar,\n"
+                + "b varchar,\n"
+                + "ds varchar)"
+                + "WITH (format='PARQUET', partitioned_by = ARRAY['ds'])");
+        assertUpdate(
+                session,
+                "create table partition_test10(\n"
+                + "id integer,\n"
+                + "a varchar,\n"
+                + "b varchar,\n"
+                + "ds varchar)"
+                + "WITH (format='PARQUET')");
+        assertUpdate(session, "insert into partition_test9(id,a,ds) values(1, 'a','a')", 1);
+        assertUpdate(session, "insert into partition_test10(id,a,ds) values(1, 'a','a')", 1);
+        assertQuery(session, "select a.id, b.id from partition_test9 a join partition_test10 b on (a.id = b.id) where a.ds = 'a'", "SELECT 1, 1");
+        assertUpdate(session, "DROP TABLE partition_test9");
+        assertUpdate(session, "DROP TABLE partition_test10");
+    }
+
+    @Test
+    public void testPartitionPredicateAllowed() throws Exception
+    {
+        Session session = Session.builder(getQueryRunner().getDefaultSession())
+                .setIdentity(Identity.forUser("hive")
+                    .withRole("hive", new SelectedRole(ROLE, Optional.of("admin")))
+                    .build())
+                .setCatalogSessionProperty("hive", "query_partition_filter_required", "true")
+                .build();
+
+        assertUpdate(
+                session,
+                "create table partition_test11(\n"
+                + "id integer,\n"
+                + "a varchar,\n"
+                + "b varchar,\n"
+                + "ds varchar)"
+                + "WITH (format='PARQUET', partitioned_by = ARRAY['ds'])");
+        assertUpdate(session, "insert into partition_test11(id,a,ds) values(1, '1','1')", 1);
+        String query = "select id from partition_test11 where cast(ds as integer) = 1";
+        assertQuery(session, query, "select 1");
+        computeActual(session, "explain " + query);
+        assertUpdate(session, "DROP TABLE partition_test11");
+    }
+
+    @Test
+    public void testNestedQueryWithInnerPartitionPredicate() throws Exception
+    {
+        Session session = Session.builder(getQueryRunner().getDefaultSession())
+                .setIdentity(Identity.forUser("hive")
+                        .withRole("hive", new SelectedRole(ROLE, Optional.of("admin")))
+                        .build())
+                .setCatalogSessionProperty("hive", "query_partition_filter_required", "true")
+                .build();
+
+        assertUpdate(
+                session,
+                "create table partition_test12(\n"
+                        + "id integer,\n"
+                        + "a varchar,\n"
+                        + "b varchar,\n"
+                        + "ds varchar)"
+                        + "WITH (format='PARQUET', partitioned_by = ARRAY['ds'])");
+        assertUpdate(session, "insert into partition_test12(id,a,ds) values(1, '1','1')", 1);
+        String query = "select id from (select * from partition_test12 where cast(ds as integer) = 1) where cast(a as integer) = 1";
+        assertQuery(session, query, "select 1");
+        computeActual(session, "explain " + query);
+        assertUpdate(session, "DROP TABLE partition_test12");
+    }
+
+    @Test
+    public void testPartitionPredicateDisallowed() throws Exception
+    {
+        Session session = Session.builder(getQueryRunner().getDefaultSession())
+                .setIdentity(Identity.forUser("hive")
+                    .withRole("hive", new SelectedRole(ROLE, Optional.of("admin")))
+                    .build())
+                .setCatalogSessionProperty("hive", "query_partition_filter_required", "true")
+                .build();
+
+        assertUpdate(
+                session,
+                "create table partition_test12(\n"
+                + "id integer,\n"
+                + "a varchar,\n"
+                + "b varchar,\n"
+                + "ds varchar)"
+                + "WITH (format='PARQUET', partitioned_by = ARRAY['ds'])");
+        assertUpdate(session, "insert into partition_test12(id,a,ds) values(1, '1','1')", 1);
+        String query = "select id from partition_test12 where cast(b as integer) = 1";
+        assertQueryFails(session, query, "Filter required on tpch\\.partition_test12 for at least one partition column:.*");
+        assertQueryFails(session, "explain " + query, "Filter required on tpch\\.partition_test12 for at least one partition column:.*");
+        assertUpdate(session, "DROP TABLE partition_test12");
+    }
+
+    @Test
+    public void testAnalyzeWithPartitionsAllowed()
+    {
+        Session session = Session.builder(getQueryRunner().getDefaultSession())
+                .setIdentity(Identity.forUser("hive")
+                        .withRole("hive", new SelectedRole(ROLE, Optional.of("admin")))
+                        .build())
+                .setCatalogSessionProperty("hive", "query_partition_filter_required", "true")
+                .build();
+
+        assertUpdate(
+                session,
+                "CREATE TABLE partition_test14(id integer, a varchar, b varchar, ds varchar) "
+                        + "WITH (format='PARQUET', partitioned_by = ARRAY['ds'])");
+        assertUpdate(session, "INSERT INTO partition_test14(id,a,ds) VALUES(1, 'a','a')", 1);
+        String query = "ANALYZE partition_test14 WITH (PARTITIONS=ARRAY[ARRAY['a']])";
+        computeActual(session, query);
+        computeActual(session, "EXPLAIN " + query);
+        assertUpdate(session, "DROP TABLE partition_test14");
+    }
+
+    @Test
+    public void testAnalyzeFullTableDisallowed()
+    {
+        Session session = Session.builder(getQueryRunner().getDefaultSession())
+                .setIdentity(Identity.forUser("hive")
+                        .withRole("hive", new SelectedRole(ROLE, Optional.of("admin")))
+                        .build())
+                .setCatalogSessionProperty("hive", "query_partition_filter_required", "true")
+                .build();
+
+        assertUpdate(
+                session,
+                "CREATE TABLE partition_test15(id integer, a varchar, b varchar, ds varchar) "
+                        + "WITH (format='PARQUET', partitioned_by = ARRAY['ds'])");
+        assertUpdate(session, "INSERT INTO partition_test15(id,a,ds) VALUES(1, 'a','a')", 1);
+        String query = "ANALYZE partition_test15";
+        String regExpMessage = "Filter required on tpch\\.partition_test15 for at least one partition column:.*";
+        assertQueryFails(session, query, regExpMessage);
+        assertQueryFails(session, "explain " + query, regExpMessage);
+        assertUpdate(session, "DROP TABLE partition_test15");
     }
 
     @Test
     public void testSchemaOperations()
+    {
+        Session session = Session.builder(getQueryRunner().getDefaultSession())
+                .setIdentity(Identity.forUser("hive")
+                        .withRole("hive", new SelectedRole(ROLE, Optional.of("admin")))
+                        .build())
+                .build();
+
+        assertUpdate(session, "CREATE SCHEMA new_schema");
+
+        assertUpdate(session, "CREATE TABLE new_schema.test (x bigint)");
+
+        assertQueryFails(session, "DROP SCHEMA new_schema", "Schema not empty: new_schema");
+
+        assertUpdate(session, "DROP TABLE new_schema.test");
+
+        assertUpdate(session, "DROP SCHEMA new_schema");
+    }
+
+    @Test
+    public void testSchemaAuthorizationForUser()
     {
         Session admin = Session.builder(getQueryRunner().getDefaultSession())
                 .setIdentity(Identity.forUser("hive")
@@ -175,15 +506,82 @@ public class TestHiveIntegrationSmokeTest
                         .build())
                 .build();
 
-        assertUpdate(admin, "CREATE SCHEMA new_schema");
+        assertUpdate(admin, "CREATE SCHEMA test_schema_authorization_user");
 
-        assertUpdate(admin, "CREATE TABLE new_schema.test (x bigint)");
+        Session user = testSessionBuilder()
+                .setCatalog(getSession().getCatalog().get())
+                .setSchema("test_schema_authorization_user")
+                .setIdentity(Identity.forUser("user").withPrincipal(getSession().getIdentity().getPrincipal()).build())
+                .build();
 
-        assertQueryFails(admin, "DROP SCHEMA new_schema", "Schema not empty: new_schema");
+        // ordinary users cannot drop a schema or create a table in a schema the do not own
+        assertQueryFails(user, "DROP SCHEMA test_schema_authorization_user", "Access Denied: Cannot drop schema test_schema_authorization_user");
+        assertQueryFails(user, "CREATE TABLE test_schema_authorization_user.test (x bigint)", "Access Denied: Cannot create table test_schema_authorization_user.test");
 
-        assertUpdate(admin, "DROP TABLE new_schema.test");
+        // change owner to user
+        assertUpdate(admin, "ALTER SCHEMA test_schema_authorization_user SET AUTHORIZATION user");
 
-        assertUpdate(admin, "DROP SCHEMA new_schema");
+        assertUpdate(user, "CREATE TABLE test_schema_authorization_user.test (x bigint)");
+        assertUpdate(user, "DROP TABLE test_schema_authorization_user.test");
+        assertUpdate(user, "DROP SCHEMA test_schema_authorization_user");
+    }
+
+    @Test
+    public void testSchemaAuthorizationForRole()
+    {
+        Session admin = Session.builder(getQueryRunner().getDefaultSession())
+                .setIdentity(Identity.forUser("hive")
+                        .withRole("hive", new SelectedRole(ROLE, Optional.of("admin")))
+                        .build())
+                .build();
+
+        assertUpdate(admin, "CREATE SCHEMA test_schema_authorization_role");
+
+        // make sure role-grants only work on existing roles
+        assertQueryFails(admin, "ALTER SCHEMA test_schema_authorization_role SET AUTHORIZATION ROLE nonexisting_role", ".*?Role 'nonexisting_role' does not exist");
+
+        assertUpdate(admin, "CREATE ROLE authorized_users");
+        assertUpdate(admin, "GRANT authorized_users TO user");
+
+        assertUpdate(admin, "ALTER SCHEMA test_schema_authorization_role SET AUTHORIZATION ROLE authorized_users");
+
+        Session user = testSessionBuilder()
+                .setCatalog(getSession().getCatalog().get())
+                .setSchema("test_schema_authorization_role")
+                .setIdentity(Identity.forUser("user").withPrincipal(getSession().getIdentity().getPrincipal()).build())
+                .build();
+
+        assertUpdate(user, "CREATE TABLE test_schema_authorization_role.test (x bigint)");
+        assertUpdate(user, "DROP TABLE test_schema_authorization_role.test");
+        assertUpdate(user, "DROP SCHEMA test_schema_authorization_role");
+
+        assertUpdate(admin, "DROP ROLE authorized_users");
+    }
+
+    @Test
+    public void testSchemaAuthorization()
+    {
+        Session admin = Session.builder(getQueryRunner().getDefaultSession())
+                .setIdentity(Identity.forUser("hive")
+                        .withRole("hive", new SelectedRole(ROLE, Optional.of("admin")))
+                        .build())
+                .build();
+
+        Session user = testSessionBuilder()
+                .setCatalog(getSession().getCatalog().get())
+                .setSchema("test_schema_authorization")
+                .setIdentity(Identity.forUser("user").withPrincipal(getSession().getIdentity().getPrincipal()).build())
+                .build();
+
+        assertUpdate(admin, "CREATE SCHEMA test_schema_authorization");
+        assertUpdate(admin, "CREATE ROLE admin");
+
+        assertUpdate(admin, "ALTER SCHEMA test_schema_authorization SET AUTHORIZATION user");
+        assertUpdate(user, "ALTER SCHEMA test_schema_authorization SET AUTHORIZATION ROLE admin");
+        assertQueryFails(user, "ALTER SCHEMA test_schema_authorization SET AUTHORIZATION ROLE admin", "Access Denied: Cannot set authorization for schema test_schema_authorization to ROLE admin");
+
+        assertUpdate(admin, "DROP SCHEMA test_schema_authorization");
+        assertUpdate(admin, "DROP ROLE admin");
     }
 
     @Test
@@ -3265,10 +3663,12 @@ public class TestHiveIntegrationSmokeTest
 
             Session withMismatchOptimization = Session.builder(getSession())
                     .setSystemProperty(COLOCATED_JOIN, "true")
+                    .setSystemProperty(ENABLE_DYNAMIC_FILTERING, "false")
                     .setCatalogSessionProperty(catalog, "optimize_mismatched_bucket_count", "true")
                     .build();
             Session withoutMismatchOptimization = Session.builder(getSession())
                     .setSystemProperty(COLOCATED_JOIN, "true")
+                    .setSystemProperty(ENABLE_DYNAMIC_FILTERING, "false")
                     .setCatalogSessionProperty(catalog, "optimize_mismatched_bucket_count", "false")
                     .build();
 
@@ -3359,6 +3759,7 @@ public class TestHiveIntegrationSmokeTest
             Session notColocated = Session.builder(getSession())
                     .setSystemProperty(COLOCATED_JOIN, "false")
                     .setSystemProperty(GROUPED_EXECUTION, "false")
+                    .setSystemProperty(ENABLE_DYNAMIC_FILTERING, "false")
                     .build();
             // Co-located JOIN with all groups at once, fixed schedule
             Session colocatedAllGroupsAtOnce = Session.builder(getSession())
@@ -3366,6 +3767,7 @@ public class TestHiveIntegrationSmokeTest
                     .setSystemProperty(GROUPED_EXECUTION, "true")
                     .setSystemProperty(CONCURRENT_LIFESPANS_PER_NODE, "0")
                     .setSystemProperty(DYNAMIC_SCHEDULE_FOR_GROUPED_EXECUTION, "false")
+                    .setSystemProperty(ENABLE_DYNAMIC_FILTERING, "false")
                     .build();
             // Co-located JOIN, 1 group per worker at a time, fixed schedule
             Session colocatedOneGroupAtATime = Session.builder(getSession())
@@ -3373,6 +3775,7 @@ public class TestHiveIntegrationSmokeTest
                     .setSystemProperty(GROUPED_EXECUTION, "true")
                     .setSystemProperty(CONCURRENT_LIFESPANS_PER_NODE, "1")
                     .setSystemProperty(DYNAMIC_SCHEDULE_FOR_GROUPED_EXECUTION, "false")
+                    .setSystemProperty(ENABLE_DYNAMIC_FILTERING, "false")
                     .build();
             // Co-located JOIN with all groups at once, dynamic schedule
             Session colocatedAllGroupsAtOnceDynamic = Session.builder(getSession())
@@ -3380,6 +3783,7 @@ public class TestHiveIntegrationSmokeTest
                     .setSystemProperty(GROUPED_EXECUTION, "true")
                     .setSystemProperty(CONCURRENT_LIFESPANS_PER_NODE, "0")
                     .setSystemProperty(DYNAMIC_SCHEDULE_FOR_GROUPED_EXECUTION, "true")
+                    .setSystemProperty(ENABLE_DYNAMIC_FILTERING, "false")
                     .build();
             // Co-located JOIN, 1 group per worker at a time, dynamic schedule
             Session colocatedOneGroupAtATimeDynamic = Session.builder(getSession())
@@ -3387,6 +3791,7 @@ public class TestHiveIntegrationSmokeTest
                     .setSystemProperty(GROUPED_EXECUTION, "true")
                     .setSystemProperty(CONCURRENT_LIFESPANS_PER_NODE, "1")
                     .setSystemProperty(DYNAMIC_SCHEDULE_FOR_GROUPED_EXECUTION, "true")
+                    .setSystemProperty(ENABLE_DYNAMIC_FILTERING, "false")
                     .build();
             // Broadcast JOIN, 1 group per worker at a time
             Session broadcastOneGroupAtATime = Session.builder(getSession())
@@ -3394,6 +3799,7 @@ public class TestHiveIntegrationSmokeTest
                     .setSystemProperty(COLOCATED_JOIN, "true")
                     .setSystemProperty(GROUPED_EXECUTION, "true")
                     .setSystemProperty(CONCURRENT_LIFESPANS_PER_NODE, "1")
+                    .setSystemProperty(ENABLE_DYNAMIC_FILTERING, "false")
                     .build();
 
             // Broadcast JOIN, 1 group per worker at a time, dynamic schedule
@@ -3403,6 +3809,7 @@ public class TestHiveIntegrationSmokeTest
                     .setSystemProperty(GROUPED_EXECUTION, "true")
                     .setSystemProperty(CONCURRENT_LIFESPANS_PER_NODE, "1")
                     .setSystemProperty(DYNAMIC_SCHEDULE_FOR_GROUPED_EXECUTION, "true")
+                    .setSystemProperty(ENABLE_DYNAMIC_FILTERING, "false")
                     .build();
 
             //
@@ -5332,6 +5739,84 @@ public class TestHiveIntegrationSmokeTest
         assertQuery("SELECT count(*) FROM " + tableName, "SELECT 3");
 
         assertUpdate("DROP TABLE " + tableName);
+    }
+
+    @Test
+    public void testColumnPruning()
+    {
+        Session session = Session.builder(getSession())
+                .setCatalogSessionProperty("hive", "orc_use_column_names", "true")
+                .setCatalogSessionProperty("hive", "parquet_use_column_names", "true")
+                .build();
+
+        testWithStorageFormat(new TestingHiveStorageFormat(session, HiveStorageFormat.ORC), this::testColumnPruning);
+        testWithStorageFormat(new TestingHiveStorageFormat(session, HiveStorageFormat.PARQUET), this::testColumnPruning);
+    }
+
+    private void testColumnPruning(Session session, HiveStorageFormat storageFormat)
+    {
+        String tableName = "test_schema_evolution_column_pruning_" + storageFormat.name().toLowerCase(ENGLISH);
+        String evolvedTableName = tableName + "_evolved";
+
+        assertUpdate(session, "DROP TABLE IF EXISTS " + tableName);
+        assertUpdate(session, "DROP TABLE IF EXISTS " + evolvedTableName);
+
+        assertUpdate(session, format(
+                "CREATE TABLE %s(" +
+                        "  a bigint, " +
+                        "  b varchar, " +
+                        "  c row(" +
+                        "    f1 row(" +
+                        "      g1 bigint," +
+                        "      g2 bigint), " +
+                        "    f2 varchar, " +
+                        "    f3 varbinary), " +
+                        "  d integer) " +
+                        "WITH (format='%s')",
+                tableName,
+                storageFormat));
+        assertUpdate(session, "INSERT INTO " + tableName + " VALUES (42, 'ala', ROW(ROW(177, 873321), 'ma kota', X'abcdef'), 12345678)", 1);
+
+        // All data
+        assertQuery(
+                session,
+                "SELECT a, b, c.f1.g1, c.f1.g2, c.f2, c.f3, d FROM " + tableName,
+                "VALUES (42, 'ala', 177, 873321, 'ma kota', X'abcdef', 12345678)");
+
+        // Pruning
+        assertQuery(
+                session,
+                "SELECT b, c.f1.g2, c.f3, d FROM " + tableName,
+                "VALUES ('ala', 873321, X'abcdef', 12345678)");
+
+        String tableLocation = (String) computeActual("SELECT DISTINCT regexp_replace(\"$path\", '/[^/]*$', '') FROM " + tableName).getOnlyValue();
+
+        assertUpdate(session, format(
+                "CREATE TABLE %s(" +
+                        "  e tinyint, " + // added
+                        "  a bigint, " +
+                        "  bxx varchar, " + // renamed
+                        "  c row(" +
+                        "    f1 row(" +
+                        "      g1xx bigint," + // renamed
+                        "      g2 bigint), " +
+                        "    f2xx varchar, " + // renamed
+                        "    f3 varbinary), " +
+                        "  d integer, " +
+                        "  f smallint) " + // added
+                        "WITH (format='%s', external_location='%s')",
+                evolvedTableName,
+                storageFormat,
+                tableLocation));
+
+        // Pruning being an effected of renamed fields (schema evolution)
+        assertQuery(
+                session,
+                "SELECT a, bxx, c.f1.g1xx, c.f1.g2, c.f2xx, c.f3,  d, e, f FROM " + evolvedTableName + " t",
+                "VALUES (42, NULL, NULL, 873321, NULL, X'abcdef', 12345678, NULL, NULL)");
+
+        assertUpdate(session, "DROP TABLE " + evolvedTableName);
+        assertUpdate(session, "DROP TABLE " + tableName);
     }
 
     @Test

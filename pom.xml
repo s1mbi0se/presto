@@ -10,7 +10,7 @@
 
     <groupId>io.prestosql</groupId>
     <artifactId>presto-root</artifactId>
-    <version>330</version>
+    <version>331</version>
     <packaging>pom</packaging>
 
     <name>presto-root</name>
@@ -30,7 +30,7 @@
     <scm>
         <connection>scm:git:git://github.com/prestosql/presto.git</connection>
         <url>https://github.com/prestosql/presto</url>
-        <tag>330</tag>
+        <tag>331</tag>
     </scm>
 
     <properties>
@@ -44,9 +44,9 @@
         <air.maven.version>3.3.9</air.maven.version>
 
         <dep.antlr.version>4.7.1</dep.antlr.version>
-        <dep.airlift.version>0.192</dep.airlift.version>
+        <dep.airlift.version>0.193</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
-        <dep.aws-sdk.version>1.11.602</dep.aws-sdk.version>
+        <dep.aws-sdk.version>1.11.697</dep.aws-sdk.version>
         <dep.okhttp.version>3.9.0</dep.okhttp.version>
         <dep.jdbi3.version>3.4.0</dep.jdbi3.version>
         <dep.drift.version>1.14</dep.drift.version>
@@ -64,7 +64,8 @@
         <air.test.timezone>America/Bahia_Banderas</air.test.timezone>
         <air.test.parallel>methods</air.test.parallel>
         <air.test.thread-count>2</air.test.thread-count>
-        <air.test.jvmsize>2g</air.test.jvmsize>
+        <!-- Be conservative about memory allotment, because tests start background process (e.g. docker containers) -->
+        <air.test.jvmsize>3g</air.test.jvmsize>
 
         <air.javadoc.lint>-missing</air.javadoc.lint>
     </properties>
@@ -137,6 +138,7 @@
         <module>presto-iceberg</module>
         <module>presto-google-sheets</module>
         <module>presto-connectors/presto-shannondb</module>
+        <module>presto-bigquery</module>
     </modules>
 
     <dependencyManagement>
@@ -993,6 +995,12 @@
             </dependency>
 
             <dependency>
+                <groupId>javax.xml.bind</groupId>
+                <artifactId>jaxb-api</artifactId>
+                <version>2.3.1</version>
+            </dependency>
+
+            <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>testing-mysql-server</artifactId>
                 <version>8.0.12-2</version>
@@ -1317,14 +1325,14 @@
             <plugin>
                 <groupId>io.prestosql</groupId>
                 <artifactId>presto-maven-plugin</artifactId>
-                <version>8</version>
+                <version>9</version>
                 <extensions>true</extensions>
             </plugin>
 
             <plugin>
                 <groupId>ca.vanzyl.maven.plugins</groupId>
                 <artifactId>provisio-maven-plugin</artifactId>
-                <version>1.0.4</version>
+                <version>1.0.7</version>
                 <extensions>true</extensions>
             </plugin>
 
@@ -1398,15 +1406,6 @@
         <profile>
             <id>errorprone-compiler-presto</id><!-- airbase defines "errorprone-compiler" profile but set up this ourselves -->
 
-            <!-- TODO simplify the following configuration when using JDK 9+ for compilation. See https://errorprone.info/docs/installation -->
-            <properties>
-                <javac.version>9+181-r4173-1</javac.version>
-
-                <!-- with errorprone compiler, checkstyle is run on generated sources too and they may not match our checkstyle rules -->
-                <air.check.skip-checkstyle>true</air.check.skip-checkstyle>
-            </properties>
-
-            <!-- using github.com/google/error-prone-javac is required when running on JDK 8 -->
             <build>
                 <plugins>
                     <plugin>
@@ -1417,7 +1416,6 @@
                         <configuration combine.children="merge">
                             <fork>true</fork>
                             <compilerArgs>
-                                <arg>-J-Xbootclasspath/p:${settings.localRepository}/com/google/errorprone/javac/${javac.version}/javac-${javac.version}.jar</arg>
                                 <arg>-XDcompilePolicy=simple</arg>
                                 <!-- TODO enable more checks, i.e. remove "-XepDisableAllChecks" -->
                                 <arg>-Xplugin:ErrorProne -XepExcludedPaths:.*/target/generated-(|test-)sources/.* -XepDisableAllChecks -Xep:MissingOverride:ERROR -Xep:ClassCanBeStatic:ERROR -Xep:ArrayToString:ERROR -Xep:GetClassOnClass:ERROR</arg>

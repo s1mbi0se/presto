@@ -26,6 +26,9 @@ import io.airlift.units.Duration;
 import io.prestosql.Session.ResourceEstimateBuilder;
 import io.prestosql.dispatcher.DispatcherConfig.HeaderSupport;
 import io.prestosql.spi.QueryRequestMetadata;
+import io.prestosql.security.AccessControl;
+import io.prestosql.spi.security.AccessDeniedException;
+import io.prestosql.spi.security.GroupProvider;
 import io.prestosql.spi.security.Identity;
 import io.prestosql.spi.security.SelectedRole;
 import io.prestosql.spi.session.ResourceEstimates;
@@ -34,7 +37,9 @@ import io.prestosql.sql.parser.ParsingOptions;
 import io.prestosql.sql.parser.SqlParser;
 import io.prestosql.transaction.TransactionId;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -117,7 +122,7 @@ public final class HttpRequestSessionContext
 
     private final Optional<QueryRequestMetadata> queryRequestMetadata;
 
-    public HttpRequestSessionContext(HeaderSupport forwardedHeaderSupport, MultivaluedMap<String, String> headers, String remoteAddress, Optional<Identity> authenticatedIdentity)
+    public HttpRequestSessionContext(HeaderSupport forwardedHeaderSupport, MultivaluedMap<String, String> headers, String remoteAddress, Optional<Identity> authenticatedIdentity, GroupProvider groupProvider)
             throws WebApplicationException
     {
         catalog = trimEmptyToNull(headers.getFirst(PRESTO_CATALOG));
@@ -126,7 +131,7 @@ public final class HttpRequestSessionContext
         assertRequest((catalog != null) || (schema == null), "Schema is set but catalog is not");
 
         this.authenticatedIdentity = requireNonNull(authenticatedIdentity, "authenticatedIdentity is null");
-        identity = buildSessionIdentity(authenticatedIdentity, headers);
+        identity = buildSessionIdentity(authenticatedIdentity, headers, groupProvider);
 
         source = headers.getFirst(PRESTO_SOURCE);
         traceToken = Optional.ofNullable(trimEmptyToNull(headers.getFirst(PRESTO_TRACE_TOKEN)));
@@ -180,7 +185,34 @@ public final class HttpRequestSessionContext
         transactionId = parseTransactionId(transactionIdHeader);
     }
 
-    private static Identity buildSessionIdentity(Optional<Identity> authenticatedIdentity, MultivaluedMap<String, String> headers)
+    public static Identity extractAuthorizedIdentity(HttpServletRequest servletRequest, HttpHeaders httpHeaders, AccessControl accessControl, GroupProvider groupProvider)
+    {
+        return extractAuthorizedIdentity(
+                Optional.ofNullable((Identity) servletRequest.getAttribute(AUTHENTICATED_IDENTITY)),
+                httpHeaders.getRequestHeaders(),
+                accessControl,
+                groupProvider);
+    }
+
+    public static Identity extractAuthorizedIdentity(Optional<Identity> optionalAuthenticatedIdentity, MultivaluedMap<String, String> headers, AccessControl accessControl, GroupProvider groupProvider)
+            throws AccessDeniedException
+    {
+        Identity identity = buildSessionIdentity(optionalAuthenticatedIdentity, headers, groupProvider);
+
+        accessControl.checkCanSetUser(identity.getPrincipal(), identity.getUser());
+
+        // authenticated may not present for HTTP or if authentication is not setup
+        optionalAuthenticatedIdentity.ifPresent(authenticatedIdentity -> {
+            // only check impersonation if authenticated user is not the same as the explicitly set user
+            if (!authenticatedIdentity.getUser().equals(identity.getUser())) {
+                accessControl.checkCanImpersonateUser(authenticatedIdentity, identity.getUser());
+            }
+        });
+
+        return identity;
+    }
+
+    private static Identity buildSessionIdentity(Optional<Identity> authenticatedIdentity, MultivaluedMap<String, String> headers, GroupProvider groupProvider)
     {
         String prestoUser = trimEmptyToNull(headers.getFirst(PRESTO_USER));
         String user = prestoUser != null ? prestoUser : authenticatedIdentity.map(Identity::getUser).orElse(null);
@@ -190,6 +222,7 @@ public final class HttpRequestSessionContext
                 .orElseGet(() -> Identity.forUser(user))
                 .withAdditionalRoles(parseRoleHeaders(headers))
                 .withAdditionalExtraCredentials(parseExtraCredentials(headers))
+                .withAdditionalGroups(groupProvider.getGroups(user))
                 .build();
     }
 

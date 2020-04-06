@@ -13,22 +13,19 @@
  */
 package io.prestosql.plugin.kudu;
 
-import io.prestosql.spi.type.VarcharType;
 import io.prestosql.testing.AbstractTestIntegrationSmokeTest;
 import io.prestosql.testing.MaterializedResult;
-import io.prestosql.testing.MaterializedRow;
 import io.prestosql.testing.QueryRunner;
-import io.prestosql.testing.sql.TestTable;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
 import java.util.regex.Pattern;
 
 import static io.prestosql.plugin.kudu.KuduQueryRunnerFactory.createKuduQueryRunnerTpch;
+import static io.prestosql.spi.type.VarcharType.VARCHAR;
+import static io.prestosql.testing.MaterializedResult.resultBuilder;
 import static io.prestosql.testing.assertions.Assert.assertEquals;
 import static io.prestosql.tpch.TpchTable.ORDERS;
-import static java.lang.String.format;
 import static org.testng.Assert.assertTrue;
 
 public class TestKuduIntegrationSmoke
@@ -41,37 +38,24 @@ public class TestKuduIntegrationSmoke
         return createKuduQueryRunnerTpch(ORDERS);
     }
 
-    @Override
-    protected TestTable createTableWithDefaultColumns()
-    {
-        throw new SkipException("Kudu connector does not support column default values");
-    }
-
-    /**
-     * Overrides original implementation because of usage of 'extra' column.
-     */
     @Test
     @Override
     public void testDescribeTable()
     {
-        MaterializedResult actualColumns = computeActual("DESC orders").toTestTypes();
-        MaterializedResult.Builder builder = MaterializedResult.resultBuilder(this.getQueryRunner().getDefaultSession(), VarcharType.VARCHAR, VarcharType.VARCHAR, VarcharType.VARCHAR, VarcharType.VARCHAR);
-        for (MaterializedRow row : actualColumns.getMaterializedRows()) {
-            builder.row(row.getField(0), row.getField(1), "", "");
-        }
-        MaterializedResult filteredActual = builder.build();
-        builder = MaterializedResult.resultBuilder(this.getQueryRunner().getDefaultSession(), VarcharType.VARCHAR, VarcharType.VARCHAR, VarcharType.VARCHAR, VarcharType.VARCHAR);
-        MaterializedResult expectedColumns = builder
-                .row("orderkey", "bigint", "", "")
-                .row("custkey", "bigint", "", "")
-                .row("orderstatus", "varchar", "", "")
-                .row("totalprice", "double", "", "")
-                .row("orderdate", "varchar", "", "")
-                .row("orderpriority", "varchar", "", "")
-                .row("clerk", "varchar", "", "")
-                .row("shippriority", "integer", "", "")
-                .row("comment", "varchar", "", "").build();
-        assertEquals(filteredActual, expectedColumns, format("%s != %s", filteredActual, expectedColumns));
+        String extra = "nullable, encoding=auto, compression=default";
+        MaterializedResult expectedColumns = resultBuilder(getQueryRunner().getDefaultSession(), VARCHAR, VARCHAR, VARCHAR, VARCHAR)
+                .row("orderkey", "bigint", extra, "")
+                .row("custkey", "bigint", extra, "")
+                .row("orderstatus", "varchar", extra, "")
+                .row("totalprice", "double", extra, "")
+                .row("orderdate", "varchar", extra, "")
+                .row("orderpriority", "varchar", extra, "")
+                .row("clerk", "varchar", extra, "")
+                .row("shippriority", "integer", extra, "")
+                .row("comment", "varchar", extra, "")
+                .build();
+        MaterializedResult actualColumns = computeActual("DESCRIBE orders");
+        assertEquals(actualColumns, expectedColumns);
     }
 
     @Test
@@ -145,18 +129,6 @@ public class TestKuduIntegrationSmoke
     {
         assertTrue(Pattern.compile(key + "\\s*=\\s*" + regexValue + ",?\\s+").matcher(tableProperties).find(),
                 "Not found: " + key + " = " + regexValue + " in " + tableProperties);
-    }
-
-    @Override
-    protected boolean canCreateSchema()
-    {
-        return false;
-    }
-
-    @Override
-    protected boolean canDropSchema()
-    {
-        return false;
     }
 
     @AfterClass(alwaysRun = true)

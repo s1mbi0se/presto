@@ -339,7 +339,7 @@ public class BaseJdbcClient
     }
 
     @Override
-    public ConnectorSplitSource getSplits(JdbcIdentity identity, JdbcTableHandle tableHandle)
+    public ConnectorSplitSource getSplits(ConnectorSession session, JdbcTableHandle tableHandle)
     {
         return new FixedSplitSource(ImmutableList.of(new JdbcSplit(Optional.empty())));
     }
@@ -810,6 +810,17 @@ public class BaseJdbcClient
     {
         try (Connection connection = connectionFactory.openConnection(identity)) {
             execute(connection, "CREATE SCHEMA " + quoted(schemaName));
+        }
+        catch (SQLException e) {
+            throw new PrestoException(JDBC_ERROR, e);
+        }
+    }
+
+    @Override
+    public void dropSchema(JdbcIdentity identity, String schemaName)
+    {
+        try (Connection connection = connectionFactory.openConnection(identity)) {
+            execute(connection, "DROP SCHEMA " + quoted(schemaName));
         }
         catch (SQLException e) {
             throw new PrestoException(JDBC_ERROR, e);

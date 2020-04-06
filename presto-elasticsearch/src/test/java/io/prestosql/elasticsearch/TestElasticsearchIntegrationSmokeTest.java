@@ -18,9 +18,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HostAndPort;
 import io.prestosql.testing.AbstractTestIntegrationSmokeTest;
 import io.prestosql.testing.MaterializedResult;
-import io.prestosql.testing.MaterializedRow;
 import io.prestosql.testing.QueryRunner;
-import io.prestosql.testing.sql.TestTable;
 import io.prestosql.tpch.TpchTable;
 import org.apache.http.HttpHost;
 import org.apache.http.entity.ContentType;
@@ -30,7 +28,6 @@ import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.intellij.lang.annotations.Language;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
@@ -71,12 +68,6 @@ public class TestElasticsearchIntegrationSmokeTest
         client.close();
     }
 
-    @Override
-    protected TestTable createTableWithDefaultColumns()
-    {
-        throw new SkipException("ElasticSearch connector does not support column default values");
-    }
-
     @Test
     @Override
     public void testSelectAll()
@@ -89,14 +80,7 @@ public class TestElasticsearchIntegrationSmokeTest
     @Override
     public void testDescribeTable()
     {
-        MaterializedResult actualColumns = computeActual("DESC orders").toTestTypes();
-        MaterializedResult.Builder builder = resultBuilder(getQueryRunner().getDefaultSession(), VARCHAR, VARCHAR, VARCHAR, VARCHAR);
-        for (MaterializedRow row : actualColumns.getMaterializedRows()) {
-            builder.row(row.getField(0), row.getField(1), "", "");
-        }
-        MaterializedResult actualResult = builder.build();
-        builder = resultBuilder(getQueryRunner().getDefaultSession(), VARCHAR, VARCHAR, VARCHAR, VARCHAR);
-        MaterializedResult expectedColumns = builder
+        MaterializedResult expectedColumns = resultBuilder(getQueryRunner().getDefaultSession(), VARCHAR, VARCHAR, VARCHAR, VARCHAR)
                 .row("clerk", "varchar", "", "")
                 .row("comment", "varchar", "", "")
                 .row("custkey", "bigint", "", "")
@@ -107,7 +91,8 @@ public class TestElasticsearchIntegrationSmokeTest
                 .row("shippriority", "bigint", "", "")
                 .row("totalprice", "real", "", "")
                 .build();
-        assertEquals(actualResult, expectedColumns, format("%s != %s", actualResult, expectedColumns));
+        MaterializedResult actualColumns = computeActual("DESCRIBE orders");
+        assertEquals(actualColumns, expectedColumns);
     }
 
     @Test
@@ -124,6 +109,22 @@ public class TestElasticsearchIntegrationSmokeTest
         assertQuery(
                 "SELECT name, fields.fielda, fields.fieldb FROM data",
                 "VALUES ('nestfield', 32, 'valueb')");
+    }
+
+    @Test
+    public void testNameConflict()
+            throws IOException
+    {
+        String indexName = "name_conflict";
+        index(indexName, ImmutableMap.<String, Object>builder()
+                .put("field", "value")
+                .put("Conflict", "conflict1")
+                .put("conflict", "conflict2")
+                .build());
+
+        assertQuery(
+                "SELECT * FROM name_conflict",
+                "VALUES ('value')");
     }
 
     @Test
@@ -682,18 +683,6 @@ public class TestElasticsearchIntegrationSmokeTest
         assertQuery(
                 "SELECT count(*) FROM multi_alias",
                 "SELECT (SELECT count(*) FROM region) + (SELECT count(*) FROM nation)");
-    }
-
-    @Override
-    protected boolean canCreateSchema()
-    {
-        return false;
-    }
-
-    @Override
-    protected boolean canDropSchema()
-    {
-        return false;
     }
 
     private void index(String index, Map<String, Object> document)

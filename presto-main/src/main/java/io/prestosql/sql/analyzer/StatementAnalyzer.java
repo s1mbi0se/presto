@@ -43,9 +43,11 @@ import io.prestosql.spi.connector.ColumnMetadata;
 import io.prestosql.spi.connector.ConnectorTableMetadata;
 import io.prestosql.spi.connector.ConnectorViewDefinition;
 import io.prestosql.spi.connector.ConnectorViewDefinition.ViewColumn;
+import io.prestosql.spi.connector.TableNotFoundException;
 import io.prestosql.spi.function.OperatorType;
 import io.prestosql.spi.security.AccessDeniedException;
 import io.prestosql.spi.security.Identity;
+import io.prestosql.spi.security.ViewExpression;
 import io.prestosql.spi.type.ArrayType;
 import io.prestosql.spi.type.CharType;
 import io.prestosql.spi.type.MapType;
@@ -53,6 +55,7 @@ import io.prestosql.spi.type.RowType;
 import io.prestosql.spi.type.Type;
 import io.prestosql.spi.type.TypeNotFoundException;
 import io.prestosql.spi.type.VarcharType;
+import io.prestosql.sql.SqlPath;
 import io.prestosql.sql.analyzer.Analysis.SelectExpression;
 import io.prestosql.sql.analyzer.Scope.AsteriskedIdentifierChainBasis;
 import io.prestosql.sql.parser.ParsingException;
@@ -131,6 +134,7 @@ import io.prestosql.sql.tree.SampledRelation;
 import io.prestosql.sql.tree.Select;
 import io.prestosql.sql.tree.SelectItem;
 import io.prestosql.sql.tree.SetOperation;
+import io.prestosql.sql.tree.SetSchemaAuthorization;
 import io.prestosql.sql.tree.SetSession;
 import io.prestosql.sql.tree.SimpleGroupBy;
 import io.prestosql.sql.tree.SingleColumn;
@@ -184,6 +188,7 @@ import static io.prestosql.spi.StandardErrorCode.EXPRESSION_NOT_IN_DISTINCT;
 import static io.prestosql.spi.StandardErrorCode.FUNCTION_NOT_WINDOW;
 import static io.prestosql.spi.StandardErrorCode.INVALID_COLUMN_REFERENCE;
 import static io.prestosql.spi.StandardErrorCode.INVALID_FUNCTION_ARGUMENT;
+import static io.prestosql.spi.StandardErrorCode.INVALID_ROW_FILTER;
 import static io.prestosql.spi.StandardErrorCode.INVALID_VIEW;
 import static io.prestosql.spi.StandardErrorCode.INVALID_WINDOW_FRAME;
 import static io.prestosql.spi.StandardErrorCode.MISMATCHED_COLUMN_ALIASES;
@@ -211,10 +216,12 @@ import static io.prestosql.sql.NodeUtils.mapFromProperties;
 import static io.prestosql.sql.ParsingUtil.createParsingOptions;
 import static io.prestosql.sql.analyzer.AggregationAnalyzer.verifyOrderByAggregations;
 import static io.prestosql.sql.analyzer.AggregationAnalyzer.verifySourceAggregations;
+import static io.prestosql.sql.analyzer.Analyzer.verifyNoAggregateWindowOrGroupingFunctions;
 import static io.prestosql.sql.analyzer.ExpressionAnalyzer.createConstantAnalyzer;
 import static io.prestosql.sql.analyzer.ExpressionTreeUtils.asQualifiedName;
 import static io.prestosql.sql.analyzer.ExpressionTreeUtils.extractAggregateFunctions;
 import static io.prestosql.sql.analyzer.ExpressionTreeUtils.extractExpressions;
+import static io.prestosql.sql.analyzer.ExpressionTreeUtils.extractLocation;
 import static io.prestosql.sql.analyzer.ExpressionTreeUtils.extractWindowFunctions;
 import static io.prestosql.sql.analyzer.Scope.BasisType.TABLE;
 import static io.prestosql.sql.analyzer.ScopeReferenceExtractor.getReferencesToScope;
@@ -339,8 +346,18 @@ class StatementAnalyzer
             accessControl.checkCanInsertIntoTable(session.toSecurityContext(), targetTable);
 
             TableMetadata tableMetadata = metadata.getTableMetadata(session, targetTableHandle.get());
-            List<String> tableColumns = tableMetadata.getColumns().stream()
+
+            List<ColumnMetadata> columns = tableMetadata.getColumns().stream()
                     .filter(column -> !column.isHidden())
+                    .collect(toImmutableList());
+
+            for (ColumnMetadata column : columns) {
+                if (!accessControl.getColumnMasks(session.toSecurityContext(), targetTable, column.getName(), column.getType()).isEmpty()) {
+                    throw semanticException(NOT_SUPPORTED, insert, "Insert into table with column masks");
+                }
+            }
+
+            List<String> tableColumns = columns.stream()
                     .map(ColumnMetadata::getName)
                     .collect(toImmutableList());
 
@@ -477,6 +494,20 @@ class StatementAnalyzer
             analysis.setUpdateType("DELETE");
 
             accessControl.checkCanDeleteFromTable(session.toSecurityContext(), tableName);
+
+            if (!accessControl.getRowFilters(session.toSecurityContext(), tableName).isEmpty()) {
+                throw semanticException(NOT_SUPPORTED, node, "Delete from table with row filter");
+            }
+
+            TableHandle handle = metadata.getTableHandle(session, tableName)
+                    .orElseThrow(() -> new TableNotFoundException(tableName.asSchemaTableName()));
+
+            TableMetadata tableMetadata = metadata.getTableMetadata(session, handle);
+            for (ColumnMetadata tableColumn : tableMetadata.getColumns()) {
+                if (!accessControl.getColumnMasks(session.toSecurityContext(), tableName, tableColumn.getName(), tableColumn.getType()).isEmpty()) {
+                    throw semanticException(NOT_SUPPORTED, node, "Delete from table with column mask");
+                }
+            }
 
             return createAndAssignScope(node, scope, Field.newUnqualified("rows", BIGINT));
         }
@@ -671,6 +702,12 @@ class StatementAnalyzer
 
         @Override
         protected Scope visitRenameSchema(RenameSchema node, Optional<Scope> scope)
+        {
+            return createAndAssignScope(node, scope);
+        }
+
+        @Override
+        protected Scope visitSetSchemaAuthorization(SetSchemaAuthorization node, Optional<Scope> scope)
         {
             return createAndAssignScope(node, scope);
         }
@@ -990,9 +1027,23 @@ class StatementAnalyzer
                 analysis.setColumn(field, columnHandle);
             }
 
+            List<Field> outputFields = fields.build();
+
+            Scope accessControlScope = Scope.builder()
+                    .withRelationType(RelationId.anonymous(), new RelationType(outputFields))
+                    .build();
+
+            for (Field field : outputFields) {
+                accessControl.getColumnMasks(session.toSecurityContext(), name, field.getName().get(), field.getType())
+                        .forEach(mask -> analyzeColumnMask(session.getIdentity().getUser(), table, name, field, accessControlScope, mask));
+            }
+
+            accessControl.getRowFilters(session.toSecurityContext(), name)
+                    .forEach(filter -> analyzeRowFilter(session.getIdentity().getUser(), table, name, accessControlScope, filter));
+
             analysis.registerTable(table, tableHandle.get());
 
-            return createAndAssignScope(table, scope, fields.build());
+            return createAndAssignScope(table, scope, outputFields);
         }
 
         private Scope createScopeForCommonTableExpression(Table table, Optional<Scope> scope, WithQuery withQuery)
@@ -1081,6 +1132,18 @@ class StatementAnalyzer
                     .collect(toImmutableList());
 
             analysis.addRelationCoercion(table, outputFields.stream().map(Field::getType).toArray(Type[]::new));
+
+            Scope accessControlScope = Scope.builder()
+                    .withRelationType(RelationId.anonymous(), new RelationType(outputFields))
+                    .build();
+
+            for (Field field : outputFields) {
+                accessControl.getColumnMasks(session.toSecurityContext(), name, field.getName().get(), field.getType())
+                        .forEach(mask -> analyzeColumnMask(session.getIdentity().getUser(), table, name, field, accessControlScope, mask));
+            }
+
+            accessControl.getRowFilters(session.toSecurityContext(), name)
+                    .forEach(filter -> analyzeRowFilter(session.getIdentity().getUser(), table, name, accessControlScope, filter));
 
             return createAndAssignScope(table, scope, outputFields);
         }
@@ -1387,7 +1450,7 @@ class StatementAnalyzer
                     analysis.addCoercion(expression, BOOLEAN, false);
                 }
 
-                Analyzer.verifyNoAggregateWindowOrGroupingFunctions(metadata, expression, "JOIN clause");
+                verifyNoAggregateWindowOrGroupingFunctions(metadata, expression, "JOIN clause");
 
                 analysis.recordSubqueries(node, expressionAnalysis);
                 analysis.setJoinCriteria(node, expression);
@@ -1801,7 +1864,7 @@ class StatementAnalyzer
                                 sets.add(ImmutableList.of(ImmutableSet.of(field)));
                             }
                             else {
-                                Analyzer.verifyNoAggregateWindowOrGroupingFunctions(metadata, column, "GROUP BY clause");
+                                verifyNoAggregateWindowOrGroupingFunctions(metadata, column, "GROUP BY clause");
                                 analysis.recordSubqueries(node, analyzeExpression(column, scope));
                                 complexExpressions.add(column);
                             }
@@ -2190,7 +2253,7 @@ class StatementAnalyzer
 
         public void analyzeWhere(Node node, Scope scope, Expression predicate)
         {
-            Analyzer.verifyNoAggregateWindowOrGroupingFunctions(metadata, predicate, "WHERE clause");
+            verifyNoAggregateWindowOrGroupingFunctions(metadata, predicate, "WHERE clause");
 
             ExpressionAnalysis expressionAnalysis = analyzeExpression(predicate, scope);
             analysis.recordSubqueries(node, expressionAnalysis);
@@ -2278,21 +2341,7 @@ class StatementAnalyzer
                 }
 
                 // TODO: record path in view definition (?) (check spec) and feed it into the session object we use to evaluate the query defined by the view
-                Session viewSession = Session.builder(metadata.getSessionPropertyManager())
-                        .setQueryId(session.getQueryId())
-                        .setTransactionId(session.getTransactionId().orElse(null))
-                        .setIdentity(identity)
-                        .setSource(session.getSource().orElse(null))
-                        .setCatalog(catalog.orElse(null))
-                        .setSchema(schema.orElse(null))
-                        .setPath(session.getPath())
-                        .setTimeZoneKey(session.getTimeZoneKey())
-                        .setLocale(session.getLocale())
-                        .setRemoteUserAddress(session.getRemoteUserAddress().orElse(null))
-                        .setUserAgent(session.getUserAgent().orElse(null))
-                        .setClientInfo(session.getClientInfo().orElse(null))
-                        .setStartTime(session.getStartTime())
-                        .build();
+                Session viewSession = createViewSession(catalog, schema, identity, session.getPath());
 
                 StatementAnalyzer analyzer = new StatementAnalyzer(analysis, metadata, sqlParser, viewAccessControl, viewSession, warningCollector);
                 Scope queryScope = analyzer.analyze(query, Scope.create());
@@ -2354,6 +2403,116 @@ class StatementAnalyzer
                     analysis,
                     expression,
                     warningCollector);
+        }
+
+        private void analyzeRowFilter(String currentIdentity, Table table, QualifiedObjectName name, Scope scope, ViewExpression filter)
+        {
+            if (analysis.hasRowFilter(name, currentIdentity)) {
+                throw new PrestoException(INVALID_ROW_FILTER, extractLocation(table), format("Row filter for '%s' is recursive", name), null);
+            }
+
+            Expression expression;
+            try {
+                expression = sqlParser.createExpression(filter.getExpression(), createParsingOptions(session));
+            }
+            catch (ParsingException e) {
+                throw new PrestoException(INVALID_ROW_FILTER, extractLocation(table), format("Invalid row filter for '%s': %s", name, e.getErrorMessage()), e);
+            }
+
+            analysis.registerTableForRowFiltering(name, currentIdentity);
+            ExpressionAnalysis expressionAnalysis;
+            try {
+                expressionAnalysis = ExpressionAnalyzer.analyzeExpression(
+                        createViewSession(filter.getCatalog(), filter.getSchema(), Identity.forUser(filter.getIdentity()).build(), session.getPath()), // TODO: path should be included in row filter
+                        metadata,
+                        accessControl,
+                        sqlParser,
+                        scope,
+                        analysis,
+                        expression,
+                        warningCollector);
+            }
+            catch (PrestoException e) {
+                throw new PrestoException(e::getErrorCode, extractLocation(table), format("Invalid row filter for '%s': %s", name, e.getRawMessage()), e);
+            }
+            finally {
+                analysis.unregisterTableForRowFiltering(name, currentIdentity);
+            }
+
+            verifyNoAggregateWindowOrGroupingFunctions(metadata, expression, format("Row filter for '%s'", name));
+
+            analysis.recordSubqueries(expression, expressionAnalysis);
+
+            Type actualType = expressionAnalysis.getType(expression);
+            if (!actualType.equals(BOOLEAN)) {
+                TypeCoercion coercion = new TypeCoercion(metadata::getType);
+
+                if (!coercion.canCoerce(actualType, BOOLEAN)) {
+                    throw new PrestoException(TYPE_MISMATCH, extractLocation(table), format("Expected row filter for '%s' to be of type BOOLEAN, but was %s", name, actualType), null);
+                }
+
+                analysis.addCoercion(expression, BOOLEAN, coercion.isTypeOnlyCoercion(actualType, BOOLEAN));
+            }
+
+            analysis.addRowFilter(table, expression);
+        }
+
+        private void analyzeColumnMask(String currentIdentity, Table table, QualifiedObjectName tableName, Field field, Scope scope, ViewExpression mask)
+        {
+            String column = field.getName().get();
+            if (analysis.hasColumnMask(tableName, column, currentIdentity)) {
+                throw new PrestoException(INVALID_ROW_FILTER, extractLocation(table), format("Column mask for '%s.%s' is recursive", tableName, column), null);
+            }
+
+            Expression expression;
+            try {
+                expression = sqlParser.createExpression(mask.getExpression(), createParsingOptions(session));
+            }
+            catch (ParsingException e) {
+                throw new PrestoException(INVALID_ROW_FILTER, extractLocation(table), format("Invalid column mask for '%s.%s': %s", tableName, column, e.getErrorMessage()), e);
+            }
+
+            ExpressionAnalysis expressionAnalysis;
+            analysis.registerTableForColumnMasking(tableName, column, currentIdentity);
+            try {
+                expressionAnalysis = ExpressionAnalyzer.analyzeExpression(
+                        createViewSession(mask.getCatalog(), mask.getSchema(), Identity.forUser(mask.getIdentity()).build(), session.getPath()), // TODO: path should be included in row filter
+                        metadata,
+                        accessControl,
+                        sqlParser,
+                        scope,
+                        analysis,
+                        expression,
+                        warningCollector);
+            }
+            catch (PrestoException e) {
+                throw new PrestoException(e::getErrorCode, extractLocation(table), format("Invalid column mask for '%s.%s': %s", tableName, column, e.getRawMessage()), e);
+            }
+            finally {
+                analysis.unregisterTableForColumnMasking(tableName, column, currentIdentity);
+            }
+
+            verifyNoAggregateWindowOrGroupingFunctions(metadata, expression, format("Column mask for '%s.%s'", table.getName(), column));
+
+            analysis.recordSubqueries(expression, expressionAnalysis);
+
+            Type expectedType = field.getType();
+            Type actualType = expressionAnalysis.getType(expression);
+            if (!actualType.equals(expectedType)) {
+                TypeCoercion coercion = new TypeCoercion(metadata::getType);
+
+                if (!coercion.canCoerce(actualType, field.getType())) {
+                    throw new PrestoException(TYPE_MISMATCH, extractLocation(table), format("Expected column mask for '%s.%s' to be of type %s, but was %s", tableName, column, field.getType(), actualType), null);
+                }
+
+                // TODO: this should be "coercion.isTypeOnlyCoercion(actualType, expectedType)", but type-only coercions are broken
+                // due to the line "changeType(value, returnType)" in SqlToRowExpressionTranslator.visitCast. If there's an expression
+                // like CAST(CAST(x AS VARCHAR(1)) AS VARCHAR(2)), it determines that the outer cast is type-only and converts the expression
+                // to CAST(x AS VARCHAR(2)) by changing the type of the inner cast.
+                analysis.addCoercion(expression, expectedType, false);
+            }
+
+            analysis.addColumnMask(table, column, expression);
         }
 
         private List<Expression> descriptorToFields(Scope scope)
@@ -2593,6 +2752,25 @@ class StatementAnalyzer
 
             return scopeBuilder;
         }
+    }
+
+    private Session createViewSession(Optional<String> catalog, Optional<String> schema, Identity identity, SqlPath path)
+    {
+        return Session.builder(metadata.getSessionPropertyManager())
+                .setQueryId(session.getQueryId())
+                .setTransactionId(session.getTransactionId().orElse(null))
+                .setIdentity(identity)
+                .setSource(session.getSource().orElse(null))
+                .setCatalog(catalog.orElse(null))
+                .setSchema(schema.orElse(null))
+                .setPath(path)
+                .setTimeZoneKey(session.getTimeZoneKey())
+                .setLocale(session.getLocale())
+                .setRemoteUserAddress(session.getRemoteUserAddress().orElse(null))
+                .setUserAgent(session.getUserAgent().orElse(null))
+                .setClientInfo(session.getClientInfo().orElse(null))
+                .setStartTime(session.getStartTime())
+                .build();
     }
 
     private static boolean hasScopeAsLocalParent(Scope root, Scope parent)

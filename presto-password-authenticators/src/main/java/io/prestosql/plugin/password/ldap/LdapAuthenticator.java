@@ -65,6 +65,7 @@ public class LdapAuthenticator
     private final Optional<String> userBaseDistinguishedName;
     private final Optional<String> bindDistinguishedName;
     private final Optional<String> bindPassword;
+    private final boolean ignoreReferrals;
     private final Map<String, String> basicEnvironment;
     private final LoadingCache<Credentials, Principal> authenticationCache;
 
@@ -77,6 +78,7 @@ public class LdapAuthenticator
         this.userBaseDistinguishedName = Optional.ofNullable(ldapConfig.getUserBaseDistinguishedName());
         this.bindDistinguishedName = Optional.ofNullable(ldapConfig.getBindDistingushedName());
         this.bindPassword = Optional.ofNullable(ldapConfig.getBindPassword());
+        this.ignoreReferrals = ldapConfig.isIgnoreReferrals();
 
         if (groupAuthorizationSearchPattern.isPresent()) {
             checkState(userBaseDistinguishedName.isPresent(), "Base distinguished name (DN) for user is null");
@@ -212,10 +214,10 @@ public class LdapAuthenticator
 
             String userDistinguishedName = search.next().getNameInNamespace();
             while (search.hasMore()) {
-                if (!userDistinguishedName.equals(search.next().getNameInNamespace())) {
-                    String message = format("Multiple group membership results for user [%s] with different distinguished names", user);
-                    log.debug(message);
-                    throw new AccessDeniedException(message);
+                String nextUserDistinguishedName = search.next().getNameInNamespace();
+                if (!userDistinguishedName.equals(nextUserDistinguishedName)) {
+                    log.debug("Multiple group membership results for user [%s] with different distinguished names: [%s], [%s]", user, userDistinguishedName, nextUserDistinguishedName);
+                    throw new AccessDeniedException(format("Multiple group membership results for user [%s] with different distinguished names", user));
                 }
             }
 
@@ -257,7 +259,7 @@ public class LdapAuthenticator
                 .put(SECURITY_AUTHENTICATION, "simple")
                 .put(SECURITY_PRINCIPAL, userDistinguishedName)
                 .put(SECURITY_CREDENTIALS, password)
-                .put(REFERRAL, "follow")
+                .put(REFERRAL, ignoreReferrals ? "ignore" : "follow")
                 .build();
     }
 

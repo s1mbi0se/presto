@@ -125,6 +125,9 @@ public class HiveConfig
     private Optional<Duration> hiveTransactionHeartbeatInterval = Optional.empty();
     private int hiveTransactionHeartbeatThreads = 5;
 
+    private boolean allowRegisterPartition;
+    private boolean queryPartitionFilterRequired;
+
     public int getMaxInitialSplits()
     {
         return maxInitialSplits;
@@ -877,5 +880,32 @@ public class HiveConfig
     {
         this.hiveTransactionHeartbeatThreads = hiveTransactionHeartbeatThreads;
         return this;
+    }
+
+    @Deprecated
+    public boolean isAllowRegisterPartition()
+    {
+        return allowRegisterPartition;
+    }
+
+    @Deprecated
+    @Config("hive.allow-register-partition-procedure")
+    public HiveConfig setAllowRegisterPartition(boolean allowRegisterPartition)
+    {
+        this.allowRegisterPartition = allowRegisterPartition;
+        return this;
+    }
+
+    @Config("hive.query-partition-filter-required")
+    @ConfigDescription("Require filter on at least one partition column")
+    public HiveConfig setQueryPartitionFilterRequired(boolean queryPartitionFilterRequired)
+    {
+        this.queryPartitionFilterRequired = queryPartitionFilterRequired;
+        return this;
+    }
+
+    public boolean isQueryPartitionFilterRequired()
+    {
+        return queryPartitionFilterRequired;
     }
 }

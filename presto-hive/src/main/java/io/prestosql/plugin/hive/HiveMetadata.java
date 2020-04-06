@@ -45,6 +45,7 @@ import io.prestosql.plugin.hive.statistics.HiveStatisticsProvider;
 import io.prestosql.plugin.hive.util.HiveUtil;
 import io.prestosql.plugin.hive.util.HiveWriteUtils;
 import io.prestosql.spi.PrestoException;
+import io.prestosql.spi.StandardErrorCode;
 import io.prestosql.spi.block.Block;
 import io.prestosql.spi.connector.ColumnHandle;
 import io.prestosql.spi.connector.ColumnMetadata;
@@ -98,6 +99,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -109,6 +111,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -321,13 +324,18 @@ public class HiveMetadata
     @Override
     public List<String> listSchemaNames(ConnectorSession session)
     {
-        return metastore.getAllDatabases();
+        return metastore.getAllDatabases().stream()
+                .filter(HiveMetadata::filterSchema)
+                .collect(toImmutableList());
     }
 
     @Override
     public HiveTableHandle getTableHandle(ConnectorSession session, SchemaTableName tableName)
     {
         requireNonNull(tableName, "tableName is null");
+        if (!filterSchema(tableName.getSchemaName())) {
+            return null;
+        }
         Optional<Table> table = metastore.getTable(new HiveIdentity(session), tableName.getSchemaName(), tableName.getTableName());
         if (!table.isPresent()) {
             return null;
@@ -375,7 +383,7 @@ public class HiveMetadata
 
             handle = handle.withAnalyzePartitionValues(list);
             HivePartitionResult partitions = partitionManager.getPartitions(handle, list);
-            handle = partitionManager.applyPartitionResult(handle, partitions);
+            handle = partitionManager.applyPartitionResult(handle, partitions, Optional.empty());
         }
 
         if (analyzeColumnNames.isPresent()) {
@@ -643,6 +651,9 @@ public class HiveMetadata
     private List<String> listSchemas(ConnectorSession session, Optional<String> schemaName)
     {
         if (schemaName.isPresent()) {
+            if (!filterSchema(schemaName.get())) {
+                return ImmutableList.of();
+            }
             return ImmutableList.of(schemaName.get());
         }
         return listSchemaNames(session);
@@ -701,6 +712,9 @@ public class HiveMetadata
             return listTables(session, prefix.getSchema());
         }
         SchemaTableName tableName = prefix.toSchemaTableName();
+        if (!filterSchema(tableName.getSchemaName())) {
+            return ImmutableList.of();
+        }
         try {
             if (!metastore.getTable(new HiveIdentity(session), tableName.getSchemaName(), tableName.getTableName()).isPresent()) {
                 return ImmutableList.of();
@@ -759,6 +773,12 @@ public class HiveMetadata
     public void renameSchema(ConnectorSession session, String source, String target)
     {
         metastore.renameDatabase(new HiveIdentity(session), source, target);
+    }
+
+    @Override
+    public void setSchemaAuthorization(ConnectorSession session, String source, PrestoPrincipal principal)
+    {
+        metastore.setDatabaseOwner(new HiveIdentity(session), source, HivePrincipal.from(principal));
     }
 
     @Override
@@ -1715,6 +1735,9 @@ public class HiveMetadata
     @Override
     public Optional<ConnectorViewDefinition> getView(ConnectorSession session, SchemaTableName viewName)
     {
+        if (!filterSchema(viewName.getSchemaName())) {
+            return Optional.empty();
+        }
         return metastore.getTable(new HiveIdentity(session), viewName.getSchemaName(), viewName.getTableName())
                 .flatMap(view -> {
                     if (isPrestoView(view)) {
@@ -1743,6 +1766,21 @@ public class HiveMetadata
     private boolean isHiveOrPrestoView(Table table)
     {
         return table.getTableType().equals(TableType.VIRTUAL_VIEW.name());
+    }
+
+    private static boolean filterSchema(String schemaName)
+    {
+        if ("information_schema".equals(schemaName)) {
+            // For things like listing columns in information_schema.columns table, we need to explicitly filter out Hive's own information_schema.
+            // TODO https://github.com/prestosql/presto/issues/1559 this should be filtered out in engine.
+            return false;
+        }
+        if ("sys".equals(schemaName)) {
+            // Hive 3's `sys` schema contains no objects we can handle, so there is no point in exposing it.
+            // Also, exposing it may require proper handling in access control.
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -1846,15 +1884,36 @@ public class HiveMetadata
         checkArgument(!handle.getAnalyzePartitionValues().isPresent() || constraint.getSummary().isAll(), "Analyze should not have a constraint");
 
         HivePartitionResult partitionResult = partitionManager.getPartitions(metastore, new HiveIdentity(session), handle, constraint);
-        HiveTableHandle newHandle = partitionManager.applyPartitionResult(handle, partitionResult);
+        HiveTableHandle newHandle = partitionManager.applyPartitionResult(handle, partitionResult, constraint.getColumns());
 
         if (handle.getPartitions().equals(newHandle.getPartitions()) &&
                 handle.getCompactEffectivePredicate().equals(newHandle.getCompactEffectivePredicate()) &&
-                handle.getBucketFilter().equals(newHandle.getBucketFilter())) {
+                handle.getBucketFilter().equals(newHandle.getBucketFilter()) &&
+                handle.getConstraintColumns().equals(newHandle.getConstraintColumns())) {
             return Optional.empty();
         }
 
         return Optional.of(new ConstraintApplicationResult<>(newHandle, partitionResult.getUnenforcedConstraint()));
+    }
+
+    @Override
+    public void validateScan(ConnectorSession session, ConnectorTableHandle tableHandle)
+    {
+        HiveTableHandle handle = (HiveTableHandle) tableHandle;
+        if (HiveSessionProperties.isQueryPartitionFilterRequired(session) && !handle.getAnalyzePartitionValues().isPresent() && handle.getEnforcedConstraint().isAll()) {
+            List<HiveColumnHandle> partitionColumns = handle.getPartitionColumns();
+            if (!partitionColumns.isEmpty()) {
+                Optional<Set<ColumnHandle>> referencedColumns = handle.getConstraintColumns();
+                if (!referencedColumns.isPresent() || Collections.disjoint(referencedColumns.get(), partitionColumns)) {
+                    String partitionColumnNames = partitionColumns.stream()
+                            .map(HiveColumnHandle::getName)
+                            .collect(Collectors.joining(","));
+                    throw new PrestoException(
+                            StandardErrorCode.QUERY_REJECTED,
+                            String.format("Filter required on %s.%s for at least one partition column: %s ", handle.getSchemaName(), handle.getTableName(), partitionColumnNames));
+                }
+            }
+        }
     }
 
     @Override
@@ -1947,7 +2006,8 @@ public class HiveMetadata
                         hivePartitioningHandle.getBucketCount())),
                 hiveTable.getBucketFilter(),
                 hiveTable.getAnalyzePartitionValues(),
-                hiveTable.getAnalyzeColumnNames());
+                hiveTable.getAnalyzeColumnNames(),
+                Optional.empty());
     }
 
     @VisibleForTesting
@@ -2149,15 +2209,15 @@ public class HiveMetadata
     }
 
     @Override
-    public void grantRoles(ConnectorSession session, Set<String> roles, Set<PrestoPrincipal> grantees, boolean withAdminOption, Optional<PrestoPrincipal> grantor)
+    public void grantRoles(ConnectorSession session, Set<String> roles, Set<PrestoPrincipal> grantees, boolean adminOption, Optional<PrestoPrincipal> grantor)
     {
-        accessControlMetadata.grantRoles(session, roles, HivePrincipal.from(grantees), withAdminOption, grantor.map(HivePrincipal::from));
+        accessControlMetadata.grantRoles(session, roles, HivePrincipal.from(grantees), adminOption, grantor.map(HivePrincipal::from));
     }
 
     @Override
-    public void revokeRoles(ConnectorSession session, Set<String> roles, Set<PrestoPrincipal> grantees, boolean adminOptionFor, Optional<PrestoPrincipal> grantor)
+    public void revokeRoles(ConnectorSession session, Set<String> roles, Set<PrestoPrincipal> grantees, boolean adminOption, Optional<PrestoPrincipal> grantor)
     {
-        accessControlMetadata.revokeRoles(session, roles, HivePrincipal.from(grantees), adminOptionFor, grantor.map(HivePrincipal::from));
+        accessControlMetadata.revokeRoles(session, roles, HivePrincipal.from(grantees), adminOption, grantor.map(HivePrincipal::from));
     }
 
     @Override

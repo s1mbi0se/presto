@@ -111,7 +111,7 @@ import static org.testng.Assert.assertTrue;
 
 public abstract class AbstractTestHiveFileSystem
 {
-    protected static final HdfsContext TESTING_CONTEXT = new HdfsContext(new ConnectorIdentity("test", Optional.empty(), Optional.empty()));
+    protected static final HdfsContext TESTING_CONTEXT = new HdfsContext(ConnectorIdentity.ofUser("test"));
 
     protected String database;
     protected SchemaTableName table;
@@ -197,7 +197,7 @@ public abstract class AbstractTestHiveFileSystem
                 partitionUpdateCodec,
                 new HiveTypeTranslator(),
                 new NodeVersion("test_version"),
-                SqlStandardAccessControlMetadata::new);
+                (metastore) -> new SqlStandardAccessControlMetadata(metastore));
         transactionManager = new HiveTransactionManager();
         splitManager = new HiveSplitManager(
                 transactionHandle -> ((HiveMetadata) transactionManager.get(transactionHandle)).getMetastore(),
@@ -248,7 +248,7 @@ public abstract class AbstractTestHiveFileSystem
 
     protected Transaction newTransaction()
     {
-        return new HiveTransaction(transactionManager, metadataFactory.get());
+        return new HiveTransaction(transactionManager, (HiveMetadata) metadataFactory.create());
     }
 
     @Test

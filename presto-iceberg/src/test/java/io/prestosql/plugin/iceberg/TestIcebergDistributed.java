@@ -16,6 +16,10 @@ package io.prestosql.plugin.iceberg;
 import com.google.common.collect.ImmutableMap;
 import io.prestosql.testing.AbstractTestDistributedQueries;
 import io.prestosql.testing.QueryRunner;
+import io.prestosql.testing.sql.TestTable;
+import org.testng.SkipException;
+
+import java.util.Optional;
 
 import static io.prestosql.plugin.iceberg.IcebergQueryRunner.createIcebergQueryRunner;
 
@@ -33,6 +37,12 @@ public class TestIcebergDistributed
     protected boolean supportsViews()
     {
         return false;
+    }
+
+    @Override
+    protected TestTable createTableWithDefaultColumns()
+    {
+        throw new SkipException("Iceberg connector does not support column default values");
     }
 
     @Override
@@ -70,5 +80,26 @@ public class TestIcebergDistributed
     public void testInsertWithCoercion()
     {
         // Iceberg does not support parameterized varchar
+    }
+
+    @Override
+    protected Optional<DataMappingTestSetup> filterDataMappingSmokeTestData(DataMappingTestSetup dataMappingTestSetup)
+    {
+        String typeName = dataMappingTestSetup.getPrestoTypeName();
+        if (typeName.equals("tinyint")
+                || typeName.equals("smallint")
+                || typeName.equals("timestamp")
+                || typeName.startsWith("char(")) {
+            return Optional.of(dataMappingTestSetup.asUnsupported());
+        }
+
+        if (typeName.startsWith("decimal(")
+                || typeName.equals("time")
+                || typeName.equals("timestamp with time zone")) {
+            // TODO this should either work or fail cleanly
+            return Optional.empty();
+        }
+
+        return Optional.of(dataMappingTestSetup);
     }
 }
