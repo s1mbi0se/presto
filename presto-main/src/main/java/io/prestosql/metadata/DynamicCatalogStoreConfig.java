@@ -35,9 +35,9 @@ public class DynamicCatalogStoreConfig
     protected static final String SHANNONDB_CONNECTOR_NAME = "shannondb";
     protected static DataConnection shannondbDataConnection;
     private File catalogConfigurationDir = new File("etc/catalog/");
-    private String dataConnectionsEndpoint;
-    private String dataConnectionsUrl;
-    private String dataConnectionsApiKey;
+    private String dataConnectionsEndpoint = "/v1/data_connections/all";
+    private String dataConnectionsUrl = "localhost";
+    private String dataConnectionsApiKey = "apikey";
     private List<String> disabledCatalogs;
 
     public String getDataConnectionsEndpoint()
@@ -60,18 +60,23 @@ public class DynamicCatalogStoreConfig
         Map<String, String> properties = null;
         try {
             properties = this.readConfigFile(API_CONFIG_FILE);
-            this.dataConnectionsEndpoint = properties.get("data-connections-endpoint");
-            this.dataConnectionsUrl = properties.get("data-connections-url");
-            this.dataConnectionsApiKey = properties.get("data-connections-api-key");
+
+            if (properties.size() > 0) {
+                this.dataConnectionsEndpoint = properties.get("data-connections-endpoint");
+                this.dataConnectionsUrl = properties.get("data-connections-url");
+                this.dataConnectionsApiKey = properties.get("data-connections-api-key");
+            }
 
             Map<String, String> shannonDbConfig = this.readConfigFile(SHANNONDB_CONFIG_FILE);
 
-            shannondbDataConnection = new DataConnection(
-                    BigInteger.ONE,
-                    SHANNONDB_CONNECTOR_NAME,
-                    0,
-                    "active",
-                    shannonDbConfig);
+            if (shannonDbConfig.size() > 0) {
+                shannondbDataConnection = new DataConnection(
+                        BigInteger.ONE,
+                        SHANNONDB_CONNECTOR_NAME,
+                        0,
+                        "active",
+                        shannonDbConfig);
+            }
         }
         catch (IOException e) {
             e.printStackTrace();
