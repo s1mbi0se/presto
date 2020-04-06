@@ -18,7 +18,7 @@ import io.airlift.airline.CommandFactory;
 import io.airlift.airline.Help;
 import io.prestosql.tests.product.launcher.Extensions;
 
-public final class Launcher
+public class Launcher
 {
     public static void main(String[] args)
     {
@@ -37,7 +37,8 @@ public final class Launcher
                 .withGroup("env")
                 .withDefaultCommand(Help.class) // TODO should be group aware https://github.com/airlift/airline/issues/72? Otherwise it's required until https://github.com/airlift/airline/pull/71
                 .withCommand(EnvironmentUp.class)
-                .withCommand(EnvironmentDown.class);
+                .withCommand(EnvironmentDown.class)
+                .withCommand(EnvironmentList.class);
 
         cli
                 .withGroup("test")

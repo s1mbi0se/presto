@@ -205,7 +205,7 @@ Property Name                                      Description                  
                                                    tables in the schemas ``schema1`` and ``schema2``.
                                                    ``*`` to cache directory listing for all tables.
 
-``hive.file-status-cache-size``                    Maximum no. of file status entries cached for a path.        10,00,000
+``hive.file-status-cache-size``                    Maximum no. of file status entries cached for a path.        1,000,000
 
 ``hive.file-status-cache-expire-time``             Duration of time after a directory listing is cached that it ``1m``
                                                    should be automatically removed from cache.
@@ -214,9 +214,9 @@ Property Name                                      Description                  
 Hive Thrift Metastore Configuration Properties
 ----------------------------------------------
 
-================================================== ============================================================
-Property Name                                      Description
-================================================== ============================================================
+================================================== ============================================================ ============
+Property Name                                      Description                                                  Default
+================================================== ============================================================ ============
 ``hive.metastore.uri``                             The URI(s) of the Hive metastore to connect to using the
                                                    Thrift protocol. If multiple URIs are provided, the first
                                                    URI is used by default, and the rest of the URIs are
@@ -238,10 +238,22 @@ Property Name                                      Description
                                                    to the Hive metastore service.
 
 ``hive.metastore.client.keytab``                   Hive metastore client keytab location.
-================================================== ============================================================
+
+``hive.metastore-cache-ttl``                       Time to live Hive metadata cache.                            ``0s``
+
+``hive.metastore-refresh-interval``                How often to refresh the Hive metastore cache.
+
+``hive.metastore-cache-maximum-size``              Hive metastore cache maximum size.                           10,000
+
+``hive.metastore-refresh-max-threads``             Maximum number of threads to refresh Hive metastore cache.   100
+================================================== ============================================================ ============
 
 AWS Glue Catalog Configuration Properties
 -----------------------------------------
+
+In order to use a Glue catalog, ensure to configure the metastore with
+``hive.metastore=glue`` and provide further details with the following
+properties:
 
 ==================================================== ============================================================
 Property Name                                        Description
@@ -738,6 +750,19 @@ Procedures
     ``create_empty_partition``). A null value for the ``partition_values`` argument indicates that stats
     should be dropped for the entire table.
 
+.. _register_partition:
+
+* ``system.register_partition(schema_name, table_name, partition_columns, partition_values, location)``
+
+    Registers existing location as a new partition in the metastore for the specified table.
+
+.. _unregister_partition:
+
+* ``system.unregister_partition(schema_name, table_name, partition_columns, partition_values)``
+
+    Unregisters given, existing partition in the metastore for the specified table.
+    The partition data is not deleted.
+
 Examples
 --------
 
@@ -834,4 +859,6 @@ Drop a schema::
 Hive Connector Limitations
 --------------------------
 
-:doc:`/sql/delete` is only supported if the ``WHERE`` clause matches entire partitions.
+* :doc:`/sql/delete` is only supported if the ``WHERE`` clause matches entire partitions.
+* :doc:`/sql/alter-schema` usage fails, since the Hive metastore does not support renaming schemas.
+

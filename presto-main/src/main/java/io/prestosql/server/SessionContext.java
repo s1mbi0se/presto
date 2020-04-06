@@ -26,6 +26,8 @@ import java.util.Set;
 
 public interface SessionContext
 {
+    Optional<Identity> getAuthenticatedIdentity();
+
     Identity getIdentity();
 
     @Nullable

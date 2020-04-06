@@ -19,20 +19,6 @@ import com.google.inject.multibindings.MapBinder;
 import io.prestosql.tests.product.launcher.env.common.Hadoop;
 import io.prestosql.tests.product.launcher.env.common.Kerberos;
 import io.prestosql.tests.product.launcher.env.common.Standard;
-import io.prestosql.tests.product.launcher.env.environment.Multinode;
-import io.prestosql.tests.product.launcher.env.environment.Singlenode;
-import io.prestosql.tests.product.launcher.env.environment.SinglenodeCassandra;
-import io.prestosql.tests.product.launcher.env.environment.SinglenodeHdfsImpersonation;
-import io.prestosql.tests.product.launcher.env.environment.SinglenodeHiveImpersonation;
-import io.prestosql.tests.product.launcher.env.environment.SinglenodeKafka;
-import io.prestosql.tests.product.launcher.env.environment.SinglenodeKerberosHdfsImpersonation;
-import io.prestosql.tests.product.launcher.env.environment.SinglenodeKerberosHdfsNoImpersonation;
-import io.prestosql.tests.product.launcher.env.environment.SinglenodeKerberosHiveImpersonation;
-import io.prestosql.tests.product.launcher.env.environment.SinglenodeMySql;
-import io.prestosql.tests.product.launcher.env.environment.SinglenodePostgreSql;
-import io.prestosql.tests.product.launcher.env.environment.SinglenodeSqlServer;
-import io.prestosql.tests.product.launcher.env.environment.TwoKerberosHives;
-import io.prestosql.tests.product.launcher.env.environment.TwoMixedHives;
 
 import static com.google.inject.multibindings.MapBinder.newMapBinder;
 import static java.util.Objects.requireNonNull;
@@ -40,6 +26,7 @@ import static java.util.Objects.requireNonNull;
 public final class EnvironmentModule
         implements Module
 {
+    public static final String BASE_PACKAGE = "io.prestosql.tests.product.launcher.env.environment";
     private final Module additionalEnvironments;
 
     public EnvironmentModule(Module additionalEnvironments)
@@ -51,32 +38,13 @@ public final class EnvironmentModule
     public void configure(Binder binder)
     {
         binder.bind(EnvironmentFactory.class);
-        binder.bind(SelectedEnvironmentProvider.class);
         binder.bind(Standard.class);
         binder.bind(Hadoop.class);
         binder.bind(Kerberos.class);
 
         MapBinder<String, EnvironmentProvider> environments = newMapBinder(binder, String.class, EnvironmentProvider.class);
 
-        environments.addBinding("singlenode").to(Singlenode.class);
-
-        environments.addBinding("singlenode-hive-impersonation").to(SinglenodeHiveImpersonation.class);
-        environments.addBinding("singlenode-kerberos-hive-impersonation").to(SinglenodeKerberosHiveImpersonation.class);
-
-        environments.addBinding("singlenode-hdfs-impersonation").to(SinglenodeHdfsImpersonation.class);
-        environments.addBinding("singlenode-kerberos-hdfs-impersonation").to(SinglenodeKerberosHdfsImpersonation.class);
-        environments.addBinding("singlenode-kerberos-hdfs-no-impersonation").to(SinglenodeKerberosHdfsNoImpersonation.class);
-
-        environments.addBinding("multinode").to(Multinode.class);
-
-        environments.addBinding("two-kerberos-hives").to(TwoKerberosHives.class);
-        environments.addBinding("two-mixed-hives").to(TwoMixedHives.class);
-
-        environments.addBinding("singlenode-cassandra").to(SinglenodeCassandra.class);
-        environments.addBinding("singlenode-kafka").to(SinglenodeKafka.class);
-        environments.addBinding("singlenode-mysql").to(SinglenodeMySql.class);
-        environments.addBinding("singlenode-postgresql").to(SinglenodePostgreSql.class);
-        environments.addBinding("singlenode-sqlserver").to(SinglenodeSqlServer.class);
+        Environments.findByBasePackage(BASE_PACKAGE).forEach(clazz -> environments.addBinding(Environments.nameForClass(clazz)).to(clazz));
 
         binder.install(additionalEnvironments);
     }

@@ -40,6 +40,12 @@ public class TestingSessionContext
     }
 
     @Override
+    public Optional<Identity> getAuthenticatedIdentity()
+    {
+        return Optional.empty();
+    }
+
+    @Override
     public Identity getIdentity()
     {
         return session.getIdentity();

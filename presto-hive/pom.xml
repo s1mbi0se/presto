@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.prestosql</groupId>
         <artifactId>presto-root</artifactId>
-        <version>330-SNAPSHOT</version>
+        <version>330</version>
     </parent>
 
     <artifactId>presto-hive</artifactId>
@@ -45,7 +45,6 @@
         <dependency>
             <groupId>io.prestosql.hadoop</groupId>
             <artifactId>hadoop-apache</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>

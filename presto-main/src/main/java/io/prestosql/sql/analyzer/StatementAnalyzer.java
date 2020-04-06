@@ -344,7 +344,7 @@ class StatementAnalyzer
                     .map(ColumnMetadata::getName)
                     .collect(toImmutableList());
 
-            // analyze target table layout
+            // analyze target table layout, table columns should contain all partition columns
             Optional<NewTableLayout> newTableLayout = metadata.getInsertLayout(session, targetTableHandle.get());
             newTableLayout.ifPresent(layout -> {
                 if (!ImmutableSet.copyOf(tableColumns).containsAll(layout.getPartitionColumns())) {
@@ -388,9 +388,11 @@ class StatementAnalyzer
                     .collect(toImmutableList());
 
             if (!typesMatchForInsert(tableTypes, queryTypes)) {
-                throw semanticException(TYPE_MISMATCH, insert, "Insert query has mismatched column types: " +
-                        "Table: [" + Joiner.on(", ").join(tableTypes) + "], " +
-                        "Query: [" + Joiner.on(", ").join(queryTypes) + "]");
+                throw semanticException(TYPE_MISMATCH,
+                        insert,
+                        "Insert query has mismatched column types: Table: [%s], Query: [%s]",
+                        Joiner.on(", ").join(tableTypes),
+                        Joiner.on(", ").join(queryTypes));
             }
 
             return createAndAssignScope(insert, scope, Field.newUnqualified("rows", BIGINT));
@@ -594,11 +596,18 @@ class StatementAnalyzer
                     .map(ColumnMetadata::getName)
                     .collect(toImmutableSet());
 
-            newTableLayout.ifPresent(layout -> {
+            if (newTableLayout.isPresent()) {
+                NewTableLayout layout = newTableLayout.get();
                 if (!columnNames.containsAll(layout.getPartitionColumns())) {
-                    throw new PrestoException(NOT_SUPPORTED, "INSERT must write all distribution columns: " + layout.getPartitionColumns());
+                    if (layout.getLayout().getPartitioning().isPresent()) {
+                        throw new PrestoException(NOT_SUPPORTED, "INSERT must write all distribution columns: " + layout.getPartitionColumns());
+                    }
+                    else {
+                        // created table does not contain all columns required by preferred layout
+                        newTableLayout = Optional.empty();
+                    }
                 }
-            });
+            }
 
             analysis.setCreate(new Analysis.Create(
                     Optional.of(targetTable),
@@ -1328,7 +1337,7 @@ class StatementAnalyzer
             Scope right = process(node.getRight(), isLateralRelation(node.getRight()) ? Optional.of(left) : scope);
 
             if (isLateralRelation(node.getRight())) {
-                if (node.getType().equals(RIGHT) || node.getType().equals(FULL)) {
+                if (node.getType() == RIGHT || node.getType() == FULL) {
                     Stream<Expression> leftScopeReferences = getReferencesToScope(node.getRight(), analysis, left);
                     leftScopeReferences.findFirst().ifPresent(reference -> {
                         throw semanticException(INVALID_COLUMN_REFERENCE, reference, "LATERAL reference not allowed in %s JOIN", node.getType().name());
@@ -2016,7 +2025,7 @@ class StatementAnalyzer
                     // analyze prefix as an 'asterisked identifier chain'
                     Optional<AsteriskedIdentifierChainBasis> identifierChainBasis = scope.resolveAsteriskedIdentifierChainBasis(prefix, allColumns);
                     if (!identifierChainBasis.isPresent()) {
-                        throw semanticException(TABLE_NOT_FOUND, allColumns, "Unable to resolve reference " + prefix);
+                        throw semanticException(TABLE_NOT_FOUND, allColumns, "Unable to resolve reference %s", prefix);
                     }
                     if (identifierChainBasis.get().getBasisType() == TABLE) {
                         RelationType relationType = identifierChainBasis.get().getRelationType().get();

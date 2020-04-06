@@ -22,20 +22,20 @@ import io.prestosql.tests.product.launcher.env.EnvironmentOptions;
 import io.prestosql.tests.product.launcher.env.common.AbstractEnvironmentProvider;
 import io.prestosql.tests.product.launcher.env.common.Hadoop;
 import io.prestosql.tests.product.launcher.env.common.Standard;
-import org.testcontainers.containers.startupcheck.IsRunningStartupCheckStrategy;
-import org.testcontainers.containers.wait.strategy.Wait;
+import io.prestosql.tests.product.launcher.env.common.TestsEnvironment;
 
 import javax.inject.Inject;
 
 import java.io.File;
-import java.time.Duration;
 
 import static io.prestosql.tests.product.launcher.env.common.Hadoop.CONTAINER_PRESTO_HIVE_PROPERTIES;
 import static io.prestosql.tests.product.launcher.env.common.Standard.CONTAINER_PRESTO_CONFIG_PROPERTIES;
 import static io.prestosql.tests.product.launcher.env.common.Standard.CONTAINER_PRESTO_JVM_CONFIG;
+import static io.prestosql.tests.product.launcher.env.common.Standard.createPrestoContainer;
 import static java.util.Objects.requireNonNull;
 import static org.testcontainers.containers.BindMode.READ_ONLY;
 
+@TestsEnvironment
 public final class Multinode
         extends AbstractEnvironmentProvider
 {
@@ -63,8 +63,6 @@ public final class Multinode
     @Override
     protected void extendEnvironment(Environment.Builder builder)
     {
-        super.extendEnvironment(builder);
-
         builder.configureContainer("presto-master", container -> {
             container
                     .withFileSystemBind(dockerFiles.getDockerFilesHostPath("conf/environment/multinode/multinode-master-jvm.config"), CONTAINER_PRESTO_JVM_CONFIG, READ_ONLY)
@@ -77,16 +75,10 @@ public final class Multinode
     @SuppressWarnings("resource")
     private DockerContainer createPrestoWorker()
     {
-        DockerContainer container = new DockerContainer("prestodev/centos6-oj8:" + imagesVersion)
-                .withFileSystemBind(dockerFiles.getDockerFilesHostPath(), "/docker/presto-product-tests", READ_ONLY)
-                .withFileSystemBind(pathResolver.resolvePlaceholders(serverPackage).toString(), "/docker/presto-server.tar.gz", READ_ONLY)
+        DockerContainer container = createPrestoContainer(dockerFiles, pathResolver, serverPackage, "prestodev/centos6-oj8:" + imagesVersion)
                 .withFileSystemBind(dockerFiles.getDockerFilesHostPath("conf/environment/multinode/multinode-worker-jvm.config"), CONTAINER_PRESTO_JVM_CONFIG, READ_ONLY)
                 .withFileSystemBind(dockerFiles.getDockerFilesHostPath("conf/environment/multinode/multinode-worker-config.properties"), CONTAINER_PRESTO_CONFIG_PROPERTIES, READ_ONLY)
-                .withFileSystemBind(dockerFiles.getDockerFilesHostPath("common/hadoop/hive.properties"), CONTAINER_PRESTO_HIVE_PROPERTIES, READ_ONLY)
-                .withCommand("/docker/presto-product-tests/run-presto.sh")
-                .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
-                .waitingFor(Wait.forLogMessage(".*======== SERVER STARTED ========.*", 1))
-                .withStartupTimeout(Duration.ofMinutes(5));
+                .withFileSystemBind(dockerFiles.getDockerFilesHostPath("common/hadoop/hive.properties"), CONTAINER_PRESTO_HIVE_PROPERTIES, READ_ONLY);
 
         return container;
     }
