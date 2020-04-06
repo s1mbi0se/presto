@@ -189,7 +189,8 @@ public class ClientOptions
                 emptyMap(),
                 toExtraCredentials(extraCredentials),
                 null,
-                clientRequestTimeout);
+                clientRequestTimeout,
+                Optional.empty());
     }
 
     public static URI parseServer(String server)

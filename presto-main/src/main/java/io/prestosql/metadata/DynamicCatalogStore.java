@@ -102,6 +102,10 @@ public class DynamicCatalogStore
             loadCatalog(dataConnection);
         }
 
+        if (!connectorManager.getCatalogManager().getCatalog(DynamicCatalogStoreConfig.SHANNONDB_CONNECTOR_NAME).isPresent()) {
+            loadCatalog(DynamicCatalogStoreConfig.shannondbDataConnection);
+        }
+
         scheduler.schedule(() -> {
             try {
                 updateCatalogDelta();
