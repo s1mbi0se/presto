@@ -33,4 +33,33 @@ public final class QueryRequestMetadata
     {
         this.metadata = metadata;
     }
+
+    public QueryRequestMetadata()
+    {
+    }
+
+    public QueryRequestMetadata(List<QueryRequestTableMetadata> metadata)
+    {
+        this.metadata = metadata;
+    }
+
+    public static final class Builder
+    {
+        private List<QueryRequestTableMetadata> metadata;
+
+        public Builder()
+        {
+        }
+
+        public Builder withMetadata(List<QueryRequestTableMetadata> metadata)
+        {
+            this.metadata = metadata;
+            return this;
+        }
+
+        public QueryRequestMetadata build()
+        {
+            return new QueryRequestMetadata(metadata);
+        }
+    }
 }

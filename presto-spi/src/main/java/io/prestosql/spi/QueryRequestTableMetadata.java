@@ -46,4 +46,41 @@ public class QueryRequestTableMetadata
     {
         this.columnsMetadata = columnsMetadata;
     }
+
+    public QueryRequestTableMetadata()
+    {
+    }
+
+    public QueryRequestTableMetadata(String tableName, List<Map<String, String>> columnsMetadata)
+    {
+        this.tableName = tableName;
+        this.columnsMetadata = columnsMetadata;
+    }
+
+    public static final class Builder
+    {
+        private String tableName;
+        private List<Map<String, String>> columnsMetadata;
+
+        public Builder()
+        {
+        }
+
+        public Builder withTableName(String tableName)
+        {
+            this.tableName = tableName;
+            return this;
+        }
+
+        public Builder withColumnsMetadata(List<Map<String, String>> columnsMetadata)
+        {
+            this.columnsMetadata = columnsMetadata;
+            return this;
+        }
+
+        public QueryRequestTableMetadata build()
+        {
+            return new QueryRequestTableMetadata(tableName, columnsMetadata);
+        }
+    }
 }
