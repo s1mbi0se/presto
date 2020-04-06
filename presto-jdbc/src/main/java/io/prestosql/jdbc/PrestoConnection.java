@@ -711,7 +711,8 @@ public class PrestoConnection
                 ImmutableMap.copyOf(roles),
                 extraCredentials,
                 transactionId.get(),
-                timeout);
+                timeout,
+                Optional.empty());
 
         return queryExecutor.startQuery(session, sql);
     }
