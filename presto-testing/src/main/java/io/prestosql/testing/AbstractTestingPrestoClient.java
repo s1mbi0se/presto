@@ -152,14 +152,20 @@ public abstract class AbstractTestingPrestoClient<T>
                 resourceEstimates.build(),
                 properties.build(),
                 session.getPreparedStatements(),
-                session.getIdentity().getRoles().entrySet().stream()
-                        .collect(toImmutableMap(Entry::getKey, entry ->
-                                new ClientSelectedRole(
-                                        ClientSelectedRole.Type.valueOf(entry.getValue().getType().toString()),
-                                        entry.getValue().getRole()))),
+                getCollect(session),
                 session.getIdentity().getExtraCredentials(),
                 session.getTransactionId().map(Object::toString).orElse(null),
-                clientRequestTimeout);
+                clientRequestTimeout,
+                session.getQueryRequestMetadata());
+    }
+
+    private static ImmutableMap<String, ClientSelectedRole> getCollect(Session session)
+    {
+        return session.getIdentity().getRoles().entrySet().stream()
+                .collect(toImmutableMap(Entry::getKey, entry ->
+                        new ClientSelectedRole(
+                                ClientSelectedRole.Type.valueOf(entry.getValue().getType().toString()),
+                                entry.getValue().getRole())));
     }
 
     public List<QualifiedObjectName> listTables(Session session, String catalog, String schema)

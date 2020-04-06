@@ -14,7 +14,10 @@
 package io.prestosql.testing;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
+import io.prestosql.Session;
 import io.prestosql.metadata.FunctionListBuilder;
 import io.prestosql.metadata.SqlFunction;
 import io.prestosql.spi.session.PropertyMetadata;
@@ -24,6 +27,7 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
@@ -44,6 +48,7 @@ import static io.prestosql.testing.TestingAccessControlManager.TestingPrivilegeT
 import static io.prestosql.testing.TestingAccessControlManager.TestingPrivilegeType.SELECT_COLUMN;
 import static io.prestosql.testing.TestingAccessControlManager.TestingPrivilegeType.SHOW_CREATE_TABLE;
 import static io.prestosql.testing.TestingAccessControlManager.privilege;
+import static io.prestosql.testing.TestingSession.TESTING_CATALOG;
 import static io.prestosql.testing.assertions.Assert.assertEquals;
 import static io.prestosql.tests.QueryTemplate.parameter;
 import static io.prestosql.tests.QueryTemplate.queryTemplate;
@@ -818,6 +823,126 @@ public abstract class AbstractTestQueries
     {
         assertQuery("SELECT ORDERKEY FROM ORDERS");
         assertQuery("SELECT OrDeRkEy FROM OrDeRs");
+    }
+
+    @Test
+    public void testShowSession()
+    {
+        Session session = new Session(
+                getSession().getQueryId(),
+                Optional.empty(),
+                getSession().isClientTransactionSupport(),
+                getSession().getIdentity(),
+                getSession().getSource(),
+                getSession().getCatalog(),
+                getSession().getSchema(),
+                getSession().getPath(),
+                getSession().getTraceToken(),
+                getSession().getTimeZoneKey(),
+                getSession().getLocale(),
+                getSession().getRemoteUserAddress(),
+                getSession().getUserAgent(),
+                getSession().getClientInfo(),
+                getSession().getClientTags(),
+                getSession().getClientCapabilities(),
+                getSession().getResourceEstimates(),
+                getSession().getStartTime(),
+                ImmutableMap.<String, String>builder()
+                        .put("test_string", "foo string")
+                        .put("test_long", "424242")
+                        .build(),
+                ImmutableMap.of(),
+                ImmutableMap.of(TESTING_CATALOG, ImmutableMap.<String, String>builder()
+                        .put("connector_string", "bar string")
+                        .put("connector_long", "11")
+                        .build()),
+                getQueryRunner().getMetadata().getSessionPropertyManager(),
+                getSession().getPreparedStatements(),
+                getSession().getQueryRequestMetadata());
+        MaterializedResult result = computeActual(session, "SHOW SESSION");
+
+        ImmutableMap<String, MaterializedRow> properties = Maps.uniqueIndex(result.getMaterializedRows(), input -> {
+            assertEquals(input.getFieldCount(), 5);
+            return (String) input.getField(0);
+        });
+
+        assertEquals(properties.get("test_string"), new MaterializedRow(1, "test_string", "foo string", "test default", "varchar", "test string property"));
+        assertEquals(properties.get("test_long"), new MaterializedRow(1, "test_long", "424242", "42", "bigint", "test long property"));
+        assertEquals(properties.get(TESTING_CATALOG + ".connector_string"),
+                new MaterializedRow(1, TESTING_CATALOG + ".connector_string", "bar string", "connector default", "varchar", "connector string property"));
+        assertEquals(properties.get(TESTING_CATALOG + ".connector_long"),
+                new MaterializedRow(1, TESTING_CATALOG + ".connector_long", "11", "33", "bigint", "connector long property"));
+    }
+
+    @Test
+    public void testTry()
+    {
+        // divide by zero
+        assertQuery(
+                "SELECT linenumber, sum(TRY(100/(CAST (tax*10 AS BIGINT)))) FROM lineitem GROUP BY linenumber",
+                "SELECT linenumber, sum(100/(CAST (tax*10 AS BIGINT))) FROM lineitem WHERE CAST(tax*10 AS BIGINT) <> 0 GROUP BY linenumber");
+
+        // invalid cast
+        assertQuery(
+                "SELECT TRY(CAST(IF(round(totalprice) % 2 = 0, CAST(totalprice AS VARCHAR), '^&$' || CAST(totalprice AS VARCHAR)) AS DOUBLE)) FROM orders",
+                "SELECT CASE WHEN round(totalprice) % 2 = 0 THEN totalprice ELSE null END FROM orders");
+
+        // invalid function argument
+        assertQuery(
+                "SELECT COUNT(TRY(to_base(100, CAST(round(totalprice/100) AS BIGINT)))) FROM orders",
+                "SELECT SUM(CASE WHEN CAST(round(totalprice/100) AS BIGINT) BETWEEN 2 AND 36 THEN 1 ELSE 0 END) FROM orders");
+
+        // as part of a complex expression
+        assertQuery(
+                "SELECT COUNT(CAST(orderkey AS VARCHAR) || TRY(to_base(100, CAST(round(totalprice/100) AS BIGINT)))) FROM orders",
+                "SELECT SUM(CASE WHEN CAST(round(totalprice/100) AS BIGINT) BETWEEN 2 AND 36 THEN 1 ELSE 0 END) FROM orders");
+
+        // missing function argument
+        assertQueryFails("SELECT TRY()", "line 1:8: The 'try' function must have exactly one argument");
+
+        // check that TRY is not pushed down
+        assertQueryFails("SELECT TRY(x) IS NULL FROM (SELECT 1/y AS x FROM (VALUES 1, 2, 3, 0, 4) t(y))", "Division by zero");
+        assertQuery("SELECT x IS NULL FROM (SELECT TRY(1/y) AS x FROM (VALUES 3, 0, 4) t(y))", "VALUES false, true, false");
+
+        // test try with lambda function
+        assertQuery("SELECT TRY(apply(5, x -> x + 1) / 0)", "SELECT NULL");
+        assertQuery("SELECT TRY(apply(5 + RANDOM(1), x -> x + 1) / 0)", "SELECT NULL");
+        assertQuery("SELECT apply(5 + RANDOM(1), x -> x + TRY(1 / 0))", "SELECT NULL");
+
+        // test try with invalid JSON
+        assertQuery("SELECT JSON_FORMAT(TRY(JSON 'INVALID'))", "SELECT NULL");
+        assertQuery("SELECT JSON_FORMAT(TRY (JSON_PARSE('INVALID')))", "SELECT NULL");
+
+        // tests that might be constant folded
+        assertQuery("SELECT TRY(CAST(NULL AS BIGINT))", "SELECT NULL");
+        assertQuery("SELECT TRY(CAST('123' AS BIGINT))", "SELECT 123L");
+        assertQuery("SELECT TRY(CAST('foo' AS BIGINT))", "SELECT NULL");
+        assertQuery("SELECT TRY(CAST('foo' AS BIGINT)) + TRY(CAST('123' AS BIGINT))", "SELECT NULL");
+        assertQuery("SELECT TRY(CAST(CAST(123 AS VARCHAR) AS BIGINT))", "SELECT 123L");
+        assertQuery("SELECT COALESCE(CAST(CONCAT('123', CAST(123 AS VARCHAR)) AS BIGINT), 0)", "SELECT 123123L");
+        assertQuery("SELECT TRY(CAST(CONCAT('hello', CAST(123 AS VARCHAR)) AS BIGINT))", "SELECT NULL");
+        assertQuery("SELECT COALESCE(TRY(CAST(CONCAT('a', CAST(123 AS VARCHAR)) AS INTEGER)), 0)", "SELECT 0");
+        assertQuery("SELECT COALESCE(TRY(CAST(CONCAT('a', CAST(123 AS VARCHAR)) AS BIGINT)), 0)", "SELECT 0L");
+        assertQuery("SELECT 123 + TRY(ABS(-9223372036854775807 - 1))", "SELECT NULL");
+        assertQuery("SELECT JSON_FORMAT(TRY(JSON '[]')) || '123'", "SELECT '[]123'");
+        assertQuery("SELECT JSON_FORMAT(TRY(JSON 'INVALID')) || '123'", "SELECT NULL");
+        assertQuery("SELECT TRY(2/1)", "SELECT 2");
+        assertQuery("SELECT TRY(2/0)", "SELECT null");
+        assertQuery("SELECT COALESCE(TRY(2/0), 0)", "SELECT 0");
+        assertQuery("SELECT TRY(ABS(-2))", "SELECT 2");
+    }
+
+    @Test
+    public void testTryNoMergeProjections()
+    {
+        // no regexp specified because the JVM optimizes away exception message constructor if run enough times
+        assertQueryFails("SELECT TRY(x) FROM (SELECT 1/y AS x FROM (VALUES 1, 2, 3, 0, 4) t(y))", ".*");
+    }
+
+    @Test
+    public void testNoFrom()
+    {
+        assertQuery("SELECT 1 + 2, 3 + 4");
     }
 
     @Test

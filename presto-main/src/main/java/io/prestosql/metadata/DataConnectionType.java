@@ -18,6 +18,7 @@ import java.util.Map;
 
 public enum DataConnectionType
 {
+    SHANNONDB(0),
     MYSQL(1),
     POSTGRESQL(2);
 
