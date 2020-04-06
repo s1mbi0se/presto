@@ -13,6 +13,7 @@
  */
 package io.prestosql.server;
 
+import io.prestosql.spi.QueryRequestMetadata;
 import io.prestosql.spi.security.Identity;
 import io.prestosql.spi.session.ResourceEstimates;
 import io.prestosql.transaction.TransactionId;
@@ -70,4 +71,6 @@ public interface SessionContext
     Optional<String> getTraceToken();
 
     boolean supportClientTransaction();
+
+    Optional<QueryRequestMetadata> getQueryRequestMetadata();
 }

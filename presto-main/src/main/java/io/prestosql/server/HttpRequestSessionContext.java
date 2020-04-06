@@ -13,6 +13,9 @@
  */
 package io.prestosql.server;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -21,6 +24,7 @@ import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.prestosql.Session.ResourceEstimateBuilder;
 import io.prestosql.dispatcher.DispatcherConfig.HeaderSupport;
+import io.prestosql.spi.QueryRequestMetadata;
 import io.prestosql.spi.security.Identity;
 import io.prestosql.spi.security.SelectedRole;
 import io.prestosql.spi.session.ResourceEstimates;
@@ -61,6 +65,7 @@ import static io.prestosql.client.PrestoHeaders.PRESTO_EXTRA_CREDENTIAL;
 import static io.prestosql.client.PrestoHeaders.PRESTO_LANGUAGE;
 import static io.prestosql.client.PrestoHeaders.PRESTO_PATH;
 import static io.prestosql.client.PrestoHeaders.PRESTO_PREPARED_STATEMENT;
+import static io.prestosql.client.PrestoHeaders.PRESTO_QUERY_REQUEST_METADATA;
 import static io.prestosql.client.PrestoHeaders.PRESTO_RESOURCE_ESTIMATE;
 import static io.prestosql.client.PrestoHeaders.PRESTO_ROLE;
 import static io.prestosql.client.PrestoHeaders.PRESTO_SCHEMA;
@@ -107,6 +112,8 @@ public final class HttpRequestSessionContext
     private final boolean clientTransactionSupport;
     private final String clientInfo;
 
+    private final Optional<QueryRequestMetadata> queryRequestMetadata;
+
     public HttpRequestSessionContext(HeaderSupport forwardedHeaderSupport, HttpServletRequest servletRequest)
             throws WebApplicationException
     {
@@ -133,6 +140,7 @@ public final class HttpRequestSessionContext
         clientTags = parseClientTags(servletRequest);
         clientCapabilities = parseClientCapabilities(servletRequest);
         resourceEstimates = parseResourceEstimate(servletRequest);
+        queryRequestMetadata = parseQueryRequestMetadata(servletRequest);
 
         // parse session properties
         ImmutableMap.Builder<String, String> systemProperties = ImmutableMap.builder();
@@ -316,6 +324,12 @@ public final class HttpRequestSessionContext
         return traceToken;
     }
 
+    @Override
+    public Optional<QueryRequestMetadata> getQueryRequestMetadata()
+    {
+        return queryRequestMetadata;
+    }
+
     private static List<String> splitSessionHeader(Enumeration<String> headers)
     {
         Splitter splitter = Splitter.on(',').trimResults().omitEmptyStrings();
@@ -404,6 +418,29 @@ public final class HttpRequestSessionContext
         });
 
         return builder.build();
+    }
+
+    private Optional<QueryRequestMetadata> parseQueryRequestMetadata(HttpServletRequest servletRequest)
+    {
+        String serializedData = trimEmptyToNull(servletRequest.getHeader(PRESTO_QUERY_REQUEST_METADATA));
+        if (serializedData == null) {
+            return Optional.empty();
+        }
+
+        String serialized = serializedData.replaceAll("^\"|\"$", "").replace("\\\"", "\"");
+
+        ObjectMapper mapper = new ObjectMapper();
+        final JavaType valueType = mapper.getTypeFactory().constructType(QueryRequestMetadata.class);
+
+        QueryRequestMetadata queryRequestMetadata = null;
+        try {
+            queryRequestMetadata = mapper.readValue(serialized, valueType);
+        }
+        catch (JsonProcessingException e) {
+            throw badRequest(format("Unsupported format for query request metadata '%s': %s", serializedData, e));
+        }
+
+        return Optional.ofNullable(queryRequestMetadata);
     }
 
     private static void assertRequest(boolean expression, String format, Object... args)

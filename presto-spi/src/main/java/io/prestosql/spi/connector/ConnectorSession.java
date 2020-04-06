@@ -43,4 +43,6 @@ public interface ConnectorSession
     boolean isLegacyTimestamp();
 
     <T> T getProperty(String name, Class<T> type);
+
+    <T> Optional<T> getQueryRequestMetadata();
 }
