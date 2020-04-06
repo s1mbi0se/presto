@@ -32,8 +32,10 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.prestosql.spi.security.AccessDeniedException.denyAddColumn;
 import static io.prestosql.spi.security.AccessDeniedException.denyCommentTable;
 import static io.prestosql.spi.security.AccessDeniedException.denyCreateSchema;
@@ -45,6 +47,7 @@ import static io.prestosql.spi.security.AccessDeniedException.denyDropColumn;
 import static io.prestosql.spi.security.AccessDeniedException.denyDropSchema;
 import static io.prestosql.spi.security.AccessDeniedException.denyDropTable;
 import static io.prestosql.spi.security.AccessDeniedException.denyDropView;
+import static io.prestosql.spi.security.AccessDeniedException.denyImpersonateUser;
 import static io.prestosql.spi.security.AccessDeniedException.denyInsertTable;
 import static io.prestosql.spi.security.AccessDeniedException.denyRenameColumn;
 import static io.prestosql.spi.security.AccessDeniedException.denyRenameSchema;
@@ -66,6 +69,7 @@ import static io.prestosql.testing.TestingAccessControlManager.TestingPrivilegeT
 import static io.prestosql.testing.TestingAccessControlManager.TestingPrivilegeType.DROP_SCHEMA;
 import static io.prestosql.testing.TestingAccessControlManager.TestingPrivilegeType.DROP_TABLE;
 import static io.prestosql.testing.TestingAccessControlManager.TestingPrivilegeType.DROP_VIEW;
+import static io.prestosql.testing.TestingAccessControlManager.TestingPrivilegeType.IMPERSONATE_USER;
 import static io.prestosql.testing.TestingAccessControlManager.TestingPrivilegeType.INSERT_TABLE;
 import static io.prestosql.testing.TestingAccessControlManager.TestingPrivilegeType.RENAME_COLUMN;
 import static io.prestosql.testing.TestingAccessControlManager.TestingPrivilegeType.RENAME_SCHEMA;
@@ -81,6 +85,7 @@ public class TestingAccessControlManager
         extends AccessControlManager
 {
     private final Set<TestingPrivilege> denyPrivileges = new HashSet<>();
+    private Predicate<String> deniedCatalogs = s -> true;
 
     @Inject
     public TestingAccessControlManager(TransactionManager transactionManager)
@@ -107,9 +112,37 @@ public class TestingAccessControlManager
     public void reset()
     {
         denyPrivileges.clear();
+        deniedCatalogs = s -> true;
+    }
+
+    public void denyCatalogs(Predicate<String> deniedCatalogs)
+    {
+        this.deniedCatalogs = this.deniedCatalogs.and(deniedCatalogs);
     }
 
     @Override
+    public Set<String> filterCatalogs(Identity identity, Set<String> catalogs)
+    {
+        return super.filterCatalogs(
+                identity,
+                catalogs.stream()
+                        .filter(this.deniedCatalogs)
+                        .collect(toImmutableSet()));
+    }
+
+    @Override
+    public void checkCanImpersonateUser(Identity identity, String userName)
+    {
+        if (shouldDenyPrivilege(userName, userName, IMPERSONATE_USER)) {
+            denyImpersonateUser(identity.getUser(), userName);
+        }
+        if (denyPrivileges.isEmpty()) {
+            super.checkCanImpersonateUser(identity, userName);
+        }
+    }
+
+    @Override
+    @Deprecated
     public void checkCanSetUser(Optional<Principal> principal, String userName)
     {
         if (shouldDenyPrivilege(userName, userName, SET_USER)) {
@@ -352,7 +385,7 @@ public class TestingAccessControlManager
 
     public enum TestingPrivilegeType
     {
-        SET_USER,
+        SET_USER, IMPERSONATE_USER,
         CREATE_SCHEMA, DROP_SCHEMA, RENAME_SCHEMA,
         CREATE_TABLE, DROP_TABLE, RENAME_TABLE, COMMENT_TABLE, INSERT_TABLE, DELETE_TABLE, SHOW_COLUMNS,
         ADD_COLUMN, DROP_COLUMN, RENAME_COLUMN, SELECT_COLUMN,
@@ -391,7 +424,7 @@ public class TestingAccessControlManager
             }
             TestingPrivilege that = (TestingPrivilege) o;
             return Objects.equals(entityName, that.entityName) &&
-                    Objects.equals(type, that.type);
+                    type == that.type;
         }
 
         @Override

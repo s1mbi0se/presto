@@ -19,6 +19,7 @@ import io.prestosql.tests.product.launcher.env.DockerContainer;
 import io.prestosql.tests.product.launcher.env.Environment;
 import io.prestosql.tests.product.launcher.env.common.AbstractEnvironmentProvider;
 import io.prestosql.tests.product.launcher.env.common.Standard;
+import io.prestosql.tests.product.launcher.env.common.TestsEnvironment;
 import io.prestosql.tests.product.launcher.testcontainers.SelectedPortWaitStrategy;
 import org.testcontainers.containers.startupcheck.IsRunningStartupCheckStrategy;
 
@@ -30,7 +31,8 @@ import static io.prestosql.tests.product.launcher.env.common.Standard.CONTAINER_
 import static io.prestosql.tests.product.launcher.testcontainers.TestcontainersUtil.exposePort;
 import static java.util.Objects.requireNonNull;
 
-public class SinglenodeCassandra
+@TestsEnvironment
+public final class SinglenodeCassandra
         extends AbstractEnvironmentProvider
 {
     private final DockerFiles dockerFiles;
@@ -48,8 +50,6 @@ public class SinglenodeCassandra
     @Override
     protected void extendEnvironment(Environment.Builder builder)
     {
-        super.extendEnvironment(builder);
-
         builder.addContainer("cassandra", createCassandra());
 
         builder.configureContainer("presto-master", container -> container

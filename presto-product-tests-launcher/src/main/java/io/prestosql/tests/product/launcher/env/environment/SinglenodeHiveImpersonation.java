@@ -19,6 +19,7 @@ import io.prestosql.tests.product.launcher.env.Environment;
 import io.prestosql.tests.product.launcher.env.common.AbstractEnvironmentProvider;
 import io.prestosql.tests.product.launcher.env.common.Hadoop;
 import io.prestosql.tests.product.launcher.env.common.Standard;
+import io.prestosql.tests.product.launcher.env.common.TestsEnvironment;
 
 import javax.inject.Inject;
 
@@ -26,6 +27,7 @@ import static io.prestosql.tests.product.launcher.env.common.Hadoop.CONTAINER_PR
 import static java.util.Objects.requireNonNull;
 import static org.testcontainers.containers.BindMode.READ_ONLY;
 
+@TestsEnvironment
 public final class SinglenodeHiveImpersonation
         extends AbstractEnvironmentProvider
 {
@@ -41,8 +43,6 @@ public final class SinglenodeHiveImpersonation
     @Override
     protected void extendEnvironment(Environment.Builder builder)
     {
-        super.extendEnvironment(builder);
-
         builder.configureContainer("presto-master", container -> container
                 .withFileSystemBind(dockerFiles.getDockerFilesHostPath("conf/environment/singlenode-hive-impersonation/hive.properties"), CONTAINER_PRESTO_HIVE_PROPERTIES, READ_ONLY));
     }

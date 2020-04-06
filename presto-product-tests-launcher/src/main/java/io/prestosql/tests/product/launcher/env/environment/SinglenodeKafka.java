@@ -20,16 +20,19 @@ import io.prestosql.tests.product.launcher.env.DockerContainer;
 import io.prestosql.tests.product.launcher.env.Environment;
 import io.prestosql.tests.product.launcher.env.common.AbstractEnvironmentProvider;
 import io.prestosql.tests.product.launcher.env.common.Standard;
+import io.prestosql.tests.product.launcher.env.common.TestsEnvironment;
 import io.prestosql.tests.product.launcher.testcontainers.SelectedPortWaitStrategy;
 import org.testcontainers.containers.startupcheck.IsRunningStartupCheckStrategy;
 
 import javax.inject.Inject;
 
 import static io.prestosql.tests.product.launcher.env.common.Standard.CONTAINER_PRESTO_ETC;
+import static io.prestosql.tests.product.launcher.testcontainers.TestcontainersUtil.exposePort;
 import static java.util.Objects.requireNonNull;
 import static org.testcontainers.containers.BindMode.READ_ONLY;
 
-public class SinglenodeKafka
+@TestsEnvironment
+public final class SinglenodeKafka
         extends AbstractEnvironmentProvider
 {
     private static final String CONFLUENT_VERSION = "5.2.1";
@@ -46,8 +49,6 @@ public class SinglenodeKafka
     @Override
     protected void extendEnvironment(Environment.Builder builder)
     {
-        super.extendEnvironment(builder);
-
         builder.configureContainer("presto-master", container -> container
                 .withFileSystemBind(
                         dockerFiles.getDockerFilesHostPath("conf/environment/singlenode-kafka/kafka.properties"),
@@ -61,17 +62,21 @@ public class SinglenodeKafka
     @SuppressWarnings("resource")
     private DockerContainer createZookeeper()
     {
-        return new DockerContainer("confluentinc/cp-zookeeper:" + CONFLUENT_VERSION)
+        DockerContainer container = new DockerContainer("confluentinc/cp-zookeeper:" + CONFLUENT_VERSION)
                 .withEnv("ZOOKEEPER_CLIENT_PORT", "2181")
                 .withEnv("ZOOKEEPER_TICK_TIME", "2000")
                 .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
                 .waitingFor(new SelectedPortWaitStrategy(2181));
+
+        exposePort(container, 2181);
+
+        return container;
     }
 
     @SuppressWarnings("resource")
     private DockerContainer createKafka()
     {
-        return new DockerContainer("confluentinc/cp-kafka:" + CONFLUENT_VERSION)
+        DockerContainer container = new DockerContainer("confluentinc/cp-kafka:" + CONFLUENT_VERSION)
                 .withEnv("KAFKA_BROKER_ID", "1")
                 .withEnv("KAFKA_ZOOKEEPER_CONNECT", "zookeeper:2181")
                 .withEnv("KAFKA_ADVERTISED_LISTENERS", "PLAINTEXT://kafka:9092")
@@ -79,5 +84,9 @@ public class SinglenodeKafka
                 .withEnv("KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS", "0")
                 .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
                 .waitingFor(new SelectedPortWaitStrategy(9092));
+
+        exposePort(container, 9092);
+
+        return container;
     }
 }

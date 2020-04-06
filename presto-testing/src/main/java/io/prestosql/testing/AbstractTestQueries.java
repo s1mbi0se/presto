@@ -4192,6 +4192,7 @@ public abstract class AbstractTestQueries
             assertEquals(rows.size(), 10);
 
             for (MaterializedRow row : rows) {
+                @SuppressWarnings("unchecked")
                 List<Integer> actual = (List<Integer>) row.getField(0);
 
                 // check if the result is a correct permutation
@@ -4895,6 +4896,19 @@ public abstract class AbstractTestQueries
         assertQuery(session,
                 "EXECUTE my_query USING 6, 0, 10",
                 "VALUES (3, 6)");
+    }
+
+    @Test
+    public void testExecuteUsingWithFunctionsAsParameters()
+    {
+        String query = "SELECT a + ? FROM (VALUES 1, 2, 3, 4) AS t(a)";
+
+        Session session = Session.builder(getSession())
+                .addPreparedStatement("my_query", query)
+                .build();
+        assertQuery(session,
+                "EXECUTE my_query USING abs(-2) ",
+                "VALUES 3, 4, 5, 6");
     }
 
     @Test
