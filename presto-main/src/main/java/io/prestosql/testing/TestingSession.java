@@ -70,7 +70,7 @@ public final class TestingSession
                 .setLocale(ENGLISH)
                 .setRemoteUserAddress("address")
                 .setUserAgent("agent")
-                .setQueryRequestMetadata(null);
+                .setQueryRequestMetadata(Optional.empty());
     }
 
     public static Catalog createBogusTestingCatalog(String catalogName)
