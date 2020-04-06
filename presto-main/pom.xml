@@ -376,10 +376,6 @@
             <artifactId>jaxrs-testing</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>io.prestosql</groupId>
-            <artifactId>presto-spi</artifactId>
-        </dependency>
     </dependencies>
 
     <build>
