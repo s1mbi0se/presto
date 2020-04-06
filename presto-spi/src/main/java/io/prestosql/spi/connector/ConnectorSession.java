@@ -51,4 +51,6 @@ public interface ConnectorSession
     Instant getStart();
 
     <T> T getProperty(String name, Class<T> type);
+
+    <T> Optional<T> getQueryRequestMetadata();
 }

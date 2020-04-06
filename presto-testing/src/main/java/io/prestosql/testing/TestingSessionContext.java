@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableMap;
 import io.prestosql.Session;
 import io.prestosql.connector.CatalogName;
 import io.prestosql.server.SessionContext;
+import io.prestosql.spi.QueryRequestMetadata;
 import io.prestosql.spi.security.Identity;
 import io.prestosql.spi.session.ResourceEstimates;
 import io.prestosql.transaction.TransactionId;
@@ -160,5 +161,11 @@ public class TestingSessionContext
     public boolean supportClientTransaction()
     {
         return session.isClientTransactionSupport();
+    }
+
+    @Override
+    public Optional<QueryRequestMetadata> getQueryRequestMetadata()
+    {
+        return session.getQueryRequestMetadata();
     }
 }

@@ -13,6 +13,8 @@
  */
 package io.prestosql.client;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
@@ -62,6 +64,7 @@ import static io.prestosql.client.PrestoHeaders.PRESTO_EXTRA_CREDENTIAL;
 import static io.prestosql.client.PrestoHeaders.PRESTO_LANGUAGE;
 import static io.prestosql.client.PrestoHeaders.PRESTO_PATH;
 import static io.prestosql.client.PrestoHeaders.PRESTO_PREPARED_STATEMENT;
+import static io.prestosql.client.PrestoHeaders.PRESTO_QUERY_REQUEST_METADATA;
 import static io.prestosql.client.PrestoHeaders.PRESTO_RESOURCE_ESTIMATE;
 import static io.prestosql.client.PrestoHeaders.PRESTO_SCHEMA;
 import static io.prestosql.client.PrestoHeaders.PRESTO_SESSION;
@@ -206,6 +209,17 @@ class StatementClientV1
         builder.addHeader(PRESTO_TRANSACTION_ID, session.getTransactionId() == null ? "NONE" : session.getTransactionId());
 
         builder.addHeader(PRESTO_CLIENT_CAPABILITIES, clientCapabilities);
+
+        if (session.getQueryRequestMetadata().isPresent()) {
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                String hd = mapper.writeValueAsString(session.getQueryRequestMetadata().orElse(null));
+                builder.addHeader(PRESTO_QUERY_REQUEST_METADATA, hd);
+            }
+            catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+        }
 
         return builder.build();
     }

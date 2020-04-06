@@ -82,7 +82,8 @@ public class TestFinalQueryInfo
                     ImmutableMap.of(),
                     null,
                     new Duration(2, MINUTES),
-                    true);
+                    true,
+                    Optional.empty());
 
             // start query
             StatementClient client = newStatementClient(httpClient, clientSession, sql);

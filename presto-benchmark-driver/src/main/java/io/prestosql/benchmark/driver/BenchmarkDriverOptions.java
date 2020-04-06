@@ -119,7 +119,8 @@ public class BenchmarkDriverOptions
                         .collect(toImmutableMap(ClientExtraCredential::getName, ClientExtraCredential::getValue)),
                 null,
                 clientRequestTimeout,
-                disableCompression);
+                disableCompression,
+                Optional.empty());
     }
 
     private static URI parseServer(String server)

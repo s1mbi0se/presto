@@ -156,6 +156,19 @@
         <module>presto-tpcds</module>
         <module>presto-tpch</module>
         <module>presto-verifier</module>
+        <module>presto-matching</module>
+        <module>presto-memory-context</module>
+        <module>presto-prometheus</module>
+        <module>presto-proxy</module>
+        <module>presto-kudu</module>
+        <module>presto-elasticsearch</module>
+        <module>presto-iceberg</module>
+        <module>presto-google-sheets</module>
+        <module>presto-connectors/presto-shannondb</module>
+        <module>presto-bigquery</module>
+        <module>presto-pinot</module>
+        <module>presto-oracle</module>
+        <module>presto-druid</module>
     </modules>
 
     <repositories>
@@ -233,6 +246,12 @@
             <dependency>
                 <groupId>io.prestosql</groupId>
                 <artifactId>presto-geospatial</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.prestosql.simbiose.presto-shannondb</groupId>
+                <artifactId>ppresto-shannondb</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

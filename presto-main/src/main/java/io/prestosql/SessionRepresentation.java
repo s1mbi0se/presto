@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableMap;
 import io.prestosql.connector.CatalogName;
 import io.prestosql.metadata.SessionPropertyManager;
 import io.prestosql.spi.QueryId;
+import io.prestosql.spi.QueryRequestMetadata;
 import io.prestosql.spi.security.BasicPrincipal;
 import io.prestosql.spi.security.Identity;
 import io.prestosql.spi.security.SelectedRole;
@@ -64,6 +65,7 @@ public final class SessionRepresentation
     private final Map<String, Map<String, String>> unprocessedCatalogProperties;
     private final Map<String, SelectedRole> roles;
     private final Map<String, String> preparedStatements;
+    private final Optional<QueryRequestMetadata> queryRequestMetadata;
 
     @JsonCreator
     public SessionRepresentation(
@@ -91,7 +93,8 @@ public final class SessionRepresentation
             @JsonProperty("catalogProperties") Map<CatalogName, Map<String, String>> catalogProperties,
             @JsonProperty("unprocessedCatalogProperties") Map<String, Map<String, String>> unprocessedCatalogProperties,
             @JsonProperty("roles") Map<String, SelectedRole> roles,
-            @JsonProperty("preparedStatements") Map<String, String> preparedStatements)
+            @JsonProperty("preparedStatements") Map<String, String> preparedStatements,
+            @JsonProperty("queryRequestMetadata") Optional<QueryRequestMetadata> queryRequestMetadata)
     {
         this.queryId = requireNonNull(queryId, "queryId is null");
         this.transactionId = requireNonNull(transactionId, "transactionId is null");
@@ -116,6 +119,7 @@ public final class SessionRepresentation
         this.systemProperties = ImmutableMap.copyOf(systemProperties);
         this.roles = ImmutableMap.copyOf(roles);
         this.preparedStatements = ImmutableMap.copyOf(preparedStatements);
+        this.queryRequestMetadata = requireNonNull(queryRequestMetadata, "queryMetadata is null");
 
         ImmutableMap.Builder<CatalogName, Map<String, String>> catalogPropertiesBuilder = ImmutableMap.builder();
         for (Entry<CatalogName, Map<String, String>> entry : catalogProperties.entrySet()) {
@@ -280,6 +284,12 @@ public final class SessionRepresentation
         return preparedStatements;
     }
 
+    @JsonProperty
+    public Optional<QueryRequestMetadata> getQueryRequestMetadata()
+    {
+        return queryRequestMetadata;
+    }
+
     public Session toSession(SessionPropertyManager sessionPropertyManager)
     {
         return toSession(sessionPropertyManager, emptyMap());
@@ -315,6 +325,7 @@ public final class SessionRepresentation
                 catalogProperties,
                 unprocessedCatalogProperties,
                 sessionPropertyManager,
-                preparedStatements);
+                preparedStatements,
+                queryRequestMetadata);
     }
 }

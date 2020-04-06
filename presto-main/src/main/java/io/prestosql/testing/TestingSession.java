@@ -73,7 +73,8 @@ public final class TestingSession
                 .setLocale(ENGLISH)
                 .setSystemProperty(IGNORE_STATS_CALCULATOR_FAILURES, "false")
                 .setRemoteUserAddress("address")
-                .setUserAgent("agent");
+                .setUserAgent("agent")
+                .setQueryRequestMetadata(Optional.empty());
     }
 
     public static Catalog createBogusTestingCatalog(String catalogName)

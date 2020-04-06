@@ -16,6 +16,7 @@ package io.prestosql.client;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.units.Duration;
+import io.prestosql.spi.QueryRequestMetadata;
 
 import java.net.URI;
 import java.nio.charset.CharsetEncoder;
@@ -52,6 +53,7 @@ public class ClientSession
     private final String transactionId;
     private final Duration clientRequestTimeout;
     private final boolean compressionDisabled;
+    private final Optional<QueryRequestMetadata> queryRequestMetadata;
 
     public static Builder builder(ClientSession clientSession)
     {
@@ -84,7 +86,8 @@ public class ClientSession
             Map<String, String> extraCredentials,
             String transactionId,
             Duration clientRequestTimeout,
-            boolean compressionDisabled)
+            boolean compressionDisabled,
+            Optional<QueryRequestMetadata> queryRequestMetadata)
     {
         this.server = requireNonNull(server, "server is null");
         this.user = user;
@@ -105,6 +108,7 @@ public class ClientSession
         this.extraCredentials = ImmutableMap.copyOf(requireNonNull(extraCredentials, "extraCredentials is null"));
         this.clientRequestTimeout = clientRequestTimeout;
         this.compressionDisabled = compressionDisabled;
+        this.queryRequestMetadata = queryRequestMetadata;
 
         for (String clientTag : clientTags) {
             checkArgument(!clientTag.contains(","), "client tag cannot contain ','");
@@ -238,6 +242,11 @@ public class ClientSession
         return compressionDisabled;
     }
 
+    public Optional<QueryRequestMetadata> getQueryRequestMetadata()
+    {
+        return queryRequestMetadata;
+    }
+
     @Override
     public String toString()
     {
@@ -279,6 +288,7 @@ public class ClientSession
         private String transactionId;
         private Duration clientRequestTimeout;
         private boolean compressionDisabled;
+        private Optional<QueryRequestMetadata> queryRequestMetadata;
 
         private Builder(ClientSession clientSession)
         {
@@ -302,6 +312,7 @@ public class ClientSession
             transactionId = clientSession.getTransactionId();
             clientRequestTimeout = clientSession.getClientRequestTimeout();
             compressionDisabled = clientSession.isCompressionDisabled();
+            queryRequestMetadata = clientSession.getQueryRequestMetadata();
         }
 
         public Builder withCatalog(String catalog)
@@ -361,6 +372,12 @@ public class ClientSession
         public Builder withCompressionDisabled(boolean compressionDisabled)
         {
             this.compressionDisabled = compressionDisabled;
+	    return this;
+        }
+        
+	public Builder withQueryRequestMetadata(Optional<QueryRequestMetadata> queryRequestMetadata)
+        {
+            this.queryRequestMetadata = queryRequestMetadata;
             return this;
         }
 
@@ -385,7 +402,8 @@ public class ClientSession
                     credentials,
                     transactionId,
                     clientRequestTimeout,
-                    compressionDisabled);
+                    compressionDisabled,
+                    queryRequestMetadata);
         }
     }
 }
