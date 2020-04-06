@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableMap;
 import io.prestosql.connector.CatalogName;
 import io.prestosql.metadata.SessionPropertyManager;
 import io.prestosql.spi.PrestoException;
+import io.prestosql.spi.QueryRequestMetadata;
 import io.prestosql.spi.connector.ConnectorSession;
 import io.prestosql.spi.security.ConnectorIdentity;
 import io.prestosql.spi.type.TimeZoneKey;
@@ -130,6 +131,12 @@ public class FullConnectorSession
         }
 
         return sessionPropertyManager.decodeCatalogPropertyValue(catalogName, catalog, propertyName, properties.get(propertyName), type);
+    }
+
+    @Override
+    public Optional<QueryRequestMetadata> getQueryRequestMetadata()
+    {
+        return session.getQueryRequestMetadata();
     }
 
     @Override
