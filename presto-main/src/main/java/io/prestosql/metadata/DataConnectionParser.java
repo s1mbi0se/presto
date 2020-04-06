@@ -25,10 +25,18 @@ public class DataConnectionParser
     {
         ImmutableMap.Builder<String, String> catalog = ImmutableMap.builder();
 
-        String connectionUrl = getJdbcConnectionString(connectorName, dataConnectionsProperties);
-        catalog.put("connection-url", connectionUrl);
-        catalog.put("connection-user", dataConnectionsProperties.get("username"));
-        catalog.put("connection-password", dataConnectionsProperties.get("password"));
+        if (connectorName.equals(DynamicCatalogStoreConfig.SHANNONDB_CONNECTOR_NAME)) {
+            catalog.put(DynamicCatalogStoreConfig.ShannonDbConfigProperties.HOST.getConfigName(),
+                    dataConnectionsProperties.get(DynamicCatalogStoreConfig.ShannonDbConfigProperties.HOST.getConfigName()));
+            catalog.put(DynamicCatalogStoreConfig.ShannonDbConfigProperties.PORT.getConfigName(),
+                    dataConnectionsProperties.get(DynamicCatalogStoreConfig.ShannonDbConfigProperties.PORT.getConfigName()));
+        }
+        else {
+            String connectionUrl = getJdbcConnectionString(connectorName, dataConnectionsProperties);
+            catalog.put("connection-url", connectionUrl);
+            catalog.put("connection-user", dataConnectionsProperties.get("username"));
+            catalog.put("connection-password", dataConnectionsProperties.get("password"));
+        }
 
         return catalog.build();
     }

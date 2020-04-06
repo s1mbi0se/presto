@@ -68,12 +68,17 @@
             <artifactId>okhttp-urlconnection</artifactId>
         </dependency>
 
-        <!-- for testing -->
         <dependency>
             <groupId>io.prestosql</groupId>
             <artifactId>presto-spi</artifactId>
-            <scope>test</scope>
         </dependency>
+
+        <!-- for testing -->
+<!--        <dependency>-->
+<!--            <groupId>io.prestosql</groupId>-->
+<!--            <artifactId>presto-spi</artifactId>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.testng</groupId>
