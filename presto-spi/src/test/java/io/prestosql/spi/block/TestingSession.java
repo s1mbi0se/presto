@@ -83,6 +83,12 @@ public final class TestingSession
         {
             throw new PrestoException(INVALID_SESSION_PROPERTY, "Unknown session property " + name);
         }
+
+        @Override
+        public <T> Optional<T> getQueryRequestMetadata()
+        {
+            return Optional.ofNullable(null);
+        }
     };
 
     private TestingSession() {}

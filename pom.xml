@@ -140,6 +140,7 @@
         <module>presto-elasticsearch</module>
         <module>presto-iceberg</module>
         <module>presto-google-sheets</module>
+        <module>presto-connectors/presto-shannondb</module>
         <module>presto-bigquery</module>
         <module>presto-pinot</module>
         <module>presto-oracle</module>
@@ -213,6 +214,12 @@
             <dependency>
                 <groupId>io.prestosql</groupId>
                 <artifactId>presto-orc</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.prestosql.simbiose.presto-shannondb</groupId>
+                <artifactId>ppresto-shannondb</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
