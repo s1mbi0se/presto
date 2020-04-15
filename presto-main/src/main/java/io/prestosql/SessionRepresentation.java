@@ -19,7 +19,7 @@ import com.google.common.collect.ImmutableMap;
 import io.prestosql.connector.CatalogName;
 import io.prestosql.metadata.SessionPropertyManager;
 import io.prestosql.spi.QueryId;
-import io.prestosql.spi.QueryRequestMetadata;
+import io.prestosql.spi.session.metadata.QueryRequestMetadata;
 import io.prestosql.spi.security.BasicPrincipal;
 import io.prestosql.spi.security.Identity;
 import io.prestosql.spi.security.SelectedRole;

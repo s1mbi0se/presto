@@ -25,7 +25,7 @@ import io.prestosql.security.AccessControl;
 import io.prestosql.security.SecurityContext;
 import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.QueryId;
-import io.prestosql.spi.QueryRequestMetadata;
+import io.prestosql.spi.session.metadata.QueryRequestMetadata;
 import io.prestosql.spi.connector.ConnectorSession;
 import io.prestosql.spi.security.Identity;
 import io.prestosql.spi.security.SelectedRole;

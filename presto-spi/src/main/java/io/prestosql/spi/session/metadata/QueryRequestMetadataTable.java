@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.prestosql.spi;
+package io.prestosql.spi.session.metadata;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -20,9 +20,10 @@ import java.util.List;
 import java.util.Map;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class QueryRequestTableMetadata
+public class QueryRequestMetadataTable
 {
     private String tableName;
+    private String tableType;
     private List<Map<String, String>> columnsMetadata;
 
     @JsonProperty("table_name")
@@ -47,11 +48,11 @@ public class QueryRequestTableMetadata
         this.columnsMetadata = columnsMetadata;
     }
 
-    public QueryRequestTableMetadata()
+    public QueryRequestMetadataTable()
     {
     }
 
-    public QueryRequestTableMetadata(String tableName, List<Map<String, String>> columnsMetadata)
+    public QueryRequestMetadataTable(String tableName, List<Map<String, String>> columnsMetadata)
     {
         this.tableName = tableName;
         this.columnsMetadata = columnsMetadata;
@@ -78,9 +79,9 @@ public class QueryRequestTableMetadata
             return this;
         }
 
-        public QueryRequestTableMetadata build()
+        public QueryRequestMetadataTable build()
         {
-            return new QueryRequestTableMetadata(tableName, columnsMetadata);
+            return new QueryRequestMetadataTable(tableName, columnsMetadata);
         }
     }
 }

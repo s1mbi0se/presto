@@ -17,7 +17,7 @@ import com.google.common.collect.ImmutableMap;
 import io.prestosql.connector.CatalogName;
 import io.prestosql.metadata.SessionPropertyManager;
 import io.prestosql.spi.PrestoException;
-import io.prestosql.spi.QueryRequestMetadata;
+import io.prestosql.spi.session.metadata.QueryRequestMetadata;
 import io.prestosql.spi.connector.ConnectorSession;
 import io.prestosql.spi.security.ConnectorIdentity;
 import io.prestosql.spi.type.TimeZoneKey;

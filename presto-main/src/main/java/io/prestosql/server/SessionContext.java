@@ -13,7 +13,7 @@
  */
 package io.prestosql.server;
 
-import io.prestosql.spi.QueryRequestMetadata;
+import io.prestosql.spi.session.metadata.QueryRequestMetadata;
 import io.prestosql.spi.security.Identity;
 import io.prestosql.spi.session.ResourceEstimates;
 import io.prestosql.transaction.TransactionId;
