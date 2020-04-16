@@ -19,27 +19,28 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TableMetadata
 {
     private final String name;
-    private final String type;
-    private final StorageMetadata storage;
-    private final List<ColumnMetadata> partitions;
+    private final Optional<String> type;
+    private final Optional<StorageMetadata> storage;
+    private final Optional<List<ColumnMetadata>> partitions;
     private final List<ColumnMetadata> dataColumns;
-    private final String comment;
-    private final Map<String, Object> additionalProperties;
+    private final Optional<String> comment;
+    private final Optional<Map<String, Object>> additionalProperties;
 
     @JsonCreator
     public TableMetadata(
             @JsonProperty String name,
-            @JsonProperty String type,
-            @JsonProperty StorageMetadata storage,
-            @JsonProperty List<ColumnMetadata> partitions,
+            @JsonProperty Optional<String> type,
+            @JsonProperty Optional<StorageMetadata> storage,
+            @JsonProperty Optional<List<ColumnMetadata>> partitions,
             @JsonProperty("data_columns") List<ColumnMetadata> dataColumns,
-            @JsonProperty String comment,
-            @JsonProperty("additional_properties") Map<String, Object> additionalProperties)
+            @JsonProperty Optional<String> comment,
+            @JsonProperty("additional_properties") Optional<Map<String, Object>> additionalProperties)
     {
         this.name = name;
         this.type = type;
@@ -57,19 +58,19 @@ public class TableMetadata
     }
 
     @JsonProperty
-    public String getType()
+    public Optional<String> getType()
     {
         return type;
     }
 
     @JsonProperty
-    public StorageMetadata getStorage()
+    public Optional<StorageMetadata> getStorage()
     {
         return storage;
     }
 
     @JsonProperty
-    public List<ColumnMetadata> getPartitions()
+    public Optional<List<ColumnMetadata>> getPartitions()
     {
         return partitions;
     }
@@ -81,13 +82,13 @@ public class TableMetadata
     }
 
     @JsonProperty
-    public String getComment()
+    public Optional<String> getComment()
     {
         return comment;
     }
 
     @JsonProperty("additional_properties")
-    public Map<String, Object> getAdditionalProperties()
+    public Optional<Map<String, Object>> getAdditionalProperties()
     {
         return additionalProperties;
     }
@@ -95,12 +96,12 @@ public class TableMetadata
     public static final class Builder
     {
         private String name;
-        private String type;
-        private StorageMetadata storage;
-        private List<ColumnMetadata> partitions;
+        private Optional<String> type;
+        private Optional<StorageMetadata> storage;
+        private Optional<List<ColumnMetadata>> partitions;
         private List<ColumnMetadata> dataColumns;
-        private String comment;
-        private Map<String, Object> additionalProperties;
+        private Optional<String> comment;
+        private Optional<Map<String, Object>> additionalProperties;
 
         public Builder()
         {
@@ -112,19 +113,19 @@ public class TableMetadata
             return this;
         }
 
-        public Builder withType(String type)
+        public Builder withType(Optional<String> type)
         {
             this.type = type;
             return this;
         }
 
-        public Builder withStorage(StorageMetadata storage)
+        public Builder withStorage(Optional<StorageMetadata> storage)
         {
             this.storage = storage;
             return this;
         }
 
-        public Builder withPartitions(List<ColumnMetadata> partitions)
+        public Builder withPartitions(Optional<List<ColumnMetadata>> partitions)
         {
             this.partitions = partitions;
             return this;
@@ -136,13 +137,13 @@ public class TableMetadata
             return this;
         }
 
-        public Builder withComment(String comment)
+        public Builder withComment(Optional<String> comment)
         {
             this.comment = comment;
             return this;
         }
 
-        public Builder withAdditionalProperties(Map<String, Object> additionalProperties)
+        public Builder withAdditionalProperties(Optional<Map<String, Object>> additionalProperties)
         {
             this.additionalProperties = additionalProperties;
             return this;

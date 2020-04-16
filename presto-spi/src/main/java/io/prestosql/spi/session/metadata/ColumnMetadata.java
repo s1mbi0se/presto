@@ -18,27 +18,28 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
+import java.util.Optional;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ColumnMetadata
 {
     private final String name;
     private final String dataType;
-    private final String columnType;
-    private final String comment;
-    private final String extraInfo;
-    private final boolean hidden;
-    private final Map<String, Object> properties;
+    private final Optional<String> columnType;
+    private final Optional<String> comment;
+    private final Optional<String> extraInfo;
+    private final Optional<Boolean> hidden;
+    private final Optional<Map<String, Object>> properties;
 
     @JsonCreator
     public ColumnMetadata(
             @JsonProperty String name,
             @JsonProperty("data_type") String dataType,
-            @JsonProperty("column_type") String columnType,
-            @JsonProperty String comment,
-            @JsonProperty("extra_info") String extraInfo,
-            @JsonProperty boolean hidden,
-            @JsonProperty("properties") Map<String, Object> properties)
+            @JsonProperty("column_type") Optional<String> columnType,
+            @JsonProperty Optional<String> comment,
+            @JsonProperty("extra_info") Optional<String> extraInfo,
+            @JsonProperty Optional<Boolean> hidden,
+            @JsonProperty("properties") Optional<Map<String, Object>> properties)
     {
         this.name = name;
         this.dataType = dataType;
@@ -62,31 +63,31 @@ public class ColumnMetadata
     }
 
     @JsonProperty("column_type")
-    public String getColumnType()
+    public Optional<String> getColumnType()
     {
         return columnType;
     }
 
     @JsonProperty
-    public String getComment()
+    public Optional<String> getComment()
     {
         return comment;
     }
 
     @JsonProperty("extra_info")
-    public String getExtraInfo()
+    public Optional<String> getExtraInfo()
     {
         return extraInfo;
     }
 
     @JsonProperty
-    public boolean isHidden()
+    public Optional<Boolean> isHidden()
     {
         return hidden;
     }
 
     @JsonProperty
-    public Map<String, Object> getProperties()
+    public Optional<Map<String, Object>> getProperties()
     {
         return properties;
     }

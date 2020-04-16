@@ -17,20 +17,22 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Optional;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StorageMetadata
 {
     private final String format;
     private final String location;
     private final boolean skewed;
-    private final BucketMetadata bucket;
+    private final Optional<BucketMetadata> bucket;
 
     @JsonCreator
     public StorageMetadata(
             @JsonProperty String format,
             @JsonProperty String location,
             @JsonProperty boolean skewed,
-            @JsonProperty BucketMetadata bucket)
+            @JsonProperty Optional<BucketMetadata> bucket)
     {
         this.format = format;
         this.location = location;
@@ -57,7 +59,7 @@ public class StorageMetadata
     }
 
     @JsonProperty
-    public BucketMetadata getBucket()
+    public Optional<BucketMetadata> getBucket()
     {
         return bucket;
     }

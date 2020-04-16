@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
+import java.util.Optional;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BucketMetadata
@@ -25,14 +26,14 @@ public class BucketMetadata
     private final List<String> by;
     private final Integer version;
     private final Integer count;
-    private final List<SortMetadata> sortedBy;
+    private final Optional<List<SortMetadata>> sortedBy;
 
     @JsonCreator
     public BucketMetadata(
             @JsonProperty List<String> by,
             @JsonProperty Integer version,
             @JsonProperty Integer count,
-            @JsonProperty("sorted_by") List<SortMetadata> sortedBy)
+            @JsonProperty("sorted_by") Optional<List<SortMetadata>> sortedBy)
     {
         this.by = by;
         this.version = version;
@@ -59,7 +60,7 @@ public class BucketMetadata
     }
 
     @JsonProperty("sorted_by")
-    public List<SortMetadata> getSortedBy()
+    public Optional<List<SortMetadata>> getSortedBy()
     {
         return sortedBy;
     }
