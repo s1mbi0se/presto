@@ -29,7 +29,8 @@ public class ColumnMetadata
     private final Optional<String> comment;
     private final Optional<String> extraInfo;
     private final Optional<Boolean> hidden;
-    private final Optional<Map<String, Object>> properties;
+    private final Optional<Map<String, String>> properties;
+    private final Optional<StatisticsMetadata> statistics;
 
     @JsonCreator
     public ColumnMetadata(
@@ -39,7 +40,8 @@ public class ColumnMetadata
             @JsonProperty Optional<String> comment,
             @JsonProperty("extra_info") Optional<String> extraInfo,
             @JsonProperty Optional<Boolean> hidden,
-            @JsonProperty("properties") Optional<Map<String, Object>> properties)
+            @JsonProperty Optional<Map<String, String>> properties,
+            @JsonProperty Optional<StatisticsMetadata> statistics)
     {
         this.name = name;
         this.dataType = dataType;
@@ -48,6 +50,7 @@ public class ColumnMetadata
         this.extraInfo = extraInfo;
         this.hidden = hidden;
         this.properties = properties;
+        this.statistics = statistics;
     }
 
     @JsonProperty
@@ -87,8 +90,14 @@ public class ColumnMetadata
     }
 
     @JsonProperty
-    public Optional<Map<String, Object>> getProperties()
+    public Optional<Map<String, String>> getProperties()
     {
         return properties;
+    }
+
+    @JsonProperty
+    public Optional<StatisticsMetadata> getStatistics()
+    {
+        return statistics;
     }
 }

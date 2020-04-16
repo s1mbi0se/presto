@@ -30,7 +30,8 @@ public class TableMetadata
     private final Optional<List<ColumnMetadata>> partitions;
     private final List<ColumnMetadata> dataColumns;
     private final Optional<String> comment;
-    private final Optional<Map<String, Object>> additionalProperties;
+    private final Optional<Map<String, String>> additionalProperties;
+    private final Optional<StatisticsMetadata> statistics;
 
     @JsonCreator
     public TableMetadata(
@@ -40,7 +41,8 @@ public class TableMetadata
             @JsonProperty Optional<List<ColumnMetadata>> partitions,
             @JsonProperty("data_columns") List<ColumnMetadata> dataColumns,
             @JsonProperty Optional<String> comment,
-            @JsonProperty("additional_properties") Optional<Map<String, Object>> additionalProperties)
+            @JsonProperty("additional_properties") Optional<Map<String, String>> additionalProperties,
+            @JsonProperty Optional<StatisticsMetadata> statistics)
     {
         this.name = name;
         this.type = type;
@@ -49,6 +51,7 @@ public class TableMetadata
         this.dataColumns = dataColumns;
         this.comment = comment;
         this.additionalProperties = additionalProperties;
+        this.statistics = statistics;
     }
 
     @JsonProperty
@@ -88,9 +91,15 @@ public class TableMetadata
     }
 
     @JsonProperty("additional_properties")
-    public Optional<Map<String, Object>> getAdditionalProperties()
+    public Optional<Map<String, String>> getAdditionalProperties()
     {
         return additionalProperties;
+    }
+
+    @JsonProperty
+    public Optional<StatisticsMetadata> getStatistics()
+    {
+        return statistics;
     }
 
     public static final class Builder
@@ -101,7 +110,8 @@ public class TableMetadata
         private Optional<List<ColumnMetadata>> partitions;
         private List<ColumnMetadata> dataColumns;
         private Optional<String> comment;
-        private Optional<Map<String, Object>> additionalProperties;
+        private Optional<Map<String, String>> additionalProperties;
+        private Optional<StatisticsMetadata> statistics;
 
         public Builder()
         {
@@ -143,15 +153,21 @@ public class TableMetadata
             return this;
         }
 
-        public Builder withAdditionalProperties(Optional<Map<String, Object>> additionalProperties)
+        public Builder withAdditionalProperties(Optional<Map<String, String>> additionalProperties)
         {
             this.additionalProperties = additionalProperties;
             return this;
         }
 
+        public Builder withStatistics(Optional<StatisticsMetadata> statistics)
+        {
+            this.statistics = statistics;
+            return this;
+        }
+
         public TableMetadata build()
         {
-            return new TableMetadata(name, type, storage, partitions, dataColumns, comment, additionalProperties);
+            return new TableMetadata(name, type, storage, partitions, dataColumns, comment, additionalProperties, statistics);
         }
     }
 }

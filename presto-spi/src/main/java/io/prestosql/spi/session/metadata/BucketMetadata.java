@@ -23,16 +23,16 @@ import java.util.Optional;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BucketMetadata
 {
-    private final List<String> by;
+    private final Optional<List<String>> by;
     private final Integer version;
-    private final Integer count;
+    private final Optional<Integer> count;
     private final Optional<List<SortMetadata>> sortedBy;
 
     @JsonCreator
     public BucketMetadata(
-            @JsonProperty List<String> by,
+            @JsonProperty Optional<List<String>> by,
             @JsonProperty Integer version,
-            @JsonProperty Integer count,
+            @JsonProperty Optional<Integer> count,
             @JsonProperty("sorted_by") Optional<List<SortMetadata>> sortedBy)
     {
         this.by = by;
@@ -42,7 +42,7 @@ public class BucketMetadata
     }
 
     @JsonProperty
-    public List<String> getBy()
+    public Optional<List<String>> getBy()
     {
         return by;
     }
@@ -54,7 +54,7 @@ public class BucketMetadata
     }
 
     @JsonProperty
-    public Integer getCount()
+    public Optional<Integer> getCount()
     {
         return count;
     }

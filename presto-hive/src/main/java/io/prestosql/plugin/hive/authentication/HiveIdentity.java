@@ -15,6 +15,7 @@ package io.prestosql.plugin.hive.authentication;
 
 import io.prestosql.spi.connector.ConnectorSession;
 import io.prestosql.spi.security.ConnectorIdentity;
+import io.prestosql.spi.session.metadata.QueryRequestMetadata;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -28,20 +29,24 @@ public final class HiveIdentity
 
     private final Optional<String> username;
 
+    private final Optional<QueryRequestMetadata> metadata;
+
     private HiveIdentity()
     {
         this.username = Optional.empty();
+        this.metadata = Optional.empty();
     }
 
     public HiveIdentity(ConnectorSession session)
     {
-        this(requireNonNull(session, "session is null").getIdentity());
+        this(requireNonNull(session, "session is null").getIdentity(), requireNonNull(session, "session is null").getQueryRequestMetadata());
     }
 
-    public HiveIdentity(ConnectorIdentity identity)
+    public HiveIdentity(ConnectorIdentity identity, Optional<QueryRequestMetadata> metadata)
     {
         requireNonNull(identity, "identity is null");
         this.username = Optional.of(requireNonNull(identity.getUser(), "identity.getUser() is null"));
+        this.metadata = metadata;
     }
 
     // this should be called only by CachingHiveMetastore
@@ -53,6 +58,11 @@ public final class HiveIdentity
     public Optional<String> getUsername()
     {
         return username;
+    }
+
+    public Optional<QueryRequestMetadata> getMetadata()
+    {
+        return metadata;
     }
 
     @Override
