@@ -25,21 +25,28 @@ import static java.util.Objects.requireNonNull;
 
 public final class HiveIdentity
 {
-    private static final HiveIdentity NONE_IDENTITY = new HiveIdentity();
+//    private static final HiveIdentity NONE_IDENTITY = new HiveIdentity();
 
     private final Optional<String> username;
 
     private final Optional<QueryRequestMetadata> metadata;
 
-    private HiveIdentity()
-    {
-        this.username = Optional.empty();
-        this.metadata = Optional.empty();
-    }
+//    private HiveIdentity()
+//    {
+//        this.username = Optional.empty();
+//        this.metadata = Optional.empty();
+//    }
 
     public HiveIdentity(ConnectorSession session)
     {
         this(requireNonNull(session, "session is null").getIdentity(), requireNonNull(session, "session is null").getQueryRequestMetadata());
+    }
+
+    public HiveIdentity(ConnectorIdentity identity)
+    {
+        requireNonNull(identity, "identity is null");
+        this.username = Optional.of(requireNonNull(identity.getUser(), "identity.getUser() is null"));
+        this.metadata = Optional.empty();
     }
 
     public HiveIdentity(ConnectorIdentity identity, Optional<QueryRequestMetadata> metadata)
@@ -49,10 +56,21 @@ public final class HiveIdentity
         this.metadata = metadata;
     }
 
-    // this should be called only by CachingHiveMetastore
-    public static HiveIdentity none()
+    private HiveIdentity(Optional<QueryRequestMetadata> metadata)
     {
-        return NONE_IDENTITY;
+        this.username = Optional.empty();
+        this.metadata = metadata;
+    }
+
+//    // this should be called only by CachingHiveMetastore
+//    public static HiveIdentity none()
+//    {
+//        return NONE_IDENTITY;
+//    }
+
+    public static HiveIdentity none(Optional<QueryRequestMetadata> metadata)
+    {
+        return new HiveIdentity(metadata);
     }
 
     public Optional<String> getUsername()

@@ -35,5 +35,4 @@ public class StatisticsMetadata
     {
         return statistics;
     }
-
 }

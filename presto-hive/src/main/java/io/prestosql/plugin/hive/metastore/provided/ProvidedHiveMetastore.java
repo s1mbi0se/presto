@@ -57,10 +57,13 @@ import java.util.OptionalDouble;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.prestosql.plugin.hive.HiveErrorCode.HIVE_INVALID_METADATA;
 import static io.prestosql.plugin.hive.HiveErrorCode.HIVE_METASTORE_ERROR;
+import static io.prestosql.spi.StandardErrorCode.NOT_SUPPORTED;
+import static java.util.Locale.ENGLISH;
 import static org.apache.hadoop.hive.metastore.api.hive_metastoreConstants.TABLE_BUCKETING_VERSION;
 
 public class ProvidedHiveMetastore
@@ -94,7 +97,7 @@ public class ProvidedHiveMetastore
         Table.Builder builder = Table.builder()
                 .setDatabaseName(Database.DEFAULT_DATABASE_NAME)
                 .setTableName(table.getName())
-                .setOwner(null)
+                .setOwner(table.getOwner())
                 .setTableType(table.getType().toString())
                 .setDataColumns(table.getDataColumns().stream()
                         .map(dataColumn -> new Column(dataColumn.getName(), HiveType.valueOf(dataColumn.getDataType()), dataColumn.getComment()))
@@ -110,7 +113,7 @@ public class ProvidedHiveMetastore
 
         builder.getStorageBuilder()
                 .setSkewed(storage.isSkewed())
-                .setStorageFormat(StorageFormat.fromHiveStorageFormat(HiveStorageFormat.valueOf(storage.getFormat())))
+                .setStorageFormat(StorageFormat.fromHiveStorageFormat(HiveStorageFormat.valueOf(storage.getFormat().toUpperCase(ENGLISH))))
                 .setLocation(storage.getLocation())
                 .setBucketProperty(storage.getBucket().isPresent() ?
                         fromStorageDescriptor(storage.getBucket().get(), tableName) :
@@ -229,205 +232,217 @@ public class ProvidedHiveMetastore
     @Override
     public Map<String, PartitionStatistics> getPartitionStatistics(HiveIdentity identity, Table table, List<Partition> partitions)
     {
-        return null;
+        return ImmutableMap.of();
     }
 
     @Override
     public void updateTableStatistics(HiveIdentity identity, String databaseName, String tableName, Function<PartitionStatistics, PartitionStatistics> update)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "updateTableStatistics");
     }
 
     @Override
     public void updatePartitionStatistics(HiveIdentity identity, Table table, String partitionName, Function<PartitionStatistics, PartitionStatistics> update)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "updatePartitionStatistics");
     }
 
     @Override
     public List<String> getAllTables(String databaseName)
     {
-        return null;
+        return new ArrayList<>(0);
     }
 
     @Override
     public List<String> getTablesWithParameter(String databaseName, String parameterKey, String parameterValue)
     {
-        return null;
+        return new ArrayList<>(0);
     }
 
     @Override
     public List<String> getAllViews(String databaseName)
     {
-        return null;
+        return new ArrayList<>(0);
     }
 
     @Override
     public void createDatabase(HiveIdentity identity, Database database)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "createDatabase");
     }
 
     @Override
     public void dropDatabase(HiveIdentity identity, String databaseName)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "dropDatabase");
     }
 
     @Override
     public void renameDatabase(HiveIdentity identity, String databaseName, String newDatabaseName)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "renameDatabase");
     }
 
     @Override
     public void setDatabaseOwner(HiveIdentity identity, String databaseName, HivePrincipal principal)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "setDatabaseOwner");
     }
 
     @Override
     public void createTable(HiveIdentity identity, Table table, PrincipalPrivileges principalPrivileges)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "createTable");
     }
 
     @Override
     public void dropTable(HiveIdentity identity, String databaseName, String tableName, boolean deleteData)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "dropTable");
     }
 
     @Override
     public void replaceTable(HiveIdentity identity, String databaseName, String tableName, Table newTable, PrincipalPrivileges principalPrivileges)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "replaceTable");
     }
 
     @Override
     public void renameTable(HiveIdentity identity, String databaseName, String tableName, String newDatabaseName, String newTableName)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "renameTable");
     }
 
     @Override
     public void commentTable(HiveIdentity identity, String databaseName, String tableName, Optional<String> comment)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "commentTable");
     }
 
     @Override
     public void addColumn(HiveIdentity identity, String databaseName, String tableName, String columnName, HiveType columnType, String columnComment)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "addColumn");
     }
 
     @Override
     public void renameColumn(HiveIdentity identity, String databaseName, String tableName, String oldColumnName, String newColumnName)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "renameColumn");
     }
 
     @Override
     public void dropColumn(HiveIdentity identity, String databaseName, String tableName, String columnName)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "dropColumn");
     }
 
     @Override
     public Optional<Partition> getPartition(HiveIdentity identity, Table table, List<String> partitionValues)
     {
-        return Optional.empty();
+        throw new PrestoException(NOT_SUPPORTED, "getPartition");
     }
 
     @Override
     public Optional<List<String>> getPartitionNames(HiveIdentity identity, String databaseName, String tableName)
     {
-        return Optional.empty();
+        throw new PrestoException(NOT_SUPPORTED, "getPartitionNames");
     }
 
     @Override
     public Optional<List<String>> getPartitionNamesByParts(HiveIdentity identity, String databaseName, String tableName, List<String> parts)
     {
-        return Optional.empty();
+        Optional<QueryRequestMetadata> metadata = identity.getMetadata();
+        TableMetadata tableMetadata = metadata.get().getMetadata().stream().filter(f -> f.getName().equals(tableName)).collect(MoreCollectors.onlyElement());
+
+        List<String> partitions = tableMetadata.getPartitions().get().stream()
+                .map(ColumnMetadata::getName).collect(Collectors.toList());
+
+        return Optional.of(partitions);
     }
 
     @Override
     public Map<String, Optional<Partition>> getPartitionsByNames(HiveIdentity identity, Table table, List<String> partitionNames)
     {
-        return null;
+        Optional<QueryRequestMetadata> metadata = identity.getMetadata();
+        TableMetadata tableMetadata = metadata.get().getMetadata().stream().filter(f -> f.getName().equals(table.getTableName())).collect(MoreCollectors.onlyElement());
+
+        List<String> partitions = tableMetadata.getPartitions().get().stream()
+                .map(ColumnMetadata::getName).collect(Collectors.toList());
+
+        return ImmutableMap.of();
     }
 
     @Override
     public void addPartitions(HiveIdentity identity, String databaseName, String tableName, List<PartitionWithStatistics> partitions)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "addPartitions");
     }
 
     @Override
     public void dropPartition(HiveIdentity identity, String databaseName, String tableName, List<String> parts, boolean deleteData)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "dropPartition");
     }
 
     @Override
     public void alterPartition(HiveIdentity identity, String databaseName, String tableName, PartitionWithStatistics partition)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "alterPartition");
     }
 
     @Override
     public void createRole(String role, String grantor)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "createRole");
     }
 
     @Override
     public void dropRole(String role)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "dropRole");
     }
 
     @Override
     public Set<String> listRoles()
     {
-        return null;
+        throw new PrestoException(NOT_SUPPORTED, "listRoles");
     }
 
     @Override
     public void grantRoles(Set<String> roles, Set<HivePrincipal> grantees, boolean adminOption, HivePrincipal grantor)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "grantRoles");
     }
 
     @Override
     public void revokeRoles(Set<String> roles, Set<HivePrincipal> grantees, boolean adminOption, HivePrincipal grantor)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "revokeRoles");
     }
 
     @Override
     public Set<RoleGrant> listRoleGrants(HivePrincipal principal)
     {
-        return null;
+        throw new PrestoException(NOT_SUPPORTED, "listRoleGrants");
     }
 
     @Override
     public void grantTablePrivileges(String databaseName, String tableName, String tableOwner, HivePrincipal grantee, Set<HivePrivilegeInfo> privileges)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "grantTablePrivileges");
     }
 
     @Override
     public void revokeTablePrivileges(String databaseName, String tableName, String tableOwner, HivePrincipal grantee, Set<HivePrivilegeInfo> privileges)
     {
-
+        throw new PrestoException(NOT_SUPPORTED, "revokeTablePrivileges");
     }
 
     @Override
     public Set<HivePrivilegeInfo> listTablePrivileges(String databaseName, String tableName, String tableOwner, Optional<HivePrincipal> principal)
     {
-        return null;
+        throw new PrestoException(NOT_SUPPORTED, "listTablePrivileges");
     }
 
     @Override

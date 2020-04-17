@@ -26,6 +26,7 @@ public class TableMetadata
 {
     private final String name;
     private final Optional<String> type;
+    private final String owner;
     private final Optional<StorageMetadata> storage;
     private final Optional<List<ColumnMetadata>> partitions;
     private final List<ColumnMetadata> dataColumns;
@@ -37,6 +38,7 @@ public class TableMetadata
     public TableMetadata(
             @JsonProperty String name,
             @JsonProperty Optional<String> type,
+            @JsonProperty String owner,
             @JsonProperty Optional<StorageMetadata> storage,
             @JsonProperty Optional<List<ColumnMetadata>> partitions,
             @JsonProperty("data_columns") List<ColumnMetadata> dataColumns,
@@ -46,6 +48,7 @@ public class TableMetadata
     {
         this.name = name;
         this.type = type;
+        this.owner = owner;
         this.storage = storage;
         this.partitions = partitions;
         this.dataColumns = dataColumns;
@@ -64,6 +67,12 @@ public class TableMetadata
     public Optional<String> getType()
     {
         return type;
+    }
+
+    @JsonProperty
+    public String getOwner()
+    {
+        return owner;
     }
 
     @JsonProperty
@@ -106,6 +115,7 @@ public class TableMetadata
     {
         private String name;
         private Optional<String> type;
+        private String owner;
         private Optional<StorageMetadata> storage;
         private Optional<List<ColumnMetadata>> partitions;
         private List<ColumnMetadata> dataColumns;
@@ -126,6 +136,12 @@ public class TableMetadata
         public Builder withType(Optional<String> type)
         {
             this.type = type;
+            return this;
+        }
+
+        public Builder withOwner(String owner)
+        {
+            this.owner = owner;
             return this;
         }
 
@@ -167,7 +183,7 @@ public class TableMetadata
 
         public TableMetadata build()
         {
-            return new TableMetadata(name, type, storage, partitions, dataColumns, comment, additionalProperties, statistics);
+            return new TableMetadata(name, type, owner, storage, partitions, dataColumns, comment, additionalProperties, statistics);
         }
     }
 }

@@ -17,6 +17,10 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import io.prestosql.plugin.hive.metastore.HiveMetastore;
+import io.prestosql.plugin.hive.metastore.cache.CachingHiveMetastoreModule;
+import io.prestosql.plugin.hive.metastore.cache.ForCachingHiveMetastore;
+
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class ProvidedHiveMetastoreModule
         implements Module
@@ -24,6 +28,12 @@ public class ProvidedHiveMetastoreModule
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(HiveMetastore.class).to(ProvidedHiveMetastore.class).in(Scopes.SINGLETON);
+        binder.bind(HiveMetastore.class)
+                .annotatedWith(ForCachingHiveMetastore.class)
+                .to(ProvidedHiveMetastore.class)
+                .in(Scopes.SINGLETON);
+        newExporter(binder).export(HiveMetastore.class)
+                .as(generator -> generator.generatedNameOf(ProvidedHiveMetastore.class));
+        binder.install(new CachingHiveMetastoreModule());
     }
 }
