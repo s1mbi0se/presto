@@ -177,8 +177,10 @@ public class ProvidedHiveMetastore
 
         Map<String, Object> stats = col.getStatistics().get().getStatistics();
 
-        if (HiveType.HIVE_SHORT.equals(HiveType.valueOf(col.getDataType()))
-                || HiveType.HIVE_INT.equals(HiveType.valueOf(col.getDataType()))) {
+        if (HiveType.HIVE_BYTE.equals(HiveType.valueOf(col.getDataType()))
+                || HiveType.HIVE_SHORT.equals(HiveType.valueOf(col.getDataType()))
+                || HiveType.HIVE_INT.equals(HiveType.valueOf(col.getDataType()))
+                || HiveType.HIVE_LONG.equals(HiveType.valueOf(col.getDataType()))) {
             return HiveColumnStatistics.createIntegerColumnStatistics(
                     stats.containsKey(StatisticsProperties.MIN_NUMERIC) ? OptionalLong.of((Long) stats.get(StatisticsProperties.MIN_NUMERIC)) : OptionalLong.empty(),
                     stats.containsKey(StatisticsProperties.MAX_NUMERIC) ? OptionalLong.of((Long) stats.get(StatisticsProperties.MAX_NUMERIC)) : OptionalLong.empty(),
