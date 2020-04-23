@@ -58,6 +58,7 @@ public class DynamicCatalogStore
     private final String dataConnectionEndpoint;
     private final String dataConnectionUrl;
     private final String dataConnectionApiKey;
+    private final String dataConnectionCryptoKey;
     private final Set<String> disabledCatalogs;
     private final AtomicBoolean catalogsLoading = new AtomicBoolean();
     private final HttpClient httpClient;
@@ -71,6 +72,7 @@ public class DynamicCatalogStore
                 config.getDataConnectionsEndpoint(),
                 config.getDataConnectionsUrl(),
                 config.getDataConnectionsApiKey(),
+                config.getCryptoKey(),
                 firstNonNull(config.getDisabledCatalogs(), ImmutableList.of()), scheduler);
     }
 
@@ -79,6 +81,7 @@ public class DynamicCatalogStore
             String dataConnectionEndpoint,
             String dataConnectionUrl,
             String dataConnectionApiKey,
+            String dataConnectionCryptoKey,
             List<String> disabledCatalogs,
             CatalogDeltaRetrieverScheduler scheduler)
     {
@@ -86,6 +89,7 @@ public class DynamicCatalogStore
         this.dataConnectionEndpoint = requireNonNull(dataConnectionEndpoint, "dataConnectionEndpoint is null.");
         this.dataConnectionUrl = requireNonNull(dataConnectionUrl, "dataConnectionUrl is null.");
         this.dataConnectionApiKey = requireNonNull(dataConnectionApiKey, "dataConnectionApiKey is null.");
+        this.dataConnectionCryptoKey = requireNonNull(dataConnectionCryptoKey, "dataConnectionCryptoKey is null");
         this.disabledCatalogs = ImmutableSet.copyOf(disabledCatalogs);
         this.scheduler = scheduler;
         this.httpClient = new JettyHttpClient();
@@ -131,7 +135,7 @@ public class DynamicCatalogStore
         connectorName = connectorName.toLowerCase(ENGLISH);
 
         log.info("-- Loading catalog %s --", dataConnection);
-        Map<String, String> properties = DataConnectionParser.getCatalogProperties(connectorName, dataConnection.getSettings());
+        Map<String, String> properties = DataConnectionParser.getCatalogProperties(connectorName, dataConnection.getSettings(), dataConnection.getCreatedAt(), dataConnectionCryptoKey);
 
         connectorManager.createCatalog(catalogName, connectorName, ImmutableMap.copyOf(properties));
         log.info("-- Added catalog %s using connector %s --", catalogName, connectorName);
