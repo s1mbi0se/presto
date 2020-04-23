@@ -308,6 +308,12 @@
             <artifactId>jjwt</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.macasaet.fernet</groupId>
+            <artifactId>fernet-java8</artifactId>
+            <version>1.4.2</version>
+        </dependency>
+
         <!-- used by tests but also needed transitively -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>

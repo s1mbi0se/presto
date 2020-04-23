@@ -119,10 +119,10 @@
             <artifactId>joda-time</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>io.prestosql</groupId>
-            <artifactId>presto-spi</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.prestosql</groupId>-->
+<!--            <artifactId>presto-spi</artifactId>-->
+<!--        </dependency>-->
 
         <!-- for testing -->
         <dependency>
