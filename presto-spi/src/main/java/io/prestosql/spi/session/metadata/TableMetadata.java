@@ -28,7 +28,7 @@ public class TableMetadata
     private final Optional<String> type;
     private final String owner;
     private final Optional<StorageMetadata> storage;
-    private final Optional<List<ColumnMetadata>> partitions;
+    private final Optional<List<PartitionMetadata>> partitions;
     private final List<ColumnMetadata> dataColumns;
     private final Optional<String> comment;
     private final Optional<Map<String, String>> additionalProperties;
@@ -40,7 +40,7 @@ public class TableMetadata
             @JsonProperty Optional<String> type,
             @JsonProperty String owner,
             @JsonProperty Optional<StorageMetadata> storage,
-            @JsonProperty Optional<List<ColumnMetadata>> partitions,
+            @JsonProperty Optional<List<PartitionMetadata>> partitions,
             @JsonProperty("data_columns") List<ColumnMetadata> dataColumns,
             @JsonProperty Optional<String> comment,
             @JsonProperty("additional_properties") Optional<Map<String, String>> additionalProperties,
@@ -82,7 +82,7 @@ public class TableMetadata
     }
 
     @JsonProperty
-    public Optional<List<ColumnMetadata>> getPartitions()
+    public Optional<List<PartitionMetadata>> getPartitions()
     {
         return partitions;
     }
@@ -117,7 +117,7 @@ public class TableMetadata
         private Optional<String> type;
         private String owner;
         private Optional<StorageMetadata> storage;
-        private Optional<List<ColumnMetadata>> partitions;
+        private Optional<List<PartitionMetadata>> partitions;
         private List<ColumnMetadata> dataColumns;
         private Optional<String> comment;
         private Optional<Map<String, String>> additionalProperties;
@@ -151,7 +151,7 @@ public class TableMetadata
             return this;
         }
 
-        public Builder withPartitions(Optional<List<ColumnMetadata>> partitions)
+        public Builder withPartitions(Optional<List<PartitionMetadata>> partitions)
         {
             this.partitions = partitions;
             return this;

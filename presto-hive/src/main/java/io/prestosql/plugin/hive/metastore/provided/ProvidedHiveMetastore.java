@@ -40,6 +40,7 @@ import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.security.RoleGrant;
 import io.prestosql.spi.session.metadata.BucketMetadata;
 import io.prestosql.spi.session.metadata.ColumnMetadata;
+import io.prestosql.spi.session.metadata.PartitionMetadata;
 import io.prestosql.spi.session.metadata.QueryRequestMetadata;
 import io.prestosql.spi.session.metadata.StatisticsProperties;
 import io.prestosql.spi.session.metadata.StorageMetadata;
@@ -47,11 +48,14 @@ import io.prestosql.spi.session.metadata.TableMetadata;
 import io.prestosql.spi.statistics.ColumnStatisticType;
 import io.prestosql.spi.type.Type;
 import org.apache.hadoop.hive.metastore.api.Order;
+import org.apache.hadoop.hive.serde.serdeConstants;
+import org.apache.hadoop.hive.serde2.OpenCSVSerde;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalLong;
@@ -62,6 +66,21 @@ import java.util.stream.Collectors;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.prestosql.plugin.hive.HiveErrorCode.HIVE_INVALID_METADATA;
 import static io.prestosql.plugin.hive.HiveErrorCode.HIVE_METASTORE_ERROR;
+import static io.prestosql.plugin.hive.HiveMetadata.AVRO_SCHEMA_URL_KEY;
+import static io.prestosql.plugin.hive.HiveMetadata.ORC_BLOOM_FILTER_COLUMNS_KEY;
+import static io.prestosql.plugin.hive.HiveMetadata.ORC_BLOOM_FILTER_FPP_KEY;
+import static io.prestosql.plugin.hive.HiveMetadata.SKIP_FOOTER_COUNT_KEY;
+import static io.prestosql.plugin.hive.HiveMetadata.SKIP_HEADER_COUNT_KEY;
+import static io.prestosql.plugin.hive.HiveTableProperties.AVRO_SCHEMA_URL;
+import static io.prestosql.plugin.hive.HiveTableProperties.CSV_ESCAPE;
+import static io.prestosql.plugin.hive.HiveTableProperties.CSV_QUOTE;
+import static io.prestosql.plugin.hive.HiveTableProperties.CSV_SEPARATOR;
+import static io.prestosql.plugin.hive.HiveTableProperties.ORC_BLOOM_FILTER_COLUMNS;
+import static io.prestosql.plugin.hive.HiveTableProperties.ORC_BLOOM_FILTER_FPP;
+import static io.prestosql.plugin.hive.HiveTableProperties.SKIP_FOOTER_LINE_COUNT;
+import static io.prestosql.plugin.hive.HiveTableProperties.SKIP_HEADER_LINE_COUNT;
+import static io.prestosql.plugin.hive.HiveTableProperties.TEXTFILE_FIELD_SEPARATOR;
+import static io.prestosql.plugin.hive.HiveTableProperties.TEXTFILE_FIELD_SEPARATOR_ESCAPE;
 import static io.prestosql.spi.StandardErrorCode.NOT_SUPPORTED;
 import static java.util.Locale.ENGLISH;
 import static org.apache.hadoop.hive.metastore.api.hive_metastoreConstants.TABLE_BUCKETING_VERSION;
@@ -103,9 +122,11 @@ public class ProvidedHiveMetastore
                         .map(dataColumn -> new Column(dataColumn.getName(), HiveType.valueOf(dataColumn.getDataType()), dataColumn.getComment()))
                         .collect(toImmutableList()))
                 .setPartitionColumns(table.getPartitions().orElse(ImmutableList.of()).stream()
-                        .map(partition -> new Column(partition.getName(), HiveType.valueOf(partition.getDataType()), partition.getComment()))
+                        .map(PartitionMetadata::getColumns)
+                        .flatMap(fm -> fm.stream())
+                        .map(column -> new Column(column.getName(), HiveType.valueOf(column.getDataType()), column.getComment()))
                         .collect(toImmutableList()))
-                .setParameters(table.getAdditionalProperties().orElse(ImmutableMap.of()))
+                .setParameters(toHivePropertiesFormat(table.getAdditionalProperties().orElse(ImmutableMap.of())))
                 .setViewOriginalText(Optional.empty())
                 .setViewExpandedText(Optional.empty());
 
@@ -118,8 +139,55 @@ public class ProvidedHiveMetastore
                 .setBucketProperty(storage.getBucket().isPresent() ?
                         fromStorageDescriptor(storage.getBucket().get(), tableName) :
                         Optional.empty())
-                .setSerdeParameters(ImmutableMap.of());
+                .setSerdeParameters(toHivePropertiesFormat(storage.getSerdeProperties().orElse(ImmutableMap.of())));
         return Optional.ofNullable(builder.build());
+    }
+
+    private Map<String, String> toHivePropertiesFormat(Map<String, String> properties)
+    {
+        if (properties.size() == 0) {
+            return ImmutableMap.of();
+        }
+
+        ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
+        for (Entry<String, String> property : properties.entrySet()) {
+            switch (property.getKey()) {
+                case ORC_BLOOM_FILTER_COLUMNS:
+                    builder.put(ORC_BLOOM_FILTER_COLUMNS_KEY, property.getValue());
+                    break;
+                case ORC_BLOOM_FILTER_FPP:
+                    builder.put(ORC_BLOOM_FILTER_FPP_KEY, property.getValue());
+                    break;
+                case AVRO_SCHEMA_URL:
+                    builder.put(AVRO_SCHEMA_URL_KEY, property.getValue());
+                    break;
+                case TEXTFILE_FIELD_SEPARATOR:
+                    builder.put(serdeConstants.FIELD_DELIM, property.getValue());
+                    break;
+                case TEXTFILE_FIELD_SEPARATOR_ESCAPE:
+                    builder.put(serdeConstants.ESCAPE_CHAR, property.getValue());
+                    break;
+                case SKIP_HEADER_LINE_COUNT:
+                    builder.put(SKIP_HEADER_COUNT_KEY, property.getValue());
+                    break;
+                case SKIP_FOOTER_LINE_COUNT:
+                    builder.put(SKIP_FOOTER_COUNT_KEY, property.getValue());
+                    break;
+                case CSV_SEPARATOR:
+                    builder.put(OpenCSVSerde.SEPARATORCHAR, property.getValue());
+                    break;
+                case CSV_QUOTE:
+                    builder.put(OpenCSVSerde.QUOTECHAR, property.getValue());
+                    break;
+                case CSV_ESCAPE:
+                    builder.put(OpenCSVSerde.ESCAPECHAR, property.getValue());
+                    break;
+                default:
+                    builder.put(property.getKey(), property.getValue());
+            }
+        }
+
+        return builder.build();
     }
 
     public Optional<HiveBucketProperty> fromStorageDescriptor(BucketMetadata bucket, String tablePartitionName)
@@ -356,7 +424,7 @@ public class ProvidedHiveMetastore
         TableMetadata tableMetadata = metadata.get().getMetadata().stream().filter(f -> f.getName().equals(tableName)).collect(MoreCollectors.onlyElement());
 
         List<String> partitions = tableMetadata.getPartitions().get().stream()
-                .map(ColumnMetadata::getName).collect(Collectors.toList());
+                .map(PartitionMetadata::getName).collect(Collectors.toList());
 
         return Optional.of(partitions);
     }
@@ -367,10 +435,38 @@ public class ProvidedHiveMetastore
         Optional<QueryRequestMetadata> metadata = identity.getMetadata();
         TableMetadata tableMetadata = metadata.get().getMetadata().stream().filter(f -> f.getName().equals(table.getTableName())).collect(MoreCollectors.onlyElement());
 
-        List<String> partitions = tableMetadata.getPartitions().get().stream()
-                .map(ColumnMetadata::getName).collect(Collectors.toList());
+        List<PartitionMetadata> partitions = tableMetadata.getPartitions().orElse(ImmutableList.of());
 
-        return ImmutableMap.of();
+        ImmutableMap.Builder<String, Optional<Partition>> builder = ImmutableMap.builder();
+        for (PartitionMetadata partition : partitions) {
+            Partition.Builder partitionBuilder = Partition.builder()
+                    .setColumns(partition.getColumns().stream()
+                            .map(dataColumn -> new Column(dataColumn.getName(), HiveType.valueOf(dataColumn.getDataType()), dataColumn.getComment()))
+                            .collect(toImmutableList()))
+                    .setDatabaseName(table.getDatabaseName())
+                    .setParameters(partition.getColumns().stream()
+                            .map(m -> m.getProperties().get())
+                            .flatMap(f -> f.entrySet().stream())
+                            .distinct()
+                            .collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
+                    .setValues(partition.getValues())
+                    .setTableName(table.getTableName());
+
+            StorageMetadata storage = partition.getStorage().get();
+
+            partitionBuilder.getStorageBuilder()
+                    .setSkewed(storage.isSkewed())
+                    .setStorageFormat(StorageFormat.fromHiveStorageFormat(HiveStorageFormat.valueOf(storage.getFormat().toUpperCase(ENGLISH))))
+                    .setLocation(storage.getLocation())
+                    .setBucketProperty(storage.getBucket().isPresent() ?
+                            fromStorageDescriptor(storage.getBucket().get(), table.getTableName()) :
+                            Optional.empty())
+                    .setSerdeParameters(toHivePropertiesFormat(storage.getSerdeProperties().orElse(ImmutableMap.of())));
+
+            builder.put(partition.getName(), Optional.of(partitionBuilder.build()));
+        }
+
+        return builder.build();
     }
 
     @Override
