@@ -47,8 +47,8 @@ public class DataConnectionParser
     {
         String jdbc = null;
         switch (connectorName) {
-            case "postgres":
-                jdbc = String.format("jdbc:%s://%s:%s", connectorName, dataConnectionsProperties.get("host"), dataConnectionsProperties.get("host-port"),
+            case "postgresql":
+                jdbc = String.format("jdbc:%s://%s:%s/%s", connectorName, dataConnectionsProperties.get("host"), dataConnectionsProperties.get("host-port"),
                         dataConnectionsProperties.get("database-name"));
                 break;
             case "mysql":
