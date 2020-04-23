@@ -18,16 +18,19 @@ import java.util.Map;
 
 public enum DataConnectionType
 {
-    SHANNONDB(0),
-    MYSQL(1),
-    POSTGRESQL(2);
+    SHANNONDB(0, "shannondb"),
+    MYSQL(1, "mysql"),
+    POSTGRESQL(2, "postgresql"),
+    HIVE(11, "hive-hadoop2");
 
     private int value;
+    private String name;
     private static Map map = new HashMap<>();
 
-    private DataConnectionType(int value)
+    private DataConnectionType(int value, String name)
     {
         this.value = value;
+        this.name = name;
     }
 
     static {
@@ -44,5 +47,10 @@ public enum DataConnectionType
     public int getValue()
     {
         return value;
+    }
+
+    public String getName()
+    {
+        return name;
     }
 }
