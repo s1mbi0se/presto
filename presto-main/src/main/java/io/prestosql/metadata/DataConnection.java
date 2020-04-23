@@ -14,11 +14,13 @@
 package io.prestosql.metadata;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.json.JsonCodec;
 
 import java.math.BigInteger;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
 
@@ -37,7 +39,8 @@ public class DataConnection
 //    private final BigInteger organizationId;
 //    private final String createdByType;
 //    private final BigInteger createdByUserId;
-//    private final DateTime createdAt;
+    @JsonFormat(pattern = "MM/dd/yyyy, HH:mm:ss")
+    private final LocalDateTime createdAt;
     private final String status;
     private final Map<String, String> settings;
 
@@ -52,7 +55,7 @@ public class DataConnection
 //            @JsonProperty("organization-id") BigInteger organizationId,
 //            @JsonProperty("created-by-type") String createdByType,
 //            @JsonProperty("created-by-user-id") BigInteger createdByUserId,
-//            @JsonProperty("created-at") DateTime createdAt,
+            @JsonProperty("created-at") LocalDateTime createdAt,
             @JsonProperty("status") String status,
             @JsonProperty("settings") Map<String, String> settings)
     {
@@ -65,7 +68,7 @@ public class DataConnection
 //        this.organizationId = requireNonNull(organizationId, "organizationId is null");
 //        this.createdByType = requireNonNull(createdByType, "createdByType is null");
 //        this.createdByUserId = requireNonNull(createdByUserId, "createdByUserId is null");
-//        this.createdAt = requireNonNull(createdAt, "createdAt is null");
+        this.createdAt = requireNonNull(createdAt, "createdAt is null");
         this.status = requireNonNull(status, "status is null");
         this.settings = ImmutableMap.copyOf(requireNonNull(settings, "properties is null"));
     }
@@ -90,7 +93,7 @@ public class DataConnection
         return typeId;
     }
 
-//    public String getAvailability()
+    //    public String getAvailability()
 //    {
 //        return availability;
 //    }
@@ -115,11 +118,11 @@ public class DataConnection
 //        return createdByUserId;
 //    }
 //
-//    public DateTime getCreatedAt()
-//    {
-//        return createdAt;
-//    }
-//
+    public LocalDateTime getCreatedAt()
+    {
+        return createdAt;
+    }
+
     public String getStatus()
     {
         return status;
