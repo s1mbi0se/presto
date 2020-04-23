@@ -14,14 +14,22 @@
 package io.prestosql.metadata;
 
 import com.google.common.collect.ImmutableMap;
+import com.macasaet.fernet.Key;
+import com.macasaet.fernet.StringValidator;
+import com.macasaet.fernet.Token;
+import com.macasaet.fernet.Validator;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.TemporalAmount;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkState;
 
 public class DataConnectionParser
 {
-    public static Map<String, String> getCatalogProperties(String connectorName, Map<String, String> dataConnectionsProperties)
+    public static Map<String, String> getCatalogProperties(String connectorName, Map<String, String> dataConnectionsProperties, LocalDateTime createdAt, String dataConnectionCryptoKey)
     {
         ImmutableMap.Builder<String, String> catalog = ImmutableMap.builder();
 
@@ -35,10 +43,31 @@ public class DataConnectionParser
             String connectionUrl = getJdbcConnectionString(connectorName, dataConnectionsProperties);
             catalog.put("connection-url", connectionUrl);
             catalog.put("connection-user", dataConnectionsProperties.get("username"));
-            catalog.put("connection-password", dataConnectionsProperties.get("password"));
+            catalog.put("connection-password", dataConnectionCryptoKey == null ?
+                    dataConnectionsProperties.get("password") : decrypt(dataConnectionsProperties.get("password"), createdAt, dataConnectionCryptoKey));
         }
 
         return catalog.build();
+    }
+
+    private static String decrypt(String password, LocalDateTime createdAt, String dataConnectionCryptoKey)
+    {
+        final Key key = new Key(dataConnectionCryptoKey);
+
+        final Token token = Token.fromString(password);
+
+        final Validator<String> validator = new StringValidator()
+        {
+            public TemporalAmount getTimeToLive()
+            {
+                return Duration.between(createdAt,
+                        LocalDateTime.now(ZoneOffset.UTC).plus(Duration.ofSeconds(60L)));
+            }
+        };
+
+        final String payload = token.validateAndDecrypt(key, validator);
+
+        return payload;
     }
 
     private DataConnectionParser() {}
@@ -47,8 +76,8 @@ public class DataConnectionParser
     {
         String jdbc = null;
         switch (connectorName) {
-            case "postgres":
-                jdbc = String.format("jdbc:%s://%s:%s", connectorName, dataConnectionsProperties.get("host"), dataConnectionsProperties.get("host-port"),
+            case "postgresql":
+                jdbc = String.format("jdbc:%s://%s:%s/%s", connectorName, dataConnectionsProperties.get("host"), dataConnectionsProperties.get("host-port"),
                         dataConnectionsProperties.get("database-name"));
                 break;
             case "mysql":

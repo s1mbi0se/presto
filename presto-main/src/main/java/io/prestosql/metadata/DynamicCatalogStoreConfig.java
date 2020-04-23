@@ -23,6 +23,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +44,7 @@ public class DynamicCatalogStoreConfig
     private String dataConnectionsUrl = "localhost";
     private String dataConnectionsApiKey = "apikey";
     private List<String> disabledCatalogs;
+    private String cryptoKey;
 
     public String getDataConnectionsEndpoint()
     {
@@ -68,6 +71,7 @@ public class DynamicCatalogStoreConfig
                 this.dataConnectionsEndpoint = properties.get("data-connections-endpoint");
                 this.dataConnectionsUrl = properties.get("data-connections-url");
                 this.dataConnectionsApiKey = properties.get("data-connections-api-key");
+                this.cryptoKey = properties.get("data-connections-crypto-key");
             }
 
             Map<String, String> shannonDbConfig = this.readConfigFile(SHANNONDB_CONFIG_FILE);
@@ -77,6 +81,7 @@ public class DynamicCatalogStoreConfig
                         BigInteger.ONE,
                         SHANNONDB_CONNECTOR_NAME,
                         0,
+                        LocalDateTime.now(ZoneOffset.UTC),
                         "active",
                         shannonDbConfig);
             }
@@ -96,6 +101,11 @@ public class DynamicCatalogStoreConfig
     {
         this.disabledCatalogs = (catalogs == null) ? null : SPLITTER.splitToList(catalogs);
         return this;
+    }
+
+    public String getCryptoKey()
+    {
+        return cryptoKey;
     }
 
     public DynamicCatalogStoreConfig setDisabledCatalogs(List<String> catalogs)

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -84,7 +85,7 @@ public class TestDynamicCatalogStore
                 "username", "myuser",
                 "password", "mypass");
 
-        Map<String, String> actual = DataConnectionParser.getCatalogProperties("mysql", properties);
+        Map<String, String> actual = DataConnectionParser.getCatalogProperties("mysql", properties, LocalDateTime.now(), null);
 
         Map<String, String> expected = ImmutableMap.of(
                 "connection-url", "jdbc:mysql://0.0.0.0:1234",
@@ -101,6 +102,7 @@ public class TestDynamicCatalogStore
                 BigInteger.ONE,
                 "sample",
                 1,
+                LocalDateTime.now(),
                 "active",
                 ImmutableMap.of());
 
