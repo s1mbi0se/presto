@@ -124,6 +124,7 @@ public class ProvidedHiveMetastore
                 .setPartitionColumns(table.getPartitions().orElse(ImmutableList.of()).stream()
                         .map(PartitionMetadata::getColumns)
                         .flatMap(fm -> fm.stream())
+                        .distinct()
                         .map(column -> new Column(column.getName(), HiveType.valueOf(column.getDataType()), column.getComment()))
                         .collect(toImmutableList()))
                 .setParameters(toHivePropertiesFormat(table.getAdditionalProperties().orElse(ImmutableMap.of())))
@@ -424,7 +425,21 @@ public class ProvidedHiveMetastore
         TableMetadata tableMetadata = metadata.get().getMetadata().stream().filter(f -> f.getName().equals(tableName)).collect(MoreCollectors.onlyElement());
 
         List<String> partitions = tableMetadata.getPartitions().get().stream()
-                .map(PartitionMetadata::getName).collect(Collectors.toList());
+                .filter(partition -> {
+                    List<String> values = partition.getValues();
+                    if (values.size() != parts.size()) {
+                        return false;
+                    }
+                    for (int i = 0; i < values.size(); i++) {
+                        String constraintPart = parts.get(i);
+                        if (!constraintPart.isEmpty() && !values.get(i).equals(constraintPart)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                })
+                .map(PartitionMetadata::getName)
+                .collect(Collectors.toList());
 
         return Optional.of(partitions);
     }
@@ -440,12 +455,12 @@ public class ProvidedHiveMetastore
         ImmutableMap.Builder<String, Optional<Partition>> builder = ImmutableMap.builder();
         for (PartitionMetadata partition : partitions) {
             Partition.Builder partitionBuilder = Partition.builder()
-                    .setColumns(partition.getColumns().stream()
+                    .setColumns(tableMetadata.getDataColumns().stream()
                             .map(dataColumn -> new Column(dataColumn.getName(), HiveType.valueOf(dataColumn.getDataType()), dataColumn.getComment()))
                             .collect(toImmutableList()))
                     .setDatabaseName(table.getDatabaseName())
                     .setParameters(partition.getColumns().stream()
-                            .map(m -> m.getProperties().get())
+                            .map(m -> m.getProperties().orElse(ImmutableMap.of()))
                             .flatMap(f -> f.entrySet().stream())
                             .distinct()
                             .collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
