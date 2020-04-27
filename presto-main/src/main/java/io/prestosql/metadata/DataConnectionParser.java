@@ -39,6 +39,11 @@ public class DataConnectionParser
             catalog.put(DynamicCatalogStoreConfig.ShannonDbConfigProperties.PORT.getConfigName(),
                     dataConnectionsProperties.get(DynamicCatalogStoreConfig.ShannonDbConfigProperties.PORT.getConfigName()));
         }
+        else if (connectorName.equals(DataConnectionType.HIVE.getName())) {
+            String connectionUrl = getMetastoreUri(connectorName, dataConnectionsProperties);
+            catalog.put("hive.metastore", "provided");
+//            catalog.put("hive.metastore.uri", connectionUrl);
+        }
         else {
             String connectionUrl = getJdbcConnectionString(connectorName, dataConnectionsProperties);
             catalog.put("connection-url", connectionUrl);
@@ -68,6 +73,11 @@ public class DataConnectionParser
         final String payload = token.validateAndDecrypt(key, validator);
 
         return payload;
+    }
+
+    private static String getMetastoreUri(String connectorName, Map<String, String> dataConnectionsProperties)
+    {
+        return String.format("thrift://%s:%s", dataConnectionsProperties.get("host"), dataConnectionsProperties.get("host-port"));
     }
 
     private DataConnectionParser() {}

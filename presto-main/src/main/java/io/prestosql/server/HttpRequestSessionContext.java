@@ -13,25 +13,23 @@
  */
 package io.prestosql.server;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.prestosql.Session.ResourceEstimateBuilder;
 import io.prestosql.dispatcher.DispatcherConfig.HeaderSupport;
 import io.prestosql.security.AccessControl;
-import io.prestosql.spi.QueryRequestMetadata;
 import io.prestosql.spi.security.AccessDeniedException;
 import io.prestosql.spi.security.GroupProvider;
 import io.prestosql.spi.security.Identity;
 import io.prestosql.spi.security.SelectedRole;
 import io.prestosql.spi.session.ResourceEstimates;
+import io.prestosql.spi.session.metadata.QueryRequestMetadata;
 import io.prestosql.sql.parser.ParsingException;
 import io.prestosql.sql.parser.ParsingOptions;
 import io.prestosql.sql.parser.SqlParser;
@@ -62,6 +60,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static com.google.common.net.HttpHeaders.X_FORWARDED_FOR;
+import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.prestosql.client.PrestoHeaders.PRESTO_CATALOG;
 import static io.prestosql.client.PrestoHeaders.PRESTO_CLIENT_CAPABILITIES;
 import static io.prestosql.client.PrestoHeaders.PRESTO_CLIENT_INFO;
@@ -120,6 +119,7 @@ public final class HttpRequestSessionContext
     private final boolean clientTransactionSupport;
     private final String clientInfo;
 
+    private final JsonCodec<QueryRequestMetadata> jsonCodecQueryRequestMetadata = jsonCodec(QueryRequestMetadata.class);
     private final Optional<QueryRequestMetadata> queryRequestMetadata;
 
     public HttpRequestSessionContext(HeaderSupport forwardedHeaderSupport, MultivaluedMap<String, String> headers, String remoteAddress, Optional<Identity> authenticatedIdentity, GroupProvider groupProvider)
@@ -480,16 +480,7 @@ public final class HttpRequestSessionContext
 
         String serialized = serializedData.replaceAll("^\"|\"$", "").replace("\\\"", "\"");
 
-        ObjectMapper mapper = new ObjectMapper();
-        final JavaType valueType = mapper.getTypeFactory().constructType(QueryRequestMetadata.class);
-
-        QueryRequestMetadata queryRequestMetadata = null;
-        try {
-            queryRequestMetadata = mapper.readValue(serialized, valueType);
-        }
-        catch (JsonProcessingException e) {
-            throw badRequest(format("Unsupported format for query request metadata '%s': %s", serializedData, e));
-        }
+        QueryRequestMetadata queryRequestMetadata = jsonCodecQueryRequestMetadata.fromJson(serialized);
 
         return Optional.ofNullable(queryRequestMetadata);
     }
