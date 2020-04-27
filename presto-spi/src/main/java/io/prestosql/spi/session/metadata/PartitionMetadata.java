@@ -17,48 +17,52 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
 import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PartitionMetadata
 {
-    private final ColumnMetadata column;
-    private final PartitionInfo info;
+    private final List<ColumnMetadata> columns;
+    private final List<PartitionInfo> infos;
 
     @JsonCreator
     public PartitionMetadata(
-            @JsonProperty ColumnMetadata column,
-            @JsonProperty PartitionInfo info)
+            @JsonProperty List<ColumnMetadata> columns,
+            @JsonProperty List<PartitionInfo> infos)
     {
-        this.column = column;
-        this.info = info;
+        this.columns = columns;
+        this.infos = infos;
     }
 
     @JsonProperty
-    public ColumnMetadata getColumn()
+    public List<ColumnMetadata> getColumns()
     {
-        return column;
+        return columns;
     }
 
     @JsonProperty
-    public PartitionInfo getInfo()
+    public List<PartitionInfo> getInfos()
     {
-        return info;
+        return infos;
     }
 
     @Override
     public boolean equals(Object o)
     {
-        if (this == o) { return true; }
-        if (o == null || getClass() != o.getClass()) { return false; }
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         PartitionMetadata that = (PartitionMetadata) o;
-        return Objects.equals(column, that.column) &&
-                Objects.equals(info, that.info);
+        return Objects.equals(columns, that.columns);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(column, info);
+        return Objects.hash(columns);
     }
 }

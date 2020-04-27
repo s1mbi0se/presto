@@ -40,6 +40,7 @@ import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.security.RoleGrant;
 import io.prestosql.spi.session.metadata.BucketMetadata;
 import io.prestosql.spi.session.metadata.ColumnMetadata;
+import io.prestosql.spi.session.metadata.PartitionInfo;
 import io.prestosql.spi.session.metadata.PartitionMetadata;
 import io.prestosql.spi.session.metadata.QueryRequestMetadata;
 import io.prestosql.spi.session.metadata.StatisticsProperties;
@@ -123,7 +124,7 @@ public class ProvidedHiveMetastore
                         .collect(toImmutableList()))
                 .setPartitionColumns(table.getPartitions().orElse(ImmutableList.of()).stream()
                         .map(PartitionMetadata::getColumns)
-                        .flatMap(fm -> fm.stream())
+                        .flatMap(f -> f.stream())
                         .distinct()
                         .map(column -> new Column(column.getName(), HiveType.valueOf(column.getDataType()), column.getComment()))
                         .collect(toImmutableList()))
@@ -424,24 +425,41 @@ public class ProvidedHiveMetastore
         Optional<QueryRequestMetadata> metadata = identity.getMetadata();
         TableMetadata tableMetadata = metadata.get().getMetadata().stream().filter(f -> f.getName().equals(tableName)).collect(MoreCollectors.onlyElement());
 
-        List<String> partitions = tableMetadata.getPartitions().get().stream()
-                .filter(partition -> {
-                    List<String> values = partition.getValues();
-                    if (values.size() != parts.size()) {
-                        return false;
-                    }
-                    for (int i = 0; i < values.size(); i++) {
-                        String constraintPart = parts.get(i);
-                        if (!constraintPart.isEmpty() && !values.get(i).equals(constraintPart)) {
-                            return false;
-                        }
-                    }
-                    return true;
-                })
-                .map(PartitionMetadata::getName)
+        List<PartitionMetadata> partitions = tableMetadata.getPartitions().get().stream()
+                .filter(partition -> partition.getInfos().stream().map(PartitionInfo::getValues).flatMap(f -> f.stream())
+                        .anyMatch(p -> emptyParts(parts) || parts.contains(p)))
                 .collect(Collectors.toList());
 
-        return Optional.of(partitions);
+        ImmutableList.Builder<String> builder = new ImmutableList.Builder<>();
+        for (PartitionMetadata partitionMetadata : partitions) {
+            int size = partitionMetadata.getColumns().size();
+            List<ColumnMetadata> columns = partitionMetadata.getColumns();
+            List<String> values = new ArrayList<>();
+            for (int i = 0; i < size; i++) {
+                ColumnMetadata column = columns.get(i);
+
+                List<PartitionInfo> infos = partitionMetadata.getInfos().stream().filter(f ->
+                        f.getValues().stream().anyMatch(a -> emptyParts(parts) || parts.contains(a))).collect(Collectors.toList());
+                int infoSize = infos.size();
+                for (int j = 0; j < infoSize; j++) {
+                    PartitionInfo info = infos.get(j);
+                    if (i == 0) {
+                        values.add(String.join("=", column.getName(), info.getValues().get(i)));
+                    }
+                    else {
+                        values.set(j, String.join("/", values.get(j), "=".join(column.getName(), info.getValues().get(i))));
+                    }
+                }
+            }
+            builder.addAll(values);
+        }
+
+        return Optional.of(builder.build());
+    }
+
+    private boolean emptyParts(List<String> parts)
+    {
+        return parts.isEmpty() || (parts.size() == 1 && parts.get(0).isEmpty());
     }
 
     @Override
@@ -454,31 +472,39 @@ public class ProvidedHiveMetastore
 
         ImmutableMap.Builder<String, Optional<Partition>> builder = ImmutableMap.builder();
         for (PartitionMetadata partition : partitions) {
-            Partition.Builder partitionBuilder = Partition.builder()
-                    .setColumns(tableMetadata.getDataColumns().stream()
-                            .map(dataColumn -> new Column(dataColumn.getName(), HiveType.valueOf(dataColumn.getDataType()), dataColumn.getComment()))
-                            .collect(toImmutableList()))
-                    .setDatabaseName(table.getDatabaseName())
-                    .setParameters(partition.getColumns().stream()
-                            .map(m -> m.getProperties().orElse(ImmutableMap.of()))
-                            .flatMap(f -> f.entrySet().stream())
-                            .distinct()
-                            .collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
-                    .setValues(partition.getValues())
-                    .setTableName(table.getTableName());
+            List<PartitionInfo> infos = partition.getInfos().stream().filter(f -> f.getValues().stream().anyMatch(a ->
+                    partitionNames.stream().anyMatch(p -> p.endsWith(a)))).collect(Collectors.toList());
+            for (PartitionInfo info : infos) {
+                Partition.Builder partitionBuilder = Partition.builder()
+                        .setColumns(tableMetadata.getDataColumns().stream()
+                                .map(dataColumn -> new Column(dataColumn.getName(), HiveType.valueOf(dataColumn.getDataType()), dataColumn.getComment()))
+                                .collect(toImmutableList()))
+                        .setDatabaseName(table.getDatabaseName())
+                        .setParameters(partition.getColumns().stream()
+                                .flatMap(f -> f.getProperties().orElse(ImmutableMap.of()).entrySet().stream())
+                                .collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
+                        .setValues(info.getValues())
+                        .setTableName(table.getTableName());
 
-            StorageMetadata storage = partition.getStorage().get();
+                partitionBuilder.getStorageBuilder()
+                        .setSkewed(info.getStorage().isSkewed())
+                        .setStorageFormat(StorageFormat.fromHiveStorageFormat(HiveStorageFormat.valueOf(info.getStorage().getFormat().toUpperCase(ENGLISH))))
+                        .setLocation(info.getStorage().getLocation())
+                        .setBucketProperty(info.getStorage().getBucket().isPresent() ?
+                                fromStorageDescriptor(info.getStorage().getBucket().get(), table.getTableName()) :
+                                Optional.empty())
+                        .setSerdeParameters(toHivePropertiesFormat(info.getStorage().getSerdeProperties().orElse(ImmutableMap.of())));
 
-            partitionBuilder.getStorageBuilder()
-                    .setSkewed(storage.isSkewed())
-                    .setStorageFormat(StorageFormat.fromHiveStorageFormat(HiveStorageFormat.valueOf(storage.getFormat().toUpperCase(ENGLISH))))
-                    .setLocation(storage.getLocation())
-                    .setBucketProperty(storage.getBucket().isPresent() ?
-                            fromStorageDescriptor(storage.getBucket().get(), table.getTableName()) :
-                            Optional.empty())
-                    .setSerdeParameters(toHivePropertiesFormat(storage.getSerdeProperties().orElse(ImmutableMap.of())));
-
-            builder.put(partition.getName(), Optional.of(partitionBuilder.build()));
+                int size = partition.getColumns().size();
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < size; i++) {
+                    if (i > 0) {
+                        sb.append("/");
+                    }
+                    sb.append(String.join("=", partition.getColumns().get(i).getName(), info.getValues().get(i)));
+                }
+                builder.put(sb.toString(), Optional.of(partitionBuilder.build()));
+            }
         }
 
         return builder.build();

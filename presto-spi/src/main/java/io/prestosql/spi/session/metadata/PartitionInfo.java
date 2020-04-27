@@ -17,27 +17,28 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
 import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PartitionInfo
 {
-    private final String value;
+    private final List<String> values;
     private final StorageMetadata storage;
 
     @JsonCreator
     public PartitionInfo(
-            @JsonProperty String value,
+            @JsonProperty List<String> values,
             @JsonProperty StorageMetadata storage)
     {
-        this.value = value;
+        this.values = values;
         this.storage = storage;
     }
 
     @JsonProperty
-    public String getValue()
+    public List<String> getValues()
     {
-        return value;
+        return values;
     }
 
     @JsonProperty
@@ -49,8 +50,12 @@ public class PartitionInfo
     @Override
     public boolean equals(Object o)
     {
-        if (this == o) { return true; }
-        if (o == null || getClass() != o.getClass()) { return false; }
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         PartitionInfo that = (PartitionInfo) o;
         return storage.equals(that.storage);
     }
