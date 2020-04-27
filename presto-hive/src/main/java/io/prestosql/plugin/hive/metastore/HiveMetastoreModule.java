@@ -21,6 +21,7 @@ import io.prestosql.plugin.hive.metastore.cache.CachingHiveMetastoreModule;
 import io.prestosql.plugin.hive.metastore.cache.ForCachingHiveMetastore;
 import io.prestosql.plugin.hive.metastore.file.FileMetastoreModule;
 import io.prestosql.plugin.hive.metastore.glue.GlueMetastoreModule;
+import io.prestosql.plugin.hive.metastore.provided.ProvidedHiveMetastoreModule;
 import io.prestosql.plugin.hive.metastore.thrift.ThriftMetastoreModule;
 
 import java.util.Optional;
@@ -49,6 +50,7 @@ public class HiveMetastoreModule
             bindMetastoreModule("file", new FileMetastoreModule());
             bindMetastoreModule("glue", new GlueMetastoreModule());
             bindMetastoreModule("alluxio", new AlluxioMetastoreModule());
+            bindMetastoreModule("provided", new ProvidedHiveMetastoreModule());
         }
     }
 
