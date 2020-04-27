@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -72,5 +73,20 @@ public class StorageMetadata
     public Optional<Map<String, String>> getSerdeProperties()
     {
         return serdeProperties;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) { return true; }
+        if (o == null || getClass() != o.getClass()) { return false; }
+        StorageMetadata that = (StorageMetadata) o;
+        return Objects.equals(location, that.location);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(location);
     }
 }

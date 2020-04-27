@@ -20,30 +20,30 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class PartitionMetadata
+public class PartitionInfo
 {
-    private final ColumnMetadata column;
-    private final PartitionInfo info;
+    private final String value;
+    private final StorageMetadata storage;
 
     @JsonCreator
-    public PartitionMetadata(
-            @JsonProperty ColumnMetadata column,
-            @JsonProperty PartitionInfo info)
+    public PartitionInfo(
+            @JsonProperty String value,
+            @JsonProperty StorageMetadata storage)
     {
-        this.column = column;
-        this.info = info;
+        this.value = value;
+        this.storage = storage;
     }
 
     @JsonProperty
-    public ColumnMetadata getColumn()
+    public String getValue()
     {
-        return column;
+        return value;
     }
 
     @JsonProperty
-    public PartitionInfo getInfo()
+    public StorageMetadata getStorage()
     {
-        return info;
+        return storage;
     }
 
     @Override
@@ -51,14 +51,13 @@ public class PartitionMetadata
     {
         if (this == o) { return true; }
         if (o == null || getClass() != o.getClass()) { return false; }
-        PartitionMetadata that = (PartitionMetadata) o;
-        return Objects.equals(column, that.column) &&
-                Objects.equals(info, that.info);
+        PartitionInfo that = (PartitionInfo) o;
+        return storage.equals(that.storage);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(column, info);
+        return Objects.hash(storage);
     }
 }
