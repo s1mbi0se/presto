@@ -207,7 +207,7 @@ public class ProvidedHiveMetastore
         if (bucket.getSortedBy().isPresent()) {
             sortedBy = bucket.getSortedBy().orElse(ImmutableList.of()).stream()
                     .map(column -> SortingColumn.fromMetastoreApiOrder(
-                            new Order(column.getColumnName(), SortingColumn.Order.valueOf(column.getOrder()).getHiveOrder()),
+                            new Order(column.getColumnName(), SortingColumn.Order.valueOf(column.getOrder().toUpperCase()).getHiveOrder()),
                             tablePartitionName))
                     .collect(toImmutableList());
         }
