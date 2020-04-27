@@ -11,8 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.prestosql.spi;
+package io.prestosql.spi.session.metadata;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -21,37 +22,29 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public final class QueryRequestMetadata
 {
-    private List<QueryRequestTableMetadata> metadata;
+    private final List<TableMetadata> metadata;
 
     @JsonProperty("metadata")
-    public List<QueryRequestTableMetadata> getMetadata()
+    public List<TableMetadata> getMetadata()
     {
         return this.metadata;
     }
 
-    public void setMetadata(List<QueryRequestTableMetadata> metadata)
-    {
-        this.metadata = metadata;
-    }
-
-    public QueryRequestMetadata()
-    {
-    }
-
-    public QueryRequestMetadata(List<QueryRequestTableMetadata> metadata)
+    @JsonCreator
+    public QueryRequestMetadata(@JsonProperty List<TableMetadata> metadata)
     {
         this.metadata = metadata;
     }
 
     public static final class Builder
     {
-        private List<QueryRequestTableMetadata> metadata;
+        private List<TableMetadata> metadata;
 
         public Builder()
         {
         }
 
-        public Builder withMetadata(List<QueryRequestTableMetadata> metadata)
+        public Builder withMetadata(List<TableMetadata> metadata)
         {
             this.metadata = metadata;
             return this;
