@@ -247,8 +247,8 @@ public class HiveMetadata
     public static final String TABLE_COMMENT = "comment";
     private static final String TRANSACTIONAL = "transactional";
 
-    private static final String ORC_BLOOM_FILTER_COLUMNS_KEY = "orc.bloom.filter.columns";
-    private static final String ORC_BLOOM_FILTER_FPP_KEY = "orc.bloom.filter.fpp";
+    public static final String ORC_BLOOM_FILTER_COLUMNS_KEY = "orc.bloom.filter.columns";
+    public static final String ORC_BLOOM_FILTER_FPP_KEY = "orc.bloom.filter.fpp";
 
     public static final String SKIP_HEADER_COUNT_KEY = "skip.header.line.count";
     public static final String SKIP_FOOTER_COUNT_KEY = "skip.footer.line.count";
