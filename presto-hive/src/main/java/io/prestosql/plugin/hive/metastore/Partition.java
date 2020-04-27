@@ -151,6 +151,11 @@ public class Partition
         return new Builder(partition);
     }
 
+    public static Builder builder(Builder builder)
+    {
+        return new Builder(builder);
+    }
+
     public static class Builder
     {
         private final Storage.Builder storageBuilder;
@@ -173,6 +178,16 @@ public class Partition
             this.values = partition.getValues();
             this.columns = partition.getColumns();
             this.parameters = partition.getParameters();
+        }
+
+        private Builder(Builder builder)
+        {
+            this.storageBuilder = builder.getStorageBuilder();
+            this.databaseName = builder.getDatabaseName();
+            this.tableName = builder.getTableName();
+            this.values = builder.getValues();
+            this.columns = builder.getColumns();
+            this.parameters = builder.getParameters();
         }
 
         public Builder setDatabaseName(String databaseName)
@@ -214,6 +229,31 @@ public class Partition
         {
             this.parameters = parameters;
             return this;
+        }
+
+        public String getDatabaseName()
+        {
+            return databaseName;
+        }
+
+        public String getTableName()
+        {
+            return tableName;
+        }
+
+        public List<String> getValues()
+        {
+            return values;
+        }
+
+        public List<Column> getColumns()
+        {
+            return columns;
+        }
+
+        public Map<String, String> getParameters()
+        {
+            return parameters;
         }
 
         public Partition build()

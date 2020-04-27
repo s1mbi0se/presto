@@ -16,7 +16,7 @@ package io.prestosql.client;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.units.Duration;
-import io.prestosql.spi.QueryRequestMetadata;
+import io.prestosql.spi.session.metadata.QueryRequestMetadata;
 
 import java.net.URI;
 import java.nio.charset.CharsetEncoder;
