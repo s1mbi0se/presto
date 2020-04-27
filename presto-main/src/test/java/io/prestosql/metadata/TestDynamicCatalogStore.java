@@ -14,11 +14,8 @@
 package io.prestosql.metadata;
 
 import com.google.common.collect.ImmutableMap;
-import io.airlift.json.JsonCodec;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -26,55 +23,10 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static io.airlift.json.JsonCodec.jsonCodec;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDynamicCatalogStore
 {
-    private final JsonCodec<DataConnectionResponse> jsonCodec = jsonCodec(DataConnectionResponse.class);
-//    private final DynamicCatalogStore store;
-//
-//    public TestDynamicCatalogStore(DynamicCatalogStore store)
-//    {
-//        this.store = store;
-//    }
-
-    @BeforeMethod
-    public void setup()
-    {
-    }
-
-    @Test
-    public void shouldRetrieveDataConnectionResponse()
-            throws IOException
-    {
-//        List<DataConnection> expected = jsonCodec.fromJson(Resources.toString(Resources.getResource("data_connection_list.json"), UTF_8)).getContent();
-//
-//        DataConnectionResponse response = client.execute(
-//                prepareGet().setUri(uriFor("/v1/data_connections/all"))
-//                        .setHeader("authorization", "")
-//                        .build(),
-//                createJsonResponseHandler(jsonCodec));
-//
-//        Assertions.assertEqualsIgnoreOrder(expected.getContent(), response.getContent());
-    }
-
-    @Test
-    public void shouldPopulateCatalogsFromDataConnections()
-    {
-    }
-
-    @Test
-    public void shouldLoadNewCatalog()
-            throws Exception
-    {
-    }
-
-    @Test
-    public void shouldDecommissionCatalog()
-    {
-    }
-
     @Test
     public void shouldGetCatalogPropertiesFromDataConnectionSettings()
     {
@@ -98,19 +50,25 @@ public class TestDynamicCatalogStore
     @Test
     public void shouldGetDataConnectionTypeString()
     {
-        DataConnection dataConnection = new DataConnection(
-                BigInteger.ONE,
-                "sample",
-                1,
-                LocalDateTime.now(),
-                "active",
-                ImmutableMap.of());
+        DataConnection mysql = new DataConnection(BigInteger.ONE, "sample", 1, LocalDateTime.now(), "active", ImmutableMap.of());
+        DataConnection postgres = new DataConnection(BigInteger.ONE, "sample", 2, LocalDateTime.now(), "active", ImmutableMap.of());
+        DataConnection shannondb = new DataConnection(BigInteger.ONE, "sample", 0, LocalDateTime.now(), "active", ImmutableMap.of());
+        DataConnection hive = new DataConnection(BigInteger.ONE, "sample", 11, LocalDateTime.now(), "active", ImmutableMap.of());
 
-        String connectorName = DataConnectionType.valueOf(dataConnection.getTypeId()).toString();
+        String connectorName_mysql = DataConnectionType.valueOf(mysql.getTypeId()).toString();
+        String connectorName_postgres = DataConnectionType.valueOf(postgres.getTypeId()).toString();
+        String connectorName_shannondb = DataConnectionType.valueOf(shannondb.getTypeId()).toString();
+        String connectorName_hive = DataConnectionType.valueOf(hive.getTypeId()).toString();
 
-        String expected = "MYSQL";
+        String expected_mysql = "MYSQL";
+        String expected_postgres = "POSTGRESQL";
+        String expected_shannondb = "SHANNONDB";
+        String expected_hive = "HIVE";
 
-        assertThat(connectorName).isEqualTo(expected);
+        assertThat(connectorName_mysql).isEqualTo(expected_mysql);
+        assertThat(connectorName_postgres).isEqualTo(expected_postgres);
+        assertThat(connectorName_shannondb).isEqualTo(expected_shannondb);
+        assertThat(connectorName_hive).isEqualTo(expected_hive);
     }
 
     @Test
