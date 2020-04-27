@@ -130,9 +130,8 @@ public class DynamicCatalogStore
             return;
         }
 
-        String connectorName = DataConnectionType.valueOf(dataConnection.getTypeId()).toString();
+        String connectorName = DataConnectionType.valueOf(dataConnection.getTypeId()).getName();
         checkState(connectorName != null, "Catalog configuration %s does not contain connector.name", dataConnection.getName());
-        connectorName = connectorName.toLowerCase(ENGLISH);
 
         log.info("-- Loading catalog %s --", dataConnection);
         Map<String, String> properties = DataConnectionParser.getCatalogProperties(connectorName, dataConnection.getSettings(), dataConnection.getCreatedAt(), dataConnectionCryptoKey);
