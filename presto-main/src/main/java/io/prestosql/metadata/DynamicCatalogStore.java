@@ -13,9 +13,12 @@
  */
 package io.prestosql.metadata;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import io.airlift.discovery.client.Announcer;
+import io.airlift.discovery.client.ServiceAnnouncement;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.json.JsonCodec;
@@ -36,9 +39,12 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.json.JsonCodec.jsonCodec;
@@ -63,17 +69,21 @@ public class DynamicCatalogStore
     private final AtomicBoolean catalogsLoading = new AtomicBoolean();
     private final HttpClient httpClient;
     private final JsonCodec<DataConnectionResponse> jsonCodec = jsonCodec(DataConnectionResponse.class);
+    private final Announcer announcer;
+    private final CatalogManager catalogManager;
 
     @Inject
     public DynamicCatalogStore(ConnectorManager connectorManager, DynamicCatalogStoreConfig config,
-            CatalogDeltaRetrieverScheduler scheduler)
+            CatalogDeltaRetrieverScheduler scheduler,
+            Announcer announcer,
+            CatalogManager catalogManager)
     {
         this(connectorManager,
                 config.getDataConnectionsEndpoint(),
                 config.getDataConnectionsUrl(),
                 config.getDataConnectionsApiKey(),
                 config.getCryptoKey(),
-                firstNonNull(config.getDisabledCatalogs(), ImmutableList.of()), scheduler);
+                firstNonNull(config.getDisabledCatalogs(), ImmutableList.of()), scheduler, announcer, catalogManager);
     }
 
     public DynamicCatalogStore(
@@ -83,7 +93,9 @@ public class DynamicCatalogStore
             String dataConnectionApiKey,
             String dataConnectionCryptoKey,
             List<String> disabledCatalogs,
-            CatalogDeltaRetrieverScheduler scheduler)
+            CatalogDeltaRetrieverScheduler scheduler,
+            Announcer announcer,
+            CatalogManager catalogManager)
     {
         this.connectorManager = connectorManager;
         this.dataConnectionEndpoint = requireNonNull(dataConnectionEndpoint, "dataConnectionEndpoint is null.");
@@ -93,6 +105,8 @@ public class DynamicCatalogStore
         this.dataConnectionUrls = new DynamicCatalogStoreRoundRobin(requireNonNull(dataConnectionUrl, "dataConnectionUrl is null."));
         this.scheduler = scheduler;
         this.httpClient = new JettyHttpClient();
+        this.announcer = announcer;
+        this.catalogManager = catalogManager;
     }
 
     public void loadCatalogs()
@@ -162,6 +176,42 @@ public class DynamicCatalogStore
                 }
             }
         }
+        updateConnectorIds(announcer, catalogManager);
+    }
+
+    private static void updateConnectorIds(Announcer announcer, CatalogManager metadata)
+    {
+        // get existing announcement
+        ServiceAnnouncement announcement = getPrestoAnnouncement(announcer.getServiceAnnouncements());
+
+        // automatically build connectorIds if not configured
+        Set<String> connectorIds = metadata.getCatalogs().stream()
+                .map(Catalog::getConnectorCatalogName)
+                .map(Object::toString)
+                .collect(toImmutableSet());
+
+        if (!announcement.getProperties().containsKey("connectorIds")
+                || !Joiner.on(',').join(connectorIds).equals(announcement.getProperties().get("connectorIds"))) {
+            // build announcement with updated sources
+            ServiceAnnouncement.ServiceAnnouncementBuilder builder = serviceAnnouncement(announcement.getType());
+            builder.addProperties(announcement.getProperties().entrySet().stream().filter(p ->
+                    !p.getKey().equals("connectorIds")).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+            builder.addProperty("connectorIds", Joiner.on(',').join(connectorIds));
+
+            // update announcement
+            announcer.removeServiceAnnouncement(announcement.getId());
+            announcer.addServiceAnnouncement(builder.build());
+        }
+    }
+
+    private static ServiceAnnouncement getPrestoAnnouncement(Set<ServiceAnnouncement> announcements)
+    {
+        for (ServiceAnnouncement announcement : announcements) {
+            if (announcement.getType().equals("presto")) {
+                return announcement;
+            }
+        }
+        throw new IllegalArgumentException("Presto announcement not found: " + announcements);
     }
 
     private List<DataConnection> listAllDataConnections()
