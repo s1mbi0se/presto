@@ -56,7 +56,7 @@ public class DynamicCatalogStore
     private final ConnectorManager connectorManager;
     private final CatalogDeltaRetrieverScheduler scheduler;
     private final String dataConnectionEndpoint;
-    private final String dataConnectionUrl;
+    private final DynamicCatalogStoreRoundRobin dataConnectionUrls;
     private final String dataConnectionApiKey;
     private final String dataConnectionCryptoKey;
     private final Set<String> disabledCatalogs;
@@ -87,10 +87,10 @@ public class DynamicCatalogStore
     {
         this.connectorManager = connectorManager;
         this.dataConnectionEndpoint = requireNonNull(dataConnectionEndpoint, "dataConnectionEndpoint is null.");
-        this.dataConnectionUrl = requireNonNull(dataConnectionUrl, "dataConnectionUrl is null.");
         this.dataConnectionApiKey = requireNonNull(dataConnectionApiKey, "dataConnectionApiKey is null.");
         this.dataConnectionCryptoKey = requireNonNull(dataConnectionCryptoKey, "dataConnectionCryptoKey is null");
         this.disabledCatalogs = ImmutableSet.copyOf(disabledCatalogs);
+        this.dataConnectionUrls = new DynamicCatalogStoreRoundRobin(requireNonNull(dataConnectionUrl, "dataConnectionUrl is null."));
         this.scheduler = scheduler;
         this.httpClient = new JettyHttpClient();
     }
@@ -196,7 +196,7 @@ public class DynamicCatalogStore
     private List<DataConnection> getDataConnections(String dataConnectionEndpoint, String queryParameters)
     {
         DataConnectionResponse response = httpClient.execute(
-                prepareGet().setUri(uriFor(dataConnectionUrl, dataConnectionEndpoint + queryParameters))
+                prepareGet().setUri(uriFor(dataConnectionUrls.getServer(), dataConnectionEndpoint + queryParameters))
                         .setHeader(AUTHORIZATION, dataConnectionApiKey)
                         .build(),
                 createJsonResponseHandler(jsonCodec));
