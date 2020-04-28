@@ -55,20 +55,20 @@ public class TestDynamicCatalogStore
         DataConnection shannondb = new DataConnection(BigInteger.ONE, "sample", 0, LocalDateTime.now(), "active", ImmutableMap.of());
         DataConnection hive = new DataConnection(BigInteger.ONE, "sample", 11, LocalDateTime.now(), "active", ImmutableMap.of());
 
-        String connectorName_mysql = DataConnectionType.valueOf(mysql.getTypeId()).toString();
-        String connectorName_postgres = DataConnectionType.valueOf(postgres.getTypeId()).toString();
-        String connectorName_shannondb = DataConnectionType.valueOf(shannondb.getTypeId()).toString();
-        String connectorName_hive = DataConnectionType.valueOf(hive.getTypeId()).toString();
+        String connectorNameMysql = DataConnectionType.valueOf(mysql.getTypeId()).toString();
+        String connectorNamePostgres = DataConnectionType.valueOf(postgres.getTypeId()).toString();
+        String connectorNameShannondb = DataConnectionType.valueOf(shannondb.getTypeId()).toString();
+        String connectorNameHive = DataConnectionType.valueOf(hive.getTypeId()).toString();
 
-        String expected_mysql = "MYSQL";
-        String expected_postgres = "POSTGRESQL";
-        String expected_shannondb = "SHANNONDB";
-        String expected_hive = "HIVE";
+        String expectedMysql = "MYSQL";
+        String expectedPostgres = "POSTGRESQL";
+        String expectedShannondb = "SHANNONDB";
+        String expectedHive = "HIVE";
 
-        assertThat(connectorName_mysql).isEqualTo(expected_mysql);
-        assertThat(connectorName_postgres).isEqualTo(expected_postgres);
-        assertThat(connectorName_shannondb).isEqualTo(expected_shannondb);
-        assertThat(connectorName_hive).isEqualTo(expected_hive);
+        assertThat(connectorNameMysql).isEqualTo(expectedMysql);
+        assertThat(connectorNamePostgres).isEqualTo(expectedPostgres);
+        assertThat(connectorNameShannondb).isEqualTo(expectedShannondb);
+        assertThat(connectorNameHive).isEqualTo(expectedHive);
     }
 
     @Test
