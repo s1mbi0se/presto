@@ -148,7 +148,8 @@ public class DynamicCatalogStore
         checkState(connectorName != null, "Catalog configuration %s does not contain connector.name", dataConnection.getName());
 
         log.info("-- Loading catalog %s --", dataConnection);
-        Map<String, String> properties = DataConnectionParser.getCatalogProperties(connectorName, dataConnection.getSettings(), dataConnection.getCreatedAt(), dataConnectionCryptoKey);
+        Map<String, String> properties = DataConnectionParser.getCatalogProperties(connectorName, dataConnection.getSettings(), dataConnection.getCreatedAt(),
+                dataConnection.getTypeId(), dataConnectionCryptoKey);
 
         connectorManager.createCatalog(catalogName, connectorName, ImmutableMap.copyOf(properties));
         log.info("-- Added catalog %s using connector %s --", catalogName, connectorName);
