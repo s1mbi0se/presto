@@ -18,6 +18,7 @@ import com.macasaet.fernet.Key;
 import com.macasaet.fernet.StringValidator;
 import com.macasaet.fernet.Token;
 import com.macasaet.fernet.Validator;
+import io.prestosql.spi.PrestoException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -29,27 +30,40 @@ import static com.google.common.base.Preconditions.checkState;
 
 public class DataConnectionParser
 {
-    public static Map<String, String> getCatalogProperties(String connectorName, Map<String, String> dataConnectionsProperties, LocalDateTime createdAt, String dataConnectionCryptoKey)
+    public static Map<String, String> getCatalogProperties(String connectorName, Map<String, String> dataConnectionsProperties, LocalDateTime createdAt, Integer typeId,
+            String dataConnectionCryptoKey)
     {
         ImmutableMap.Builder<String, String> catalog = ImmutableMap.builder();
 
-        if (connectorName.equals(DynamicCatalogStoreConfig.SHANNONDB_CONNECTOR_NAME)) {
-            catalog.put(DynamicCatalogStoreConfig.ShannonDbConfigProperties.HOST.getConfigName(),
-                    dataConnectionsProperties.get(DynamicCatalogStoreConfig.ShannonDbConfigProperties.HOST.getConfigName()));
-            catalog.put(DynamicCatalogStoreConfig.ShannonDbConfigProperties.PORT.getConfigName(),
-                    dataConnectionsProperties.get(DynamicCatalogStoreConfig.ShannonDbConfigProperties.PORT.getConfigName()));
-        }
-        else if (connectorName.equals(DataConnectionType.HIVE.getName())) {
-            String connectionUrl = getMetastoreUri(connectorName, dataConnectionsProperties);
-            catalog.put("hive.metastore", "provided");
-//            catalog.put("hive.metastore.uri", connectionUrl);
-        }
-        else {
-            String connectionUrl = getJdbcConnectionString(connectorName, dataConnectionsProperties);
-            catalog.put("connection-url", connectionUrl);
-            catalog.put("connection-user", dataConnectionsProperties.get("username"));
-            catalog.put("connection-password", dataConnectionCryptoKey == null ?
-                    dataConnectionsProperties.get("password") : decrypt(dataConnectionsProperties.get("password"), createdAt, dataConnectionCryptoKey));
+        switch (DataConnectionType.valueOf(typeId)) {
+            case SHANNONDB:
+                catalog.put(DynamicCatalogStoreConfig.ShannonDbConfigProperties.HOST.getConfigName(),
+                        dataConnectionsProperties.get(DynamicCatalogStoreConfig.ShannonDbConfigProperties.HOST.getConfigName()));
+                catalog.put(DynamicCatalogStoreConfig.ShannonDbConfigProperties.PORT.getConfigName(),
+                        dataConnectionsProperties.get(DynamicCatalogStoreConfig.ShannonDbConfigProperties.PORT.getConfigName()));
+                break;
+            case HIVE:
+                catalog.put("hive.metastore.uri", getMetastoreUri(connectorName, dataConnectionsProperties));
+                break;
+            case S3:
+            case WASABI:
+            case B2:
+                catalog.put("hive.metastore", "provided");
+                break;
+            case MYSQL:
+            case MARIADB:
+            case SQLSERVER:
+            case ORACLE:
+            case REDSHIFT:
+            case IBM_DB2:
+            case POSTGRESQL:
+                catalog.put("connection-url", getJdbcConnectionString(connectorName, dataConnectionsProperties));
+                catalog.put("connection-user", dataConnectionsProperties.get("username"));
+                catalog.put("connection-password", dataConnectionCryptoKey == null ?
+                        dataConnectionsProperties.get("password") : decrypt(dataConnectionsProperties.get("password"), createdAt, dataConnectionCryptoKey));
+                break;
+            default:
+                throw new PrestoException(null, "Data source not supported.");
         }
 
         return catalog.build();
