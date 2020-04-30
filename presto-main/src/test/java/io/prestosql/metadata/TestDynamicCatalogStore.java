@@ -37,7 +37,8 @@ public class TestDynamicCatalogStore
                 "username", "myuser",
                 "password", "mypass");
 
-        Map<String, String> actual = DataConnectionParser.getCatalogProperties("mysql", properties, LocalDateTime.now(), null);
+        Map<String, String> actual = DataConnectionParser.getCatalogProperties("mysql", properties, LocalDateTime.now(),
+                DataConnectionType.MYSQL.getValue(), null);
 
         Map<String, String> expected = ImmutableMap.of(
                 "connection-url", "jdbc:mysql://0.0.0.0:1234",
