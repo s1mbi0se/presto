@@ -21,7 +21,25 @@ public enum DataConnectionType
     SHANNONDB(0, "shannondb"),
     MYSQL(1, "mysql"),
     POSTGRESQL(2, "postgresql"),
-    HIVE(11, "hive-hadoop2");
+    MONGODB(3, "mongosb"),
+    ORACLE(4, "oracle"),
+    SQLSERVER(5, "sqlserver"),
+    REDSHIFT(6, "redshift"),
+    SAP(7, "sap"),
+    SNOWFLAKE(8, "snow"),
+    TERADATA(9, "teradata"),
+    IBM_DB2(10, "db2"),
+    HIVE(11, "hive-hadoop2"),
+    MARIADB(12, "mysql"),
+    COCKROACHDB(13, "cockroachdb"),
+    BIGQUERY(14, "bigquery"),
+    ELASTICSEARCH(15, "elasticsearch"),
+    SPARKSQL(16, "spark"),
+    MEMSQL(17, "memsql"),
+    CSV(18, "csv"),
+    S3(19, "hive-hadoop2"),
+    WASABI(20, "hive-hadoop2"),
+    B2(21, "hive-hadoop2");
 
     private int value;
     private String name;
