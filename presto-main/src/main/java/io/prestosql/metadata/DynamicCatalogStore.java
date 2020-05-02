@@ -24,6 +24,7 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 import io.prestosql.connector.ConnectorManager;
+import io.prestosql.spi.PrestoException;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -48,6 +49,7 @@ import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncemen
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.json.JsonCodec.jsonCodec;
+import static io.prestosql.metadata.DynamicCatalogStoreErrorCode.DATA_CONNECTION_REQUEST_FAILED;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
@@ -246,18 +248,24 @@ public class DynamicCatalogStore
 
     private List<DataConnection> getDataConnections(String dataConnectionEndpoint, String queryParameters)
     {
-        DataConnectionResponse response = httpClient.execute(
-                prepareGet().setUri(uriFor(dataConnectionUrls.getServer(), dataConnectionEndpoint + queryParameters))
-                        .setHeader(AUTHORIZATION, dataConnectionApiKey)
-                        .build(),
-                createJsonResponseHandler(jsonCodec));
+        DataConnectionResponse response = null;
+        try {
+            response = httpClient.execute(
+                    prepareGet().setUri(uriFor(dataConnectionUrls.getServer(), dataConnectionEndpoint + queryParameters))
+                            .setHeader(AUTHORIZATION, dataConnectionApiKey)
+                            .build(),
+                    createJsonResponseHandler(jsonCodec));
+        }
+        catch (Exception e) {
+            throw new PrestoException(DATA_CONNECTION_REQUEST_FAILED, e);
+        }
 
         return getDataConnectionsFromResponse(response);
     }
 
     private List<DataConnection> getDataConnectionsFromResponse(DataConnectionResponse response)
     {
-        if (response.getContent() != null && response.getContent().size() > 0) {
+        if (response != null && response.getContent() != null && response.getContent().size() > 0) {
             return ImmutableList.copyOf(response.getContent());
         }
 
