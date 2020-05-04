@@ -32,6 +32,7 @@ import org.joda.time.format.DateTimeFormatter;
 import javax.inject.Inject;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -257,7 +258,13 @@ public class DynamicCatalogStore
                     createJsonResponseHandler(jsonCodec));
         }
         catch (Exception e) {
-            throw new PrestoException(DATA_CONNECTION_REQUEST_FAILED, e);
+            if (e.getCause() instanceof ConnectException) {
+                log.error("Unable to connect to API");
+                log.error(e.getMessage());
+            }
+            else {
+                throw new PrestoException(DATA_CONNECTION_REQUEST_FAILED, e);
+            }
         }
 
         return getDataConnectionsFromResponse(response);
