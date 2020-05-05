@@ -18,6 +18,7 @@ import com.macasaet.fernet.Key;
 import com.macasaet.fernet.StringValidator;
 import com.macasaet.fernet.Token;
 import com.macasaet.fernet.Validator;
+import io.airlift.log.Logger;
 import io.prestosql.spi.PrestoException;
 
 import java.time.Duration;
@@ -30,6 +31,8 @@ import static com.google.common.base.Preconditions.checkState;
 
 public class DataConnectionParser
 {
+    private static final Logger log = Logger.get(DataConnectionParser.class);
+
     public static Map<String, String> getCatalogProperties(String connectorName, Map<String, String> dataConnectionsProperties, LocalDateTime createdAt, Integer typeId,
             String dataConnectionCryptoKey)
     {
@@ -71,22 +74,28 @@ public class DataConnectionParser
 
     private static String decrypt(String password, LocalDateTime createdAt, String dataConnectionCryptoKey)
     {
-        final Key key = new Key(dataConnectionCryptoKey);
+        try {
+            final Key key = new Key(dataConnectionCryptoKey);
 
-        final Token token = Token.fromString(password);
+            final Token token = Token.fromString(password);
 
-        final Validator<String> validator = new StringValidator()
-        {
-            public TemporalAmount getTimeToLive()
+            final Validator<String> validator = new StringValidator()
             {
-                return Duration.between(createdAt,
-                        LocalDateTime.now(ZoneOffset.UTC).plus(Duration.ofSeconds(60L)));
-            }
-        };
+                public TemporalAmount getTimeToLive()
+                {
+                    return Duration.between(createdAt,
+                            LocalDateTime.now(ZoneOffset.UTC).plus(Duration.ofSeconds(60L)));
+                }
+            };
 
-        final String payload = token.validateAndDecrypt(key, validator);
+            final String payload = token.validateAndDecrypt(key, validator);
 
-        return payload;
+            return payload;
+        }
+        catch (IllegalArgumentException e) {
+            log.error(e.getMessage());
+            return password;
+        }
     }
 
     private static String getMetastoreUri(String connectorName, Map<String, String> dataConnectionsProperties)
