@@ -51,10 +51,10 @@ public class TestDynamicCatalogStore
     @Test
     public void shouldGetDataConnectionTypeString()
     {
-        DataConnection mysql = new DataConnection(BigInteger.ONE, "sample", 1, LocalDateTime.now(), "active", ImmutableMap.of());
-        DataConnection postgres = new DataConnection(BigInteger.ONE, "sample", 2, LocalDateTime.now(), "active", ImmutableMap.of());
-        DataConnection shannondb = new DataConnection(BigInteger.ONE, "sample", 0, LocalDateTime.now(), "active", ImmutableMap.of());
-        DataConnection hive = new DataConnection(BigInteger.ONE, "sample", 11, LocalDateTime.now(), "active", ImmutableMap.of());
+        DataConnection mysql = new DataConnection(BigInteger.ONE, "sample", 1, LocalDateTime.now(), null, null, "active", ImmutableMap.of());
+        DataConnection postgres = new DataConnection(BigInteger.ONE, "sample", 2, LocalDateTime.now(), null, null, "active", ImmutableMap.of());
+        DataConnection shannondb = new DataConnection(BigInteger.ONE, "sample", 0, LocalDateTime.now(), null, null, "active", ImmutableMap.of());
+        DataConnection hive = new DataConnection(BigInteger.ONE, "sample", 11, LocalDateTime.now(), null, null, "active", ImmutableMap.of());
 
         String connectorNameMysql = DataConnectionType.valueOf(mysql.getTypeId()).toString();
         String connectorNamePostgres = DataConnectionType.valueOf(postgres.getTypeId()).toString();
