@@ -37,6 +37,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -62,6 +63,7 @@ public class DynamicCatalogStore
     private static DateTime lastCatalogDeltaDateTime;
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd");
     private final String baseDeltaQueryParameters = "?created-after=%s&updated-after=%s";
+    private final String baseDeletedQueryParameters = "?deleted-after=%s&status=deleted";
     private final ConnectorManager connectorManager;
     private final CatalogDeltaRetrieverScheduler scheduler;
     private final String dataConnectionEndpoint;
@@ -173,7 +175,8 @@ public class DynamicCatalogStore
                     }
                 }
                 else {
-                    if (!connectorManager.getCatalogManager().getCatalog(dataConnection.getName()).isPresent()) {
+                    Optional<Catalog> optionalCatalog = connectorManager.getCatalogManager().getCatalog(dataConnection.getName());
+                    if (!optionalCatalog.isPresent()) {
                         log.info(String.format("Found new data connection %s. Loading...", dataConnection.getName()));
                         loadCatalog(dataConnection);
                     }
@@ -226,7 +229,29 @@ public class DynamicCatalogStore
 
     private List<DataConnection> listCatalogDelta()
     {
-        return getDataConnections(dataConnectionEndpoint, resolveDeltaQueryParameter());
+        ImmutableList.Builder<DataConnection> dataConnections = ImmutableList.builder();
+        dataConnections.addAll(getDataConnections(dataConnectionEndpoint, resolveDeltaQueryParameter()));
+        dataConnections.addAll(getDataConnections(dataConnectionEndpoint, resolveDeletedQueryParameter()));
+
+        return dataConnections.build();
+    }
+
+    private String resolveDeletedQueryParameter()
+    {
+        if (lastCatalogDeltaDateTime == null) {
+            lastCatalogDeltaDateTime = DateTime.now(UTC);
+        }
+
+        try {
+            String result = String.format(baseDeletedQueryParameters, dateTimeFormatter.print(lastCatalogDeltaDateTime));
+            lastCatalogDeltaDateTime = DateTime.now(UTC);
+            return result;
+        }
+        catch (Exception e) {
+            log.error(e.getMessage());
+            e.printStackTrace();
+            return "";
+        }
     }
 
     private String resolveDeltaQueryParameter()
