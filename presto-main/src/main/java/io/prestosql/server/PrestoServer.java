@@ -108,7 +108,7 @@ public class PrestoServer
         Bootstrap app = new Bootstrap(modules.build());
 
         try {
-            Injector injector = app.strictConfig().initialize();
+            Injector injector = app.strictConfig().doNotInitializeLogging().initialize();
 
             logLocation(log, "Working directory", Paths.get("."));
             logLocation(log, "Etc directory", Paths.get("etc"));
