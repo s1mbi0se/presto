@@ -24,6 +24,7 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 import io.prestosql.connector.ConnectorManager;
+import io.prestosql.spi.PrestoException;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -31,10 +32,12 @@ import org.joda.time.format.DateTimeFormatter;
 import javax.inject.Inject;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -48,6 +51,7 @@ import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncemen
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.json.JsonCodec.jsonCodec;
+import static io.prestosql.metadata.DynamicCatalogStoreErrorCode.DATA_CONNECTION_REQUEST_FAILED;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
@@ -59,6 +63,7 @@ public class DynamicCatalogStore
     private static DateTime lastCatalogDeltaDateTime;
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd");
     private final String baseDeltaQueryParameters = "?created-after=%s&updated-after=%s";
+    private final String baseDeletedQueryParameters = "?deleted-after=%s&status=deleted";
     private final ConnectorManager connectorManager;
     private final CatalogDeltaRetrieverScheduler scheduler;
     private final String dataConnectionEndpoint;
@@ -170,7 +175,8 @@ public class DynamicCatalogStore
                     }
                 }
                 else {
-                    if (!connectorManager.getCatalogManager().getCatalog(dataConnection.getName()).isPresent()) {
+                    Optional<Catalog> optionalCatalog = connectorManager.getCatalogManager().getCatalog(dataConnection.getName());
+                    if (!optionalCatalog.isPresent()) {
                         log.info(String.format("Found new data connection %s. Loading...", dataConnection.getName()));
                         loadCatalog(dataConnection);
                     }
@@ -223,7 +229,29 @@ public class DynamicCatalogStore
 
     private List<DataConnection> listCatalogDelta()
     {
-        return getDataConnections(dataConnectionEndpoint, resolveDeltaQueryParameter());
+        ImmutableList.Builder<DataConnection> dataConnections = ImmutableList.builder();
+        dataConnections.addAll(getDataConnections(dataConnectionEndpoint, resolveDeltaQueryParameter()));
+        dataConnections.addAll(getDataConnections(dataConnectionEndpoint, resolveDeletedQueryParameter()));
+
+        return dataConnections.build();
+    }
+
+    private String resolveDeletedQueryParameter()
+    {
+        if (lastCatalogDeltaDateTime == null) {
+            lastCatalogDeltaDateTime = DateTime.now(UTC);
+        }
+
+        try {
+            String result = String.format(baseDeletedQueryParameters, dateTimeFormatter.print(lastCatalogDeltaDateTime));
+            lastCatalogDeltaDateTime = DateTime.now(UTC);
+            return result;
+        }
+        catch (Exception e) {
+            log.error(e.getMessage());
+            e.printStackTrace();
+            return "";
+        }
     }
 
     private String resolveDeltaQueryParameter()
@@ -246,18 +274,30 @@ public class DynamicCatalogStore
 
     private List<DataConnection> getDataConnections(String dataConnectionEndpoint, String queryParameters)
     {
-        DataConnectionResponse response = httpClient.execute(
-                prepareGet().setUri(uriFor(dataConnectionUrls.getServer(), dataConnectionEndpoint + queryParameters))
-                        .setHeader(AUTHORIZATION, dataConnectionApiKey)
-                        .build(),
-                createJsonResponseHandler(jsonCodec));
+        DataConnectionResponse response = null;
+        try {
+            response = httpClient.execute(
+                    prepareGet().setUri(uriFor(dataConnectionUrls.getServer(), dataConnectionEndpoint + queryParameters))
+                            .setHeader(AUTHORIZATION, dataConnectionApiKey)
+                            .build(),
+                    createJsonResponseHandler(jsonCodec));
+        }
+        catch (Exception e) {
+            if (e.getCause() instanceof ConnectException) {
+                log.error("Unable to connect to API");
+                log.error(e.getMessage());
+            }
+            else {
+                throw new PrestoException(DATA_CONNECTION_REQUEST_FAILED, e);
+            }
+        }
 
         return getDataConnectionsFromResponse(response);
     }
 
     private List<DataConnection> getDataConnectionsFromResponse(DataConnectionResponse response)
     {
-        if (response.getContent() != null && response.getContent().size() > 0) {
+        if (response != null && response.getContent() != null && response.getContent().size() > 0) {
             return ImmutableList.copyOf(response.getContent());
         }
 

@@ -15,6 +15,7 @@ package io.prestosql.metadata;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.json.JsonCodec;
@@ -23,11 +24,13 @@ import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class DataConnection
 {
     private final BigInteger id;
@@ -41,6 +44,10 @@ public class DataConnection
 //    private final BigInteger createdByUserId;
     @JsonFormat(pattern = "MM/dd/yyyy, HH:mm:ss")
     private final LocalDateTime createdAt;
+    @JsonFormat(pattern = "MM/dd/yyyy, HH:mm:ss")
+    private final LocalDateTime updatedAt;
+    @JsonFormat(pattern = "MM/dd/yyyy, HH:mm:ss")
+    private final LocalDateTime deletedAt;
     private final String status;
     private final Map<String, String> settings;
 
@@ -56,6 +63,8 @@ public class DataConnection
 //            @JsonProperty("created-by-type") String createdByType,
 //            @JsonProperty("created-by-user-id") BigInteger createdByUserId,
             @JsonProperty("created-at") LocalDateTime createdAt,
+            @JsonProperty("updated-at") LocalDateTime updatedAt,
+            @JsonProperty("deleted-at") LocalDateTime deletedAt,
             @JsonProperty("status") String status,
             @JsonProperty("settings") Map<String, String> settings)
     {
@@ -69,8 +78,10 @@ public class DataConnection
 //        this.createdByType = requireNonNull(createdByType, "createdByType is null");
 //        this.createdByUserId = requireNonNull(createdByUserId, "createdByUserId is null");
         this.createdAt = requireNonNull(createdAt, "createdAt is null");
+        this.updatedAt = updatedAt;
+        this.deletedAt = deletedAt;
         this.status = requireNonNull(status, "status is null");
-        this.settings = ImmutableMap.copyOf(requireNonNull(settings, "properties is null"));
+        this.settings = Optional.ofNullable(settings).orElse(ImmutableMap.of());
     }
 
     public BigInteger getId()
@@ -121,6 +132,16 @@ public class DataConnection
     public LocalDateTime getCreatedAt()
     {
         return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt()
+    {
+        return updatedAt;
+    }
+
+    public LocalDateTime getDeletedAt()
+    {
+        return deletedAt;
     }
 
     public String getStatus()

@@ -82,6 +82,8 @@ public class DynamicCatalogStoreConfig
                         SHANNONDB_CONNECTOR_NAME,
                         0,
                         LocalDateTime.now(ZoneOffset.UTC),
+                        null,
+                        null,
                         "active",
                         shannonDbConfig);
             }
