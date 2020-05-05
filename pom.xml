@@ -69,6 +69,7 @@
         <air.test.jvmsize>3g</air.test.jvmsize>
 
         <air.javadoc.lint>-missing</air.javadoc.lint>
+        <sentry.version>1.7.30</sentry.version>
     </properties>
 
     <modules>
@@ -505,6 +506,12 @@
                 <groupId>io.airlift</groupId>
                 <artifactId>log-manager</artifactId>
                 <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.sentry</groupId>
+                <artifactId>sentry</artifactId>
+                <version>${sentry.version}</version>
             </dependency>
 
             <dependency>

@@ -157,6 +157,11 @@
         </dependency>
 
         <dependency>
+            <groupId>io.sentry</groupId>
+            <artifactId>sentry</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>io.airlift.resolver</groupId>
             <artifactId>resolver</artifactId>
         </dependency>

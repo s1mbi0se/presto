@@ -156,6 +156,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <dependency>
+            <groupId>io.sentry</groupId>
+            <artifactId>sentry</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- for benchmarks -->
         <dependency>
             <groupId>org.openjdk.jmh</groupId>

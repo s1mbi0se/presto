@@ -101,6 +101,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <dependency>
+            <groupId>io.sentry</groupId>
+            <artifactId>sentry</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- for testing -->
         <dependency>
             <groupId>io.prestosql</groupId>
