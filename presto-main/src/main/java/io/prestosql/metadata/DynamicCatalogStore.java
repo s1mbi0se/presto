@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -283,7 +284,8 @@ public class DynamicCatalogStore
                     createJsonResponseHandler(jsonCodec));
         }
         catch (Exception e) {
-            if (e.getCause() instanceof ConnectException) {
+            if (e.getCause() instanceof IOException
+                || e.getCause() instanceof TimeoutException) {
                 log.error("Unable to connect to API");
                 log.error(e.getMessage());
             }
