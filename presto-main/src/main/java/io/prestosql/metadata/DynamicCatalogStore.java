@@ -283,7 +283,7 @@ public class DynamicCatalogStore
                     createJsonResponseHandler(jsonCodec));
         }
         catch (Exception e) {
-            if (e.getCause() instanceof ConnectException) {
+            if (e.getCause() instanceof IOException) {
                 log.error("Unable to connect to API");
                 log.error(e.getMessage());
             }
