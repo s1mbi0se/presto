@@ -157,7 +157,7 @@ public class DynamicCatalogStore
         }
 
         String connectorName = DataConnectionType.valueOf(dataConnection.getTypeId()).getName();
-        checkState(connectorName != null, "Catalog configuration %s does not contain connector.name", dataConnection.getName());
+        checkState(connectorName != null, "Catalog configuration %s does not contain connector.name", getCatalogName(dataConnection));
 
         log.info("-- Loading catalog %s --", dataConnection);
         Map<String, String> properties = DataConnectionParser.getCatalogProperties(connectorName, dataConnection.getSettings(), dataConnection.getCreatedAt(),
@@ -176,15 +176,15 @@ public class DynamicCatalogStore
             for (DataConnection dataConnection : delta) {
                 log.debug(dataConnection.toString());
                 if (!dataConnection.getStatus().equals("active")) {
-                    if (connectorManager.getCatalogManager().getCatalog(dataConnection.getName()).isPresent()) {
-                        log.info(String.format("Decommissioning data connection %s.", dataConnection.getName()));
-                        connectorManager.dropConnection(dataConnection.getName());
+                    if (connectorManager.getCatalogManager().getCatalog(getCatalogName(dataConnection)).isPresent()) {
+                        log.info(String.format("Decommissioning data connection %s.", getCatalogName(dataConnection)));
+                        connectorManager.dropConnection(getCatalogName(dataConnection));
                     }
                 }
                 else {
-                    Optional<Catalog> optionalCatalog = connectorManager.getCatalogManager().getCatalog(dataConnection.getName());
+                    Optional<Catalog> optionalCatalog = connectorManager.getCatalogManager().getCatalog(getCatalogName(dataConnection));
                     if (!optionalCatalog.isPresent()) {
-                        log.info(String.format("Found new data connection %s. Loading...", dataConnection.getName()));
+                        log.info(String.format("Found new data connection %s. Loading...", getCatalogName(dataConnection)));
                         loadCatalog(dataConnection);
                     }
                 }
