@@ -144,7 +144,7 @@ public class DynamicCatalogStore
     {
         final String catalogName = dataConnection.getName().toLowerCase(ENGLISH);
         final BigInteger id = dataConnection.getId();
-        return String.join("_", id.toString(), catalogName);
+        return String.join("_", catalogName, id.toString());
     }
 
     public void loadCatalog(DataConnection dataConnection)
