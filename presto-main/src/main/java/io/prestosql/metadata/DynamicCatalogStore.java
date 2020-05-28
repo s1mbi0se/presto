@@ -32,7 +32,7 @@ import org.joda.time.format.DateTimeFormatter;
 import javax.inject.Inject;
 
 import java.io.IOException;
-import java.net.ConnectException;
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -140,10 +140,17 @@ public class DynamicCatalogStore
         }, 5);
     }
 
+    public static String getCatalogName(DataConnection dataConnection)
+    {
+        final String catalogName = dataConnection.getName().toLowerCase(ENGLISH);
+        final BigInteger id = dataConnection.getId();
+        return String.join("_", id.toString(), catalogName);
+    }
+
     public void loadCatalog(DataConnection dataConnection)
             throws Exception
     {
-        String catalogName = dataConnection.getName().toLowerCase(ENGLISH);
+        String catalogName = getCatalogName(dataConnection);
         if (disabledCatalogs.contains(catalogName)) {
             log.info("Skipping disabled catalog %s", catalogName);
             return;
