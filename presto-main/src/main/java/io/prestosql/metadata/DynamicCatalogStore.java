@@ -140,6 +140,16 @@ public class DynamicCatalogStore
         }, 5);
     }
 
+    /**
+     * Get the name and id of the catalog     *
+     * <p>
+     *     This method gets the name of the catalog received by the api
+     * </p>     *
+     * @param dataConnection  a object received by the api
+     * @return  a String as the name of the catalog
+     *
+     * @see DataConnection
+     */
     public static String getCatalogName(DataConnection dataConnection)
     {
         final String catalogName = dataConnection.getName().toLowerCase(ENGLISH);
