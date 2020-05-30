@@ -32,7 +32,7 @@ import org.joda.time.format.DateTimeFormatter;
 import javax.inject.Inject;
 
 import java.io.IOException;
-import java.net.ConnectException;
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -140,17 +140,34 @@ public class DynamicCatalogStore
         }, 5);
     }
 
+    /**
+     * Get the name and id of the catalog     *
+     * <p>
+     *     This method gets the name of the catalog received by the api
+     * </p>     *
+     * @param dataConnection  a object received by the api
+     * @return  a String as the name of the catalog
+     *
+     * @see DataConnection
+     */
+    public static String getCatalogName(DataConnection dataConnection)
+    {
+        final String catalogName = dataConnection.getName().toLowerCase(ENGLISH);
+        final BigInteger id = dataConnection.getId();
+        return String.join("_", catalogName, id.toString());
+    }
+
     public void loadCatalog(DataConnection dataConnection)
             throws Exception
     {
-        String catalogName = dataConnection.getName().toLowerCase(ENGLISH);
+        String catalogName = getCatalogName(dataConnection);
         if (disabledCatalogs.contains(catalogName)) {
             log.info("Skipping disabled catalog %s", catalogName);
             return;
         }
 
         String connectorName = DataConnectionType.valueOf(dataConnection.getTypeId()).getName();
-        checkState(connectorName != null, "Catalog configuration %s does not contain connector.name", dataConnection.getName());
+        checkState(connectorName != null, "Catalog configuration %s does not contain connector.name", getCatalogName(dataConnection));
 
         log.info("-- Loading catalog %s --", dataConnection);
         Map<String, String> properties = DataConnectionParser.getCatalogProperties(connectorName, dataConnection.getSettings(), dataConnection.getCreatedAt(),
@@ -169,15 +186,15 @@ public class DynamicCatalogStore
             for (DataConnection dataConnection : delta) {
                 log.debug(dataConnection.toString());
                 if (!dataConnection.getStatus().equals("active")) {
-                    if (connectorManager.getCatalogManager().getCatalog(dataConnection.getName()).isPresent()) {
-                        log.info(String.format("Decommissioning data connection %s.", dataConnection.getName()));
-                        connectorManager.dropConnection(dataConnection.getName());
+                    if (connectorManager.getCatalogManager().getCatalog(getCatalogName(dataConnection)).isPresent()) {
+                        log.info(String.format("Decommissioning data connection %s.", getCatalogName(dataConnection)));
+                        connectorManager.dropConnection(getCatalogName(dataConnection));
                     }
                 }
                 else {
-                    Optional<Catalog> optionalCatalog = connectorManager.getCatalogManager().getCatalog(dataConnection.getName());
+                    Optional<Catalog> optionalCatalog = connectorManager.getCatalogManager().getCatalog(getCatalogName(dataConnection));
                     if (!optionalCatalog.isPresent()) {
-                        log.info(String.format("Found new data connection %s. Loading...", dataConnection.getName()));
+                        log.info(String.format("Found new data connection %s. Loading...", getCatalogName(dataConnection)));
                         loadCatalog(dataConnection);
                     }
                 }
