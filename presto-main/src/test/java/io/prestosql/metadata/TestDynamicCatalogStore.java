@@ -100,4 +100,14 @@ public class TestDynamicCatalogStore
             throw new IllegalArgumentException(e);
         }
     }
+
+    @Test
+    public void shouldGetCatalogName()
+    {
+        DataConnection dataConnection = new DataConnection(BigInteger.valueOf(1), "sample1", 1, LocalDateTime.now(), null, null, "active", ImmutableMap.of());
+
+        assertThat(dataConnection.getId()).isEqualTo(BigInteger.valueOf(1));
+        final String expected = "1_sample1";
+        assertThat(DynamicCatalogStore.getCatalogName(dataConnection)).isEqualTo(expected);
+    }
 }
