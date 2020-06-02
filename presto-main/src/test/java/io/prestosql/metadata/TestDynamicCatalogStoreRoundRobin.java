@@ -20,16 +20,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDynamicCatalogStoreRoundRobin
 {
-    private static String ipSet = "localhost;127.0.0.1;server3;server4";
     private DynamicCatalogStoreRoundRobin rr;
+    private String ipSet = "localhost;127.0.0.1;server3;server4";
 
     @BeforeTest
     public void setup()
     {
-        rr = new DynamicCatalogStoreRoundRobin(ipSet);
+        rr = DynamicCatalogStoreRoundRobin.getInstance(ipSet);
     }
 
-    @Test
+    @Test(priority = 1)
     public void shouldGetDataConnectionTypeString()
     {
         assertThat(rr.getServer()).isEqualTo("localhost");
@@ -40,5 +40,13 @@ public class TestDynamicCatalogStoreRoundRobin
         assertThat(rr.getServer()).isEqualTo("127.0.0.1");
         assertThat(rr.getServer()).isEqualTo("server3");
         assertThat(rr.getServer()).isEqualTo("server4");
+    }
+
+    @Test(priority = 1)
+    public void shouldGetPoolSize()
+    {
+        String ipSet = "localhost;127.0.0.1;server3;server4";
+        DynamicCatalogStoreRoundRobin rr = DynamicCatalogStoreRoundRobin.getInstance(ipSet);
+        assertThat(rr.getPoolSize()).isEqualTo(4);
     }
 }
