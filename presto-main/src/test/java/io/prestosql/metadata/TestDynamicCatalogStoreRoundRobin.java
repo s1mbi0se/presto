@@ -13,25 +13,17 @@
  */
 package io.prestosql.metadata;
 
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDynamicCatalogStoreRoundRobin
 {
-    private static String ipSet = "localhost;127.0.0.1;server3;server4";
-    private DynamicCatalogStoreRoundRobin rr;
-
-    @BeforeTest
-    public void setup()
-    {
-        rr = new DynamicCatalogStoreRoundRobin(ipSet);
-    }
-
     @Test
     public void shouldGetDataConnectionTypeString()
     {
+        String ipSet = "localhost;127.0.0.1;server3;server4";
+        DynamicCatalogStoreRoundRobin rr = DynamicCatalogStoreRoundRobin.getInstance(ipSet);
         assertThat(rr.getServer()).isEqualTo("localhost");
         assertThat(rr.getServer()).isEqualTo("127.0.0.1");
         assertThat(rr.getServer()).isEqualTo("server3");
@@ -40,5 +32,22 @@ public class TestDynamicCatalogStoreRoundRobin
         assertThat(rr.getServer()).isEqualTo("127.0.0.1");
         assertThat(rr.getServer()).isEqualTo("server3");
         assertThat(rr.getServer()).isEqualTo("server4");
+    }
+
+    @Test
+    public void shouldGetPoolSize()
+    {
+        String ipSet = "localhost;127.0.0.1;server3;server4";
+        DynamicCatalogStoreRoundRobin rr = DynamicCatalogStoreRoundRobin.getInstance(ipSet);
+        assertThat(rr.getPoolSize()).isEqualTo(4);
+    }
+
+    @Test
+    public void shouldGetInstanceWithOneServer()
+    {
+        String single = "localhost";
+        DynamicCatalogStoreRoundRobin roundRobin = DynamicCatalogStoreRoundRobin.getInstance(single);
+        assertThat(roundRobin.getServer()).isEqualTo("localhost");
+        assertThat(roundRobin.getPoolSize()).isEqualTo(1);
     }
 }
