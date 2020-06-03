@@ -24,7 +24,6 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 import io.prestosql.connector.ConnectorManager;
-import io.prestosql.spi.PrestoException;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -51,7 +50,6 @@ import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncemen
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.json.JsonCodec.jsonCodec;
-import static io.prestosql.metadata.DynamicCatalogStoreErrorCode.DATA_CONNECTION_REQUEST_FAILED;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
@@ -107,7 +105,7 @@ public class DynamicCatalogStore
         this.dataConnectionApiKey = requireNonNull(dataConnectionApiKey, "dataConnectionApiKey is null.");
         this.dataConnectionCryptoKey = requireNonNull(dataConnectionCryptoKey, "dataConnectionCryptoKey is null");
         this.disabledCatalogs = ImmutableSet.copyOf(disabledCatalogs);
-        this.dataConnectionUrls = new DynamicCatalogStoreRoundRobin(requireNonNull(dataConnectionUrl, "dataConnectionUrl is null."));
+        this.dataConnectionUrls = DynamicCatalogStoreRoundRobin.getInstance(requireNonNull(dataConnectionUrl, "dataConnectionUrl is null."));
         this.scheduler = scheduler;
         this.httpClient = new JettyHttpClient();
         this.announcer = announcer;
@@ -143,11 +141,11 @@ public class DynamicCatalogStore
     /**
      * Get the name and id of the catalog     *
      * <p>
-     *     This method gets the name of the catalog received by the api
+     * This method gets the name of the catalog received by the api
      * </p>     *
-     * @param dataConnection  a object received by the api
-     * @return  a String as the name of the catalog
      *
+     * @param dataConnection a object received by the api
+     * @return a String as the name of the catalog
      * @see DataConnection
      */
     public static String getCatalogName(DataConnection dataConnection)
@@ -180,7 +178,7 @@ public class DynamicCatalogStore
     private void updateCatalogDelta()
             throws Exception
     {
-        log.info("updating catalogs");
+        log.debug("updating catalogs");
         List<DataConnection> delta = listCatalogDelta();
         if (delta.size() > 0) {
             for (DataConnection dataConnection : delta) {
@@ -292,20 +290,24 @@ public class DynamicCatalogStore
     private List<DataConnection> getDataConnections(String dataConnectionEndpoint, String queryParameters)
     {
         DataConnectionResponse response = null;
-        try {
-            response = httpClient.execute(
-                    prepareGet().setUri(uriFor(dataConnectionUrls.getServer(), dataConnectionEndpoint + queryParameters))
-                            .setHeader(AUTHORIZATION, dataConnectionApiKey)
-                            .build(),
-                    createJsonResponseHandler(jsonCodec));
-        }
-        catch (Exception e) {
-            if (e.getCause() instanceof IOException) {
-                log.error("Unable to connect to API");
-                log.error(e.getMessage());
+        Integer poolSize = dataConnectionUrls.getPoolSize();
+        for (int i = 0; i < poolSize; i++) {
+            String apiServer = null;
+            try {
+                apiServer = dataConnectionUrls.getServer();
+                response = httpClient.execute(
+                        prepareGet().setUri(uriFor(apiServer, dataConnectionEndpoint + queryParameters))
+                                .setHeader(AUTHORIZATION, dataConnectionApiKey)
+                                .build(),
+                        createJsonResponseHandler(jsonCodec));
+                log.debug(String.format("API server [%s] - ok - request %s", apiServer, (queryParameters.contains("delete") ? "delete delta" : "delta")));
+                log.debug(dataConnectionEndpoint + queryParameters);
+                break;
             }
-            else {
-                throw new PrestoException(DATA_CONNECTION_REQUEST_FAILED, e);
+            catch (Exception e) {
+                log.error(String.format("API server [%s] - unable to connect - request %s", apiServer, (queryParameters.contains("delete") ? "delete delta" : "delta")));
+                log.error(dataConnectionEndpoint + queryParameters);
+                log.error(e.getMessage());
             }
         }
 
