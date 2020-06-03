@@ -178,7 +178,7 @@ public class DynamicCatalogStore
     private void updateCatalogDelta()
             throws Exception
     {
-        log.info("updating catalogs");
+        log.debug("updating catalogs");
         List<DataConnection> delta = listCatalogDelta();
         if (delta.size() > 0) {
             for (DataConnection dataConnection : delta) {
@@ -300,10 +300,13 @@ public class DynamicCatalogStore
                                 .setHeader(AUTHORIZATION, dataConnectionApiKey)
                                 .build(),
                         createJsonResponseHandler(jsonCodec));
-                log.info(String.format("API server [%s] ok", apiServer));
+                log.debug(String.format("API server [%s] - ok - request %s", apiServer, (queryParameters.contains("delete") ? "delete delta" : "delta")));
+                log.debug(dataConnectionEndpoint + queryParameters);
+                break;
             }
             catch (Exception e) {
-                log.error(String.format("Unable to connect to API server: %s", apiServer));
+                log.error(String.format("API server [%s] - unable to connect - request %s", apiServer, (queryParameters.contains("delete") ? "delete delta" : "delta")));
+                log.error(dataConnectionEndpoint + queryParameters);
                 log.error(e.getMessage());
             }
         }
