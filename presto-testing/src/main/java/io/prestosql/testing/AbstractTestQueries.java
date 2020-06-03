@@ -845,7 +845,7 @@ public abstract class AbstractTestQueries
                 getSession().getClientTags(),
                 getSession().getClientCapabilities(),
                 getSession().getResourceEstimates(),
-                getSession().getStartTime(),
+                getSession().getStart(),
                 ImmutableMap.<String, String>builder()
                         .put("test_string", "foo string")
                         .put("test_long", "424242")

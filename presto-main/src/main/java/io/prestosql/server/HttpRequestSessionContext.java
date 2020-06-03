@@ -58,7 +58,6 @@ import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
-import static com.google.common.net.HttpHeaders.X_FORWARDED_FOR;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.prestosql.client.PrestoHeaders.PRESTO_CATALOG;
 import static io.prestosql.client.PrestoHeaders.PRESTO_CLIENT_CAPABILITIES;
