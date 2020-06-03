@@ -51,10 +51,9 @@ public class DynamicCatalogStoreRoundRobin
     public static DynamicCatalogStoreRoundRobin getInstance(String ipSet)
     {
         if (catalogStoreRoundRobin == null) {
-            return new DynamicCatalogStoreRoundRobin(ipSet);
+            catalogStoreRoundRobin = new DynamicCatalogStoreRoundRobin(ipSet);
         }
-        else {
-            return catalogStoreRoundRobin;
-        }
+
+        return catalogStoreRoundRobin;
     }
 }
