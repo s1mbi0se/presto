@@ -14,16 +14,25 @@
 package io.prestosql.metadata;
 
 import com.google.common.collect.ImmutableMap;
+import io.airlift.http.client.UnexpectedResponseException;
+import io.airlift.http.client.jetty.JettyHttpClient;
+import io.prestosql.spi.PrestoException;
+import org.junit.Assert;
+import org.mockito.Mockito;
 import org.testng.annotations.Test;
+import sun.net.www.http.HttpClient;
 
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestDynamicCatalogStore
 {
