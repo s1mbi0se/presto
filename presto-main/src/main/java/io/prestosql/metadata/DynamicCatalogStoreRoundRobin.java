@@ -17,7 +17,7 @@ public class DynamicCatalogStoreRoundRobin
 {
     public static String[] ipSet;
 
-    private static DynamicCatalogStoreRoundRobin catalogStoreRoundRobin = null;
+    private static DynamicCatalogStoreRoundRobin catalogStoreRoundRobin;
 
     private DynamicCatalogStoreRoundRobin(String ipSet)
     {
