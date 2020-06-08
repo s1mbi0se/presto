@@ -17,12 +17,17 @@ public class DynamicCatalogStoreRoundRobin
 {
     public static String[] ipSet;
 
-    public DynamicCatalogStoreRoundRobin(String ipSet)
+    private static DynamicCatalogStoreRoundRobin catalogStoreRoundRobin;
+
+    private DynamicCatalogStoreRoundRobin(String ipSet)
     {
         this.ipSet = ipSet.split(";");
+        this.poolSize = this.ipSet.length;
     }
 
     private static Integer position = 0;
+
+    private static Integer poolSize;
 
     public String getServer()
     {
@@ -36,5 +41,19 @@ public class DynamicCatalogStoreRoundRobin
             position++;
         }
         return target;
+    }
+
+    public Integer getPoolSize()
+    {
+        return poolSize;
+    }
+
+    public static DynamicCatalogStoreRoundRobin getInstance(String ipSet)
+    {
+        if (catalogStoreRoundRobin == null) {
+            catalogStoreRoundRobin = new DynamicCatalogStoreRoundRobin(ipSet);
+        }
+
+        return catalogStoreRoundRobin;
     }
 }
