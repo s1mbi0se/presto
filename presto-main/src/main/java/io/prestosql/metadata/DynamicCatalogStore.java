@@ -74,19 +74,20 @@ public class DynamicCatalogStore
     private final JsonCodec<DataConnectionResponse> jsonCodec = jsonCodec(DataConnectionResponse.class);
     private final Announcer announcer;
     private final CatalogManager catalogManager;
+    private final ApiService apiService;
 
     @Inject
     public DynamicCatalogStore(ConnectorManager connectorManager, DynamicCatalogStoreConfig config,
             CatalogDeltaRetrieverScheduler scheduler,
             Announcer announcer,
-            CatalogManager catalogManager)
+            CatalogManager catalogManager, ApiService apiService)
     {
         this(connectorManager,
                 config.getDataConnectionsEndpoint(),
                 config.getDataConnectionsUrl(),
                 config.getDataConnectionsApiKey(),
                 config.getCryptoKey(),
-                firstNonNull(config.getDisabledCatalogs(), ImmutableList.of()), scheduler, announcer, catalogManager);
+                firstNonNull(config.getDisabledCatalogs(), ImmutableList.of()), scheduler, announcer, catalogManager, apiService);
     }
 
     public DynamicCatalogStore(
@@ -98,7 +99,7 @@ public class DynamicCatalogStore
             List<String> disabledCatalogs,
             CatalogDeltaRetrieverScheduler scheduler,
             Announcer announcer,
-            CatalogManager catalogManager)
+            CatalogManager catalogManager, ApiService apiService)
     {
         this.connectorManager = connectorManager;
         this.dataConnectionEndpoint = requireNonNull(dataConnectionEndpoint, "dataConnectionEndpoint is null.");
@@ -107,6 +108,7 @@ public class DynamicCatalogStore
         this.disabledCatalogs = ImmutableSet.copyOf(disabledCatalogs);
         this.dataConnectionUrls = DynamicCatalogStoreRoundRobin.getInstance(requireNonNull(dataConnectionUrl, "dataConnectionUrl is null."));
         this.scheduler = scheduler;
+        this.apiService = apiService;
         this.httpClient = new JettyHttpClient();
         this.announcer = announcer;
         this.catalogManager = catalogManager;
@@ -287,52 +289,12 @@ public class DynamicCatalogStore
         }
     }
 
-    private List<DataConnection> getDataConnections(String dataConnectionEndpoint, String queryParameters)
+    protected List<DataConnection> getDataConnections(String dataConnectionEndpoint, String queryParameters)
     {
-        DataConnectionResponse response = null;
-        Integer poolSize = dataConnectionUrls.getPoolSize();
-        for (int i = 0; i < poolSize; i++) {
-            String apiServer = null;
-            try {
-                apiServer = dataConnectionUrls.getServer();
-                response = httpClient.execute(
-                        prepareGet().setUri(uriFor(apiServer, dataConnectionEndpoint + queryParameters))
-                                .setHeader(AUTHORIZATION, dataConnectionApiKey)
-                                .build(),
-                        createJsonResponseHandler(jsonCodec));
-                log.debug(String.format("API server [%s] - ok - request %s", apiServer, (queryParameters.contains("delete") ? "delete delta" : "delta")));
-                log.debug(dataConnectionEndpoint + queryParameters);
-                break;
-            }
-            catch (Exception e) {
-                log.error(String.format("API server [%s] - unable to connect - request %s", apiServer, (queryParameters.contains("delete") ? "delete delta" : "delta")));
-                log.error(dataConnectionEndpoint + queryParameters);
-                log.error(e.getMessage());
-            }
-        }
-
-        return getDataConnectionsFromResponse(response);
+        return apiService.executeApiRequest(dataConnectionEndpoint, queryParameters);
     }
 
-    private List<DataConnection> getDataConnectionsFromResponse(DataConnectionResponse response)
-    {
-        if (response != null && response.getContent() != null && response.getContent().size() > 0) {
-            return ImmutableList.copyOf(response.getContent());
-        }
 
-        return ImmutableList.of();
-    }
-
-    private URI uriFor(String dataConnectionUrl, String dataConnectionEndpoint)
-    {
-        try {
-            URI uri = new URI("http", null, dataConnectionUrl, 8080, null, null, null);
-            return uri.resolve(dataConnectionEndpoint);
-        }
-        catch (URISyntaxException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
 
     public ConnectorManager getConnectorManager()
     {
