@@ -295,6 +295,14 @@
                     <groupId>org.apache.commons</groupId>
                     <artifactId>commons-lang3</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpcore</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpclient</artifactId>
+                </exclusion>
                 <!--exclusion>
                     <groupId>org.apache.thrift</groupId>
                     <artifactId>libthrift</artifactId>
