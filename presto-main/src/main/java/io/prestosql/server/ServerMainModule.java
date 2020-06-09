@@ -66,6 +66,8 @@ import io.prestosql.memory.MemoryPoolAssignmentsRequest;
 import io.prestosql.memory.MemoryResource;
 import io.prestosql.memory.NodeMemoryConfig;
 import io.prestosql.metadata.AnalyzePropertyManager;
+import io.prestosql.metadata.ApiService;
+import io.prestosql.metadata.ApiServiceClient;
 import io.prestosql.metadata.CatalogDeltaRetrieverScheduler;
 import io.prestosql.metadata.CatalogManager;
 import io.prestosql.metadata.ColumnPropertyManager;
@@ -344,6 +346,7 @@ public class ServerMainModule
         binder.bind(CatalogDeltaRetrieverScheduler.class).in(Scopes.SINGLETON);
         binder.bind(MetadataManager.class).in(Scopes.SINGLETON);
         binder.bind(Metadata.class).to(MetadataManager.class).in(Scopes.SINGLETON);
+        binder.bind(ApiService.class).to(ApiServiceClient.class).in(Scopes.SINGLETON);
 
         // type
         binder.bind(TypeAnalyzer.class).in(Scopes.SINGLETON);

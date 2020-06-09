@@ -13,7 +13,12 @@
  */
 package io.prestosql.metadata;
 
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
+import io.airlift.http.client.HttpStatus;
+import io.airlift.http.client.UnexpectedResponseException;
+import io.airlift.http.client.testing.TestingResponse;
+import org.powermock.api.mockito.PowerMockito;
 import org.testng.annotations.Test;
 
 import java.math.BigInteger;
@@ -24,9 +29,13 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class TestDynamicCatalogStore
 {
+
     @Test
     public void shouldGetCatalogPropertiesFromDataConnectionSettings()
     {
@@ -107,7 +116,26 @@ public class TestDynamicCatalogStore
         DataConnection dataConnection = new DataConnection(BigInteger.valueOf(1), "sample1", 1, LocalDateTime.now(), null, null, "active", ImmutableMap.of());
 
         assertThat(dataConnection.getId()).isEqualTo(BigInteger.valueOf(1));
-        final String expected = "1_sample1";
+        final String expected = "sample1_1";
         assertThat(DynamicCatalogStore.getCatalogName(dataConnection)).isEqualTo(expected);
+    }
+
+    @Test
+    public void shouldThrowsExceptionFromError500()
+            throws URISyntaxException
+    {
+        String ipSet = "localhost;157.1.1.1;server3;server4;server5";
+        DynamicCatalogStoreRoundRobin rr = DynamicCatalogStoreRoundRobin.getInstance(ipSet);
+        final ApiServiceClient apiService = PowerMockito.spy(new ApiServiceClient(rr, "", ""));
+        TestingResponse testingResponse = new TestingResponse(HttpStatus.INTERNAL_SERVER_ERROR, ImmutableListMultimap.of(), new byte[] {});
+
+        PowerMockito.when(apiService.uriFor("localhost", "8080")).thenReturn(new URI("http://host:80800"));
+        PowerMockito.when(apiService.executeApiRequest("/data_connection/", "id?3")).thenThrow(new UnexpectedResponseException("Error 500", null, testingResponse));
+
+        verify(apiService, times(1)).doExecute("/data_connection/", "id?3", "localhost");
+        verify(apiService, times(1)).doExecute("/data_connection/", "id?3", "157.1.1.1");
+        verify(apiService, times(1)).doExecute("/data_connection/", "id?3", "server3");
+        verify(apiService, times(1)).doExecute("/data_connection/", "id?3", "server4");
+        verify(apiService, times(1)).doExecute("/data_connection/", "id?3", "server5");
     }
 }
