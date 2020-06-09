@@ -68,7 +68,6 @@ public class DynamicCatalogStoreConfig
             properties = this.readConfigFile(API_CONFIG_FILE);
 
             if (properties.size() > 0) {
-
                 Map<String, String> env = System.getenv();
 
                 if (env.containsKey("API_DATA_CONNECTIONS_ENDPOINT")) {
