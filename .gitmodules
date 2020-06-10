@@ -1,3 +1,4 @@
 [submodule "presto-connectors"]
 	path = presto-connectors
 	url = git@github.com:s1mbi0se/presto-connectors.git
+	branch = develop
