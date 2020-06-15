@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # get presto home dir
+alias python=python3
 PRESTO_HOME=/simbiose/presto_user/presto-server-${PRESTO_VERSION}
 
 set -o allexport; source ${PRESTO_HOME}/configs/environment_variables.txt; set +
