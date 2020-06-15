@@ -1,8 +1,10 @@
-package main.java.io.prestosql.plugin.logs;
+package io.prestosql.plugin.logs;
 
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import main.java.io.prestosql.plugin.logs.BaseAspect;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
