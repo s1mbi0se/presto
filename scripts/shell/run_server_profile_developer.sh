@@ -28,7 +28,7 @@ export MAVEN_OPTS="-ea \
     -XX:+UseGCOverheadLimit \
     -XX:+ExplicitGCInvokesConcurrent \
     -Xmx512M \
-    -Dconfig=${PRESTO_HOME}/configs/config.properties \
+    -Dconfig=${PRESTO_HOME}/presto-server-main/etc/config.properties \
     -Dlog.levels-file=${PRESTO_HOME}/presto-server-main/etc/log.properties \
     -Djdk.attach.allowAttachSelf=true \
     -Dhive.metastore.uri=thrift://localhost:9083 \
