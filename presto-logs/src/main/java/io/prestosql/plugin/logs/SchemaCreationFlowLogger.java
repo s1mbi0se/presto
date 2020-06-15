@@ -1,14 +1,25 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.prestosql.plugin.logs;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
-import main.java.io.prestosql.plugin.logs.BaseAspect;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 /**
  * This class is responsible to execute all debug logs inside ColumnCreationFlux.
  *
@@ -17,9 +28,11 @@ import org.aspectj.lang.annotation.Aspect;
  * BaseAspect#printDebugLogForMethod(ProceedingJoinPoint, long)} to writes inside the log file, a
  * set of important information about methods execution.
  */
-@Aspect
-public class SchemaCreationFlowLogger extends BaseAspect {
 
+@Aspect
+public class SchemaCreationFlowLogger
+        extends BaseAspect
+{
     private static final String FLOW_NAME = "CreateSchemaFlow";
 
     protected final Map<Long, Integer> threadIdToStep = new ConcurrentHashMap<>();
@@ -42,7 +55,8 @@ public class SchemaCreationFlowLogger extends BaseAspect {
     @Around(
             "execution(* *(..)) && "
                     + "@annotation(main.java.io.prestosql.plugin.annotations.StartCreateSchemaFlowLoggable)")
-    public Object startFlux(final ProceedingJoinPoint point) throws Throwable {
+    public Object startFlux(final ProceedingJoinPoint point) throws Throwable
+    {
         final long threadId = Thread.currentThread().getId();
 
         threadIdToStep.put(threadId, 0);
@@ -68,7 +82,8 @@ public class SchemaCreationFlowLogger extends BaseAspect {
     @Around(
             "execution(* *(..)) &&"
                     + " @annotation(main.java.io.prestosql.plugin.annotations.CreateSchemaFlowLoggable)")
-    public Object around(final ProceedingJoinPoint point) throws Throwable {
+    public Object around(final ProceedingJoinPoint point) throws Throwable
+    {
         final long threadId = Thread.currentThread().getId();
 
         return printDebugLogForMethod(point, threadId);
@@ -92,7 +107,8 @@ public class SchemaCreationFlowLogger extends BaseAspect {
     @Around(
             "execution(* *(..)) && "
                     + "@annotation(main.java.io.prestosql.plugin.annotations.FinishCreateSchemaFlowLoggable)")
-    public Object finishFlux(final ProceedingJoinPoint point) throws Throwable {
+    public Object finishFlux(final ProceedingJoinPoint point) throws Throwable
+    {
         final long threadId = Thread.currentThread().getId();
 
         final Object resultFromMethod = printDebugLogForMethod(point, threadId);
@@ -112,7 +128,8 @@ public class SchemaCreationFlowLogger extends BaseAspect {
      * @return the name of a general flux inside ShannonDB.
      */
     @Override
-    protected String getFlowName() {
+    protected String getFlowName()
+    {
         return FLOW_NAME;
     }
 
@@ -124,7 +141,8 @@ public class SchemaCreationFlowLogger extends BaseAspect {
      * @return a map with a thread and and the order that a method is executed inside a flux.
      */
     @Override
-    protected Map<Long, Integer> getThreadIdToStep() {
+    protected Map<Long, Integer> getThreadIdToStep()
+    {
         return this.threadIdToStep;
     }
 
@@ -137,7 +155,8 @@ public class SchemaCreationFlowLogger extends BaseAspect {
      * @return .
      */
     @Override
-    protected Map<Long, Long> getThreadIdToDebugLogId() {
+    protected Map<Long, Long> getThreadIdToDebugLogId()
+    {
         return this.threadIdToDebugLogId;
     }
 }

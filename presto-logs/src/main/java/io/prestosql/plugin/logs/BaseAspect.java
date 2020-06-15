@@ -1,17 +1,31 @@
-package main.java.io.prestosql.plugin.logs;
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.prestosql.plugin.logs;
 
 //import br.com.s1mbi0se.shannondb.SDBInstanceSettings;
 //import br.com.s1mbi0se.shannondb.server.SDBConfig;
-import java.util.Map;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Aspect
-public abstract class BaseAspect {
+import java.util.Map;
 
+@Aspect
+public abstract class BaseAspect
+{
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseAspect.class);
 
 //    protected static final int NODE_ID = SDBConfig.getIntValue("S1S_NODE_ID", 0);
@@ -33,20 +47,21 @@ public abstract class BaseAspect {
 //    }
 
     protected Object printDebugLogForMethod(final ProceedingJoinPoint point, final long threadId)
-            throws Throwable {
+            throws Throwable
+    {
         final long start = System.currentTimeMillis();
 
         Object result = null;
 
         try {
             result = point.proceed();
-        } catch (Throwable throwable) {
+        }
+        catch (Throwable throwable) {
             if (throwable instanceof Exception) {
                 final Class<? extends Throwable> exceptionClass = throwable.getClass();
 
                 throw exceptionClass.cast(throwable);
             }
-
             throw throwable;
         }
         final long timeToExecuteMethod = System.currentTimeMillis() - start;
@@ -65,11 +80,7 @@ public abstract class BaseAspect {
                             debugLogId,
                             debugStepId,
                             timeToExecuteMethod,
-                            methodName
-//                            DATACENTER_NAME,
-//                            NODE_ID,
-//                            NODE_HOSTNAME
-                    );
+                            methodName);
 
             LOGGER.debug(debugLogMessage);
 

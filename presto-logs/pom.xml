@@ -14,6 +14,12 @@
             <version>4.14.1-HBase-1.4</version>
             <scope>compile</scope>
         </dependency>
+        <!-- Presto SPI -->
+        <dependency>
+            <groupId>io.prestosql</groupId>
+            <artifactId>presto-spi</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
     <parent>
         <groupId>io.prestosql</groupId>
