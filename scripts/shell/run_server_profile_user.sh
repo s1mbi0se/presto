@@ -1,15 +1,16 @@
 #!/bin/bash
 
-set -o allexport; source /simbiose/presto_user/configs/environment_variables.txt; set +
-# go to presto root folder
-pushd /simbiose/presto_user/
 # get presto home dir
-PRESTO_HOME=$(ls -d */ | grep presto-server | head -n 1)
+PRESTO_HOME=/simbiose/presto_user/presto-server-${PRESTO_VERSION}
+
+set -o allexport; source ${PRESTO_HOME}/configs/environment_variables.txt; set +
+# go to presto root folder
+pushd ${PRESTO_HOME}
 
 # go to scripts folder
 pushd ./scripts/shell/;
 # split configuration files
-./config_splitter.sh /simbiose/presto_user/configs config.properties
+./config_splitter.sh ${PRESTO_HOME}/configs config.properties
 popd;
 
 # make config directories

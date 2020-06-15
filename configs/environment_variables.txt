@@ -10,3 +10,7 @@ API_USER_KEY=
 
 # API crypto key to decrypt secured info
 API_CRYPTO_KEY=
+
+# Modules to build
+PRESTO_PACKAGES='!presto-server-rpm,!presto-docs,!presto-proxy,!presto-testing-server-launcher,!presto-verifier'
+
