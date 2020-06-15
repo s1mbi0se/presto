@@ -1,3 +1,7 @@
+# ---- {Docker Behavior Section} ------
+PRESTO_PROJECT_NAME=presto
+PRESTO_BEHAVIOR=developer
+
 # ---------------------------- {API CONFIG} -----------------------------
 # API endpoint to fetch data connections
 API_DATA_CONNECTIONS_ENDPOINT=/v1/data_connections/all
