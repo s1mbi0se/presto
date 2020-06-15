@@ -18,6 +18,8 @@ popd;
 mkdir -p ${PRESTO_HOME}/etc/catalog
 # move tmp configuration files to destination
 mv ./configs/config.properties.tmp ${PRESTO_HOME}/etc/config.properties
+sed -i 's/plugin.bundles=\\//g' ${PRESTO_HOME}/etc/config.properties
+sed -i 's/^..\/.*//g' ${PRESTO_HOME}/etc/config.properties
 mv ./configs/node.properties.tmp ${PRESTO_HOME}/etc/node.properties
 mv ./configs/jvm.config.tmp ${PRESTO_HOME}/etc/jvm.config
 mv ./configs/log.properties.tmp ${PRESTO_HOME}/etc/log.properties
