@@ -16,7 +16,7 @@ mkdir -p ${PRESTO_HOME}/presto-server-main/etc/catalog
 # move tmp configuration files to destination
 mv ./configs/config.properties.tmp ${PRESTO_HOME}/presto-server-main/etc/config.properties
 mv ./configs/node.properties.tmp ${PRESTO_HOME}/presto-server-main/etc/node.properties
-mv ./configs/jvm.properties.tmp ${PRESTO_HOME}/presto-server-main/etc/jvm.properties
+mv ./configs/jvm.config.tmp ${PRESTO_HOME}/presto-server-main/etc/jvm.config
 mv ./configs/log.properties.tmp ${PRESTO_HOME}/presto-server-main/etc/log.properties
 mv ./configs/api-config.properties.tmp ${PRESTO_HOME}/presto-server-main/etc/catalog/api-config.properties
 mv ./configs/shannondb.properties.tmp ${PRESTO_HOME}/presto-server-main/etc/catalog/shannondb.properties
