@@ -18,15 +18,14 @@ package io.prestosql.plugin.logs;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.airlift.log.Logger;
 
 import java.util.Map;
 
 @Aspect
 public abstract class BaseAspect
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BaseAspect.class);
+    private static final Logger log = Logger.get(BaseAspect.class);
 
 //    protected static final int NODE_ID = SDBConfig.getIntValue("S1S_NODE_ID", 0);
 //    protected static final String DATACENTER_NAME = SDBInstanceSettings.get().getDataCenterName();
@@ -68,8 +67,8 @@ public abstract class BaseAspect
 
         final Integer debugStepId = getThreadIdToStep().get(threadId);
         final Long debugLogId = getThreadIdToDebugLogId().get(threadId);
-
-        if (debugLogId != null && debugStepId != null && LOGGER.isDebugEnabled()) {
+        System.out.println("Teste");
+        if (debugLogId != null && debugStepId != null && log.isDebugEnabled()) {
             final MethodSignature methodAttached = (MethodSignature) point.getSignature();
             final String methodName = methodAttached.getMethod().getName();
 
@@ -80,9 +79,12 @@ public abstract class BaseAspect
                             debugLogId,
                             debugStepId,
                             timeToExecuteMethod,
-                            methodName);
+                            methodName,
+                            "",
+                            "",
+                            "");
 
-            LOGGER.debug(debugLogMessage);
+            System.out.println(debugLogMessage);
 
             getThreadIdToStep().put(threadId, debugStepId + 1);
         }

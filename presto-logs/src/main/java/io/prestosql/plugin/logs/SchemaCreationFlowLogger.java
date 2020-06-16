@@ -54,7 +54,7 @@ public class SchemaCreationFlowLogger
      */
     @Around(
             "execution(* *(..)) && "
-                    + "@annotation(main.java.io.prestosql.plugin.annotations.StartCreateSchemaFlowLoggable)")
+                    + "@annotation(io.prestosql.plugin.annotations.StartCreateSchemaFlowLoggable)")
     public Object startFlux(final ProceedingJoinPoint point) throws Throwable
     {
         final long threadId = Thread.currentThread().getId();
@@ -81,7 +81,7 @@ public class SchemaCreationFlowLogger
      */
     @Around(
             "execution(* *(..)) &&"
-                    + " @annotation(main.java.io.prestosql.plugin.annotations.CreateSchemaFlowLoggable)")
+                    + " @annotation(io.prestosql.plugin.annotations.CreateSchemaFlowLoggable)")
     public Object around(final ProceedingJoinPoint point) throws Throwable
     {
         final long threadId = Thread.currentThread().getId();
@@ -106,7 +106,7 @@ public class SchemaCreationFlowLogger
      */
     @Around(
             "execution(* *(..)) && "
-                    + "@annotation(main.java.io.prestosql.plugin.annotations.FinishCreateSchemaFlowLoggable)")
+                    + "@annotation(io.prestosql.plugin.annotations.FinishCreateSchemaFlowLoggable)")
     public Object finishFlux(final ProceedingJoinPoint point) throws Throwable
     {
         final long threadId = Thread.currentThread().getId();
