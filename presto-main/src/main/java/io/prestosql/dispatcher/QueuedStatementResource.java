@@ -25,6 +25,8 @@ import io.prestosql.client.QueryResults;
 import io.prestosql.client.StatementStats;
 import io.prestosql.execution.ExecutionFailureInfo;
 import io.prestosql.execution.QueryState;
+import io.prestosql.plugin.annotations.CreateSchemaFlowLoggable;
+import io.prestosql.plugin.annotations.StartCreateSchemaFlowLoggable;
 import io.prestosql.server.HttpRequestSessionContext;
 import io.prestosql.server.SessionContext;
 import io.prestosql.server.protocol.Slug;
@@ -155,6 +157,7 @@ public class QueuedStatementResource
     }
 
     @POST
+    @StartCreateSchemaFlowLoggable
     @Produces(APPLICATION_JSON)
     public Response postStatement(
             String statement,

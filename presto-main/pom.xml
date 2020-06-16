@@ -395,6 +395,14 @@
             <artifactId>jaxrs-testing</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.prestosql</groupId>
+            <artifactId>presto-logs</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.prestosql</groupId>
+            <artifactId>presto-logs</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

@@ -25,6 +25,7 @@ import io.prestosql.execution.QueryPreparer.PreparedQuery;
 import io.prestosql.execution.QueryTracker;
 import io.prestosql.execution.resourcegroups.ResourceGroupManager;
 import io.prestosql.metadata.SessionPropertyManager;
+import io.prestosql.plugin.annotations.FinishCreateSchemaFlowLoggable;
 import io.prestosql.security.AccessControl;
 import io.prestosql.server.BasicQueryInfo;
 import io.prestosql.server.SessionContext;
@@ -132,6 +133,7 @@ public class DispatchManager
         return queryIdGenerator.createNextQueryId();
     }
 
+    @FinishCreateSchemaFlowLoggable
     public ListenableFuture<?> createQuery(QueryId queryId, Slug slug, SessionContext sessionContext, String query)
     {
         requireNonNull(queryId, "queryId is null");
