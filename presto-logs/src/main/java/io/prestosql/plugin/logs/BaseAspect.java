@@ -67,7 +67,6 @@ public abstract class BaseAspect
 
         final Integer debugStepId = getThreadIdToStep().get(threadId);
         final Long debugLogId = getThreadIdToDebugLogId().get(threadId);
-        System.out.println("Teste");
         if (debugLogId != null && debugStepId != null) {
             final MethodSignature methodAttached = (MethodSignature) point.getSignature();
             final String methodName = methodAttached.getMethod().getName();
