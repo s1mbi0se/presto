@@ -13,9 +13,7 @@
  */
 package io.prestosql.plugin.logs;
 
-import io.prestosql.plugin.annotations.CreateSchemaFlowLoggable;
-import io.prestosql.plugin.annotations.FinishCreateSchemaFlowLoggable;
-import io.prestosql.plugin.annotations.StartCreateSchemaFlowLoggable;
+import io.prestosql.plugin.annotations.GenericFlowLoggable;
 
 public class Hello
 {
@@ -28,19 +26,19 @@ public class Hello
         sayGoodbye();
     }
 
-    @StartCreateSchemaFlowLoggable
+    //    @StartCreateSchemaFlowLoggable
     public static void sayHello()
     {
         System.out.println("Hello");
     }
 
-    @CreateSchemaFlowLoggable
+    @GenericFlowLoggable
     public static void sayContinue()
     {
         System.out.println("continue");
     }
 
-    @FinishCreateSchemaFlowLoggable
+    //    @FinishCreateSchemaFlowLoggable
     public static void sayGoodbye()
     {
         System.out.println("Goodbye");

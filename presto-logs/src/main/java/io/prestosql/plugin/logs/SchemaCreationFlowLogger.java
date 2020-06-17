@@ -119,6 +119,25 @@ public class SchemaCreationFlowLogger
         return resultFromMethod;
     }
 
+    @Around(
+            "execution(* *(..)) &&"
+                    + " @annotation(io.prestosql.plugin.annotations.GenericFlowLoggable)")
+    public Object generic(final ProceedingJoinPoint point) throws Throwable
+    {
+        final long threadId = Thread.currentThread().getId();
+
+        threadIdToStep.put(threadId, 0);
+        threadIdToDebugLogId.compute(
+                threadId, (key, value) -> UUID.randomUUID().getMostSignificantBits());
+
+        final Object resultFromMethod = printDebugLogForMethod(point, threadId);
+
+        threadIdToStep.remove(threadId);
+        threadIdToDebugLogId.remove(threadId);
+
+        return resultFromMethod;
+    }
+
     /**
      * Defines a name for a general flux inside ShannonDB
      *

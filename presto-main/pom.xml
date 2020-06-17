@@ -399,6 +399,10 @@
             <groupId>io.prestosql</groupId>
             <artifactId>presto-logs</artifactId>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.aspectj</groupId>-->
+<!--            <artifactId>aspectjrt</artifactId>-->
+<!--        </dependency>-->
     </dependencies>
 
     <build>
@@ -410,6 +414,28 @@
                     <ignorePackages>
                         <ignorePackage>io.prestosql.testing.assertions</ignorePackage>
                     </ignorePackages>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.nickwongdev</groupId>
+                <artifactId>aspectj-maven-plugin</artifactId>
+                <version>1.12.6</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>       <!-- use this goal to weave all your main classes -->
+                            <!--                            <goal>test-compile</goal>  &lt;!&ndash; use this goal to weave all your test classes &ndash;&gt;-->
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <showWeaveInfo>true</showWeaveInfo>
+                    <verbose>true</verbose>
+                    <Xlint>ignore</Xlint>
+                    <encoding>UTF-8</encoding>
+                    <source>11</source>
+                    <target>11</target>
+                    <complianceLevel>11</complianceLevel>
                 </configuration>
             </plugin>
         </plugins>

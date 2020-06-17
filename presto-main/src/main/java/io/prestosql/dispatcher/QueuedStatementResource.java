@@ -25,7 +25,7 @@ import io.prestosql.client.QueryResults;
 import io.prestosql.client.StatementStats;
 import io.prestosql.execution.ExecutionFailureInfo;
 import io.prestosql.execution.QueryState;
-import io.prestosql.plugin.annotations.StartCreateSchemaFlowLoggable;
+import io.prestosql.plugin.annotations.GenericFlowLoggable;
 import io.prestosql.server.HttpRequestSessionContext;
 import io.prestosql.server.SessionContext;
 import io.prestosql.server.protocol.Slug;
@@ -156,7 +156,7 @@ public class QueuedStatementResource
     }
 
     @POST
-    @StartCreateSchemaFlowLoggable
+    @GenericFlowLoggable
     @Produces(APPLICATION_JSON)
     public Response postStatement(
             String statement,
@@ -415,8 +415,8 @@ public class QueuedStatementResource
             }
             // if dispatched, redirect to new uri
             return dispatchInfo.getCoordinatorLocation()
-                            .map(coordinatorLocation -> getRedirectUri(coordinatorLocation, uriInfo))
-                            .orElseGet(() -> getQueuedUri(queryId, slug, token, uriInfo));
+                    .map(coordinatorLocation -> getRedirectUri(coordinatorLocation, uriInfo))
+                    .orElseGet(() -> getQueuedUri(queryId, slug, token, uriInfo));
         }
 
         private URI getRedirectUri(CoordinatorLocation coordinatorLocation, UriInfo uriInfo)

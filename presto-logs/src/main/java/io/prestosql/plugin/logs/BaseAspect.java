@@ -81,6 +81,7 @@ public abstract class BaseAspect
                             "",
                             "");
 
+            log.debug(debugLogMessage);
             System.out.println(debugLogMessage);
 
             getThreadIdToStep().put(threadId, debugStepId + 1);

@@ -24,6 +24,7 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 import io.prestosql.connector.ConnectorManager;
+import io.prestosql.plugin.annotations.StartCreateSchemaFlowLoggable;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -175,6 +176,7 @@ public class DynamicCatalogStore
         log.info("-- Added catalog %s using connector %s --", catalogName, connectorName);
     }
 
+    @StartCreateSchemaFlowLoggable
     private void updateCatalogDelta()
             throws Exception
     {
