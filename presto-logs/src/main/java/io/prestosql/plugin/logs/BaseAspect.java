@@ -13,12 +13,10 @@
  */
 package io.prestosql.plugin.logs;
 
-//import br.com.s1mbi0se.shannondb.SDBInstanceSettings;
-//import br.com.s1mbi0se.shannondb.server.SDBConfig;
+import io.airlift.log.Logger;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
-import io.airlift.log.Logger;
 
 import java.util.Map;
 
