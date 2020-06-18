@@ -14,12 +14,11 @@
 package io.prestosql.logging.aspects;
 
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * This class is responsible to execute all debug logs inside ColumnCreationFlux.
  *
@@ -38,20 +37,20 @@ public class SchemaCreationFlowLogger
     protected final Map<Long, Integer> threadIdToStep = new ConcurrentHashMap<>();
     protected final Map<Long, Long> threadIdToDebugLogId = new ConcurrentHashMap<>();
 
-    /**
-     * This method is executed when the Thread starts execution of creation schema command inside
-     * worker.
-     *
-     * <p>It is necessary to create the step and debug log id variable for each thread that will
-     * execute the flux. So it will delegate the processing to {@link
-     * BaseAspect#printDebugLogForMethod(ProceedingJoinPoint, long)} that will be responsible to
-     * insert inside the log information about method to be executed.
-     *
-     * @param point an object o Aspectj library that represents the method that ShannonDB needs to
-     *     obtain information inside logs.
-     * @return the same object that is returned by the method that is wrapped in this advice
-     * @throws Throwable the same exception that is thrown by the method that is wrapped
-     */
+//    /**
+//     * This method is executed when the Thread starts execution of creation schema command inside
+//     * worker.
+//     *
+//     * <p>It is necessary to create the step and debug log id variable for each thread that will
+//     * execute the flux. So it will delegate the processing to {@link
+//     * BaseAspect#printDebugLogForMethod(ProceedingJoinPoint, long)} that will be responsible to
+//     * insert inside the log information about method to be executed.
+//     *
+//     * @param point an object o Aspectj library that represents the method that ShannonDB needs to
+//     *     obtain information inside logs.
+//     * @return the same object that is returned by the method that is wrapped in this advice
+//     * @throws Throwable the same exception that is thrown by the method that is wrapped
+//     */
 //    @Around(
 //            "execution(* *(..)) && "
 //                    + "@annotation(io.prestosql.plugin.annotations.StartCreateSchemaFlowLoggable)")
@@ -66,43 +65,43 @@ public class SchemaCreationFlowLogger
 //        return printDebugLogForMethod(point, threadId);
 //    }
 
-    /**
-     * This method just retrieves the thread id and delegate the processing to method inside {@link
-     * BaseAspect}
-     *
-     * <p>It will delegate the processing to {@link
-     * BaseAspect#printDebugLogForMethod(ProceedingJoinPoint, long)} that will be responsible to
-     * insert inside the log information about method to be executed.
-     *
-     * @param point an object o Aspectj library that represents the method that ShannonDB needs to
-     *     obtain information inside logs.
-     * @return the same object that is returned by the method that is wrapped in this advice
-     * @throws Throwable the same exception that is thrown by the method that is wrapped
-     */
-    @Around(
-            "execution(* *(..))")
-    public Object around(final ProceedingJoinPoint point) throws Throwable
-    {
-        final long threadId = Thread.currentThread().getId();
+//    /**
+//     * This method just retrieves the thread id and delegate the processing to method inside {@link
+//     * BaseAspect}
+//     *
+//     * <p>It will delegate the processing to {@link
+//     * BaseAspect#printDebugLogForMethod(ProceedingJoinPoint, long)} that will be responsible to
+//     * insert inside the log information about method to be executed.
+//     *
+//     * @param point an object o Aspectj library that represents the method that ShannonDB needs to
+//     *     obtain information inside logs.
+//     * @return the same object that is returned by the method that is wrapped in this advice
+//     * @throws Throwable the same exception that is thrown by the method that is wrapped
+//     */
+//    @Around(
+//            "execution(* io.prestosql.metadata.DynamicCatalogStore.*(..))")
+//    public Object around(final ProceedingJoinPoint point) throws Throwable
+//    {
+//        final long threadId = Thread.currentThread().getId();
+//
+//        return printDebugLogForMethod(point, threadId);
+//    }
 
-        return printDebugLogForMethod(point, threadId);
-    }
-
-    /**
-     * This method is executed when the Thread starts execution when finishes the command of create
-     * schema inside the worker.
-     *
-     * <p>It is necessary to remove the step and debug log id variable for each thread that already
-     * executed the flux. It will first to delegate the processing to {@link
-     * BaseAspect#printDebugLogForMethod(ProceedingJoinPoint, long)} that will be responsible to
-     * insert inside the log information about method to be executed than it will reset information
-     * about step and debug log id inside maps.
-     *
-     * @param point an object o Aspectj library that represents the method that ShannonDB needs to
-     *     obtain information inside logs.
-     * @return the same object that is returned by the method that is wrapped in this advice
-     * @throws Throwable the same exception that is thrown by the method that is wrapped
-     */
+//    /**
+//     * This method is executed when the Thread starts execution when finishes the command of create
+//     * schema inside the worker.
+//     *
+//     * <p>It is necessary to remove the step and debug log id variable for each thread that already
+//     * executed the flux. It will first to delegate the processing to {@link
+//     * BaseAspect#printDebugLogForMethod(ProceedingJoinPoint, long)} that will be responsible to
+//     * insert inside the log information about method to be executed than it will reset information
+//     * about step and debug log id inside maps.
+//     *
+//     * @param point an object o Aspectj library that represents the method that ShannonDB needs to
+//     *     obtain information inside logs.
+//     * @return the same object that is returned by the method that is wrapped in this advice
+//     * @throws Throwable the same exception that is thrown by the method that is wrapped
+//     */
 //    @Around(
 //            "execution(* *(..)) && "
 //                    + "@annotation(io.prestosql.plugin.annotations.FinishCreateSchemaFlowLoggable)")

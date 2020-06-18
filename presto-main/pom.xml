@@ -421,7 +421,7 @@
                     <execution>
                         <goals>
                             <goal>compile</goal>       <!-- use this goal to weave all your main classes -->
-                            <goal>test-compile</goal>  <!-- use this goal to weave all your test classes -->
+<!--                            <goal>test-compile</goal>  &lt;!&ndash; use this goal to weave all your test classes &ndash;&gt;-->
                         </goals>
                     </execution>
                 </executions>
@@ -429,6 +429,14 @@
                     <source>11</source>
                     <target>11</target>
                     <complianceLevel>11</complianceLevel>
+                    <sources>
+                        <source>
+                            <excludes>
+                                <exclude>io.prestosql.geospatial.serde.generated</exclude>
+                                <exclude>org.openjdk.jmh.generators</exclude>
+                            </excludes>
+                        </source>
+                    </sources>
                 </configuration>
                 <dependencies>
                     <dependency>
