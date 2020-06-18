@@ -199,7 +199,12 @@ public class DynamicCatalogStore
             }
         }
         updateConnectorIds(announcer, catalogManager);
+        finishUpdateCatalogDelta();
     }
+
+    private void finishUpdateCatalogDelta()
+    {}
+
 
     private static void updateConnectorIds(Announcer announcer, CatalogManager metadata)
     {

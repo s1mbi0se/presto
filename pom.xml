@@ -145,6 +145,12 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>br.com.simbiose</groupId>
+                <artifactId>debug_log</artifactId>
+                <version>0.0.1</version>
+            </dependency>
+
+            <dependency>
                 <groupId>io.prestosql</groupId>
                 <artifactId>presto-spi</artifactId>
                 <version>${project.version}</version>
