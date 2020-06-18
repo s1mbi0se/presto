@@ -20,7 +20,8 @@ public class LoggingAspect
                     + ".updateCatalogDelta(..))";
 
     private static final String WHITE_AND_BLACK_LIST =
-            "execution(* io.prestosql.metadata..*(..))";
+            "execution(* io.prestosql.metadata..*(..)) && " +
+                    "!within(io.prestosql.logging.aspects..*)";
 
     private static final String FINISH_METHOD =
             "execution(* io.prestosql.metadata.DynamicCatalogStore"
