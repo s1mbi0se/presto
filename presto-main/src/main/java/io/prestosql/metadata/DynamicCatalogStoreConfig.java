@@ -68,10 +68,35 @@ public class DynamicCatalogStoreConfig
             properties = this.readConfigFile(API_CONFIG_FILE);
 
             if (properties.size() > 0) {
-                this.dataConnectionsEndpoint = properties.get("data-connections-endpoint");
-                this.dataConnectionsUrl = properties.get("data-connections-url");
-                this.dataConnectionsApiKey = properties.get("data-connections-api-key");
-                this.cryptoKey = properties.get("data-connections-crypto-key");
+                Map<String, String> env = System.getenv();
+
+                if (env.containsKey("API_DATA_CONNECTIONS_ENDPOINT")) {
+                    this.dataConnectionsEndpoint = env.get("API_DATA_CONNECTIONS_ENDPOINT");
+                }
+                else {
+                    this.dataConnectionsEndpoint = properties.get("data-connections-endpoint");
+                }
+
+                if (env.containsKey("API_DATA_CONNECTIONS_URL")) {
+                    this.dataConnectionsUrl = env.get("API_DATA_CONNECTIONS_URL");
+                }
+                else {
+                    this.dataConnectionsUrl = properties.get("data-connections-url");
+                }
+
+                if (env.containsKey("API_USER_KEY")) {
+                    this.dataConnectionsApiKey = env.get("API_USER_KEY");
+                }
+                else {
+                    this.dataConnectionsApiKey = properties.get("data-connections-api-key");
+                }
+
+                if (env.containsKey("API_CRYPTO_KEY")) {
+                    this.cryptoKey = env.get("API_CRYPTO_KEY");
+                }
+                else {
+                    this.cryptoKey = properties.get("data-connections-crypto-key");
+                }
             }
 
             Map<String, String> shannonDbConfig = this.readConfigFile(SHANNONDB_CONFIG_FILE);
