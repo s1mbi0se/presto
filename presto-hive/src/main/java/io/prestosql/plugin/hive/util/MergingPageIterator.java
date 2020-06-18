@@ -15,6 +15,7 @@ package io.prestosql.plugin.hive.util;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
 import io.prestosql.spi.Page;
 import io.prestosql.spi.PageBuilder;
 import io.prestosql.spi.block.Block;
@@ -59,7 +60,7 @@ public class MergingPageIterator
         this.pageBuilder = new PageBuilder(types);
         this.pagePositions = mergeSorted(
                 iterators.stream()
-                        .map(pages -> concat(transform(pages, PagePositionIterator::new)))
+                        .map(pages -> Iterators.<PagePosition>concat(transform(pages, PagePositionIterator::new)))
                         .collect(toList()),
                 naturalOrder());
     }
