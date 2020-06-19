@@ -20,7 +20,7 @@ public class SqlSelectFlowLoggingAspect
                     + ".postStatement(..))";
 
     private static final String WHITE_AND_BLACK_LIST =
-            "execution(* io.prestosql.dispatcher..*(..)) && " +
+            "execution(* io.prestosql..*(..)) && " +
                     "!within(io.prestosql.logging.aspects..*)";
 
     private static final String FINISH_METHOD =
