@@ -140,6 +140,7 @@
         <module>presto-google-sheets</module>
         <module>presto-connectors/presto-shannondb</module>
         <module>presto-bigquery</module>
+        <module>presto-logging</module>
     </modules>
 
     <dependencyManagement>

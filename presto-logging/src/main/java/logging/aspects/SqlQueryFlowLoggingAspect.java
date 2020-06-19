@@ -1,4 +1,4 @@
-package io.prestosql.logging.aspects;
+package logging.aspects;
 
 import br.com.simbiose.debug_log.BaseAspect;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -10,7 +10,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Aspect
-public class SqlSelectFlowLoggingAspect
+public class SqlQueryFlowLoggingAspect
         extends BaseAspect
 {
     private static final String FLOW_NAME = "SqlSelectFlow";
