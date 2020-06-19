@@ -24,7 +24,7 @@ public class SqlSelectFlowLoggingAspect
                     "!within(io.prestosql.logging.aspects..*)";
 
     private static final String FINISH_METHOD =
-            "execution(* io.prestosql.dispatcher.QueuedStatementResource.Query.createQueryResults(..))";
+            "execution(* io.prestosql.execution.QueryStateTimer.endQuery())";
 
     protected final Map<Long, Integer> threadIdToStep = new ConcurrentHashMap<>();
     protected final Map<Long, Long> threadIdToDebugLogId = new ConcurrentHashMap<>();
