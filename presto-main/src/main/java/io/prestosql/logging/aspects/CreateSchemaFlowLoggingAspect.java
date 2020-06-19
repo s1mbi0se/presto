@@ -16,16 +16,20 @@ public class CreateSchemaFlowLoggingAspect
     private static final String FLOW_NAME = "CreateSchemaFlow";
 
     private static final String START_METHOD =
-            "execution(* io.prestosql.metadata.DynamicCatalogStore"
-                    + ".updateCatalogDelta(..))";
+            "execution(* io.prestosql.server.PrestoServer"
+                    + ".main(..))";
 
     private static final String WHITE_AND_BLACK_LIST =
             "execution(* io.prestosql.metadata..*(..)) && " +
                     "!within(io.prestosql.logging.aspects..*)";
 
     private static final String FINISH_METHOD =
-            "execution(* io.prestosql.metadata.DynamicCatalogStore"
-                    + ".finishUpdateCatalogDelta(..))";
+            "execution(* io.prestosql.execution.QueryStateMachine"
+                    + ".transitionToFailed(..)) || "
+                    + "execution(* io.prestosql.execution.QueryStateMachine"
+                    + ".transitionToFinished(..)) || "
+                    + "execution(* io.prestosql.execution.QueryStateMachine"
+                    + ".transitionToCanceled(..))";
 
     protected final Map<Long, Integer> threadIdToStep = new ConcurrentHashMap<>();
     protected final Map<Long, Long> threadIdToDebugLogId = new ConcurrentHashMap<>();
