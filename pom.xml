@@ -144,7 +144,6 @@
         <module>presto-bigquery</module>
         <module>presto-pinot</module>
         <module>presto-oracle</module>
-        <module>presto-logs-aspect</module>
     </modules>
 
     <dependencyManagement>
@@ -1231,6 +1230,14 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.prestosql</groupId>
+            <artifactId>presto-logs-aspect</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <pluginManagement>
