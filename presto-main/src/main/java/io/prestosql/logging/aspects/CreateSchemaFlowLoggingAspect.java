@@ -10,7 +10,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Aspect
-public class LoggingAspect
+public class CreateSchemaFlowLoggingAspect
         extends BaseAspect
 {
     private static final String FLOW_NAME = "CreateSchemaFlow";
