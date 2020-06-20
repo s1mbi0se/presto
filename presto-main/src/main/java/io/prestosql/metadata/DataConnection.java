@@ -62,9 +62,9 @@ public class DataConnection
 //            @JsonProperty("organization-id") BigInteger organizationId,
 //            @JsonProperty("created-by-type") String createdByType,
 //            @JsonProperty("created-by-user-id") BigInteger createdByUserId,
-            @JsonProperty("created-at") LocalDateTime createdAt,
-            @JsonProperty("updated-at") LocalDateTime updatedAt,
-            @JsonProperty("deleted-at") LocalDateTime deletedAt,
+            @JsonFormat(pattern = "MM/dd/yyyy, HH:mm:ss") @JsonProperty("created-at") LocalDateTime createdAt,
+            @JsonFormat(pattern = "MM/dd/yyyy, HH:mm:ss") @JsonProperty("updated-at") LocalDateTime updatedAt,
+            @JsonFormat(pattern = "MM/dd/yyyy, HH:mm:ss") @JsonProperty("deleted-at") LocalDateTime deletedAt,
             @JsonProperty("status") String status,
             @JsonProperty("settings") Map<String, String> settings)
     {
