@@ -17,6 +17,48 @@
 
     <dependencies>
         <dependency>
+            <groupId>br.com.simbiose</groupId>
+            <artifactId>debug_log</artifactId>
+            <version>0.0.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty</artifactId>
+            <version>1.30.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.locationtech.jts</groupId>
+            <artifactId>jts-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.esri.geometry</groupId>
+            <artifactId>esri-geometry-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.prestosql</groupId>
+            <artifactId>presto-geospatial-toolkit</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>fastutil</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.prestosql</groupId>
+            <artifactId>presto-spi</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>io.prestosql</groupId>
             <artifactId>presto-array</artifactId>
         </dependency>
@@ -459,6 +501,12 @@
             <artifactId>testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjrt</artifactId>
+            <version>1.9.5</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -471,6 +519,53 @@
                         <ignorePackage>io.prestosql.testing.assertions</ignorePackage>
                     </ignorePackages>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>aspectj-maven-plugin</artifactId>
+                <version>1.11</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+<!--                            <goal>test-compile</goal> -->
+                        </goals>
+                        <configuration>
+                            <source>11</source>
+                            <target>11</target>
+                            <complianceLevel>11</complianceLevel>
+                            <encoding>UTF-8</encoding>
+                            <verbose>true</verbose>
+                            <weaveDependencies>
+                                <weaveDependency>
+                                    <groupId>io.grpc</groupId>
+                                    <artifactId>grpc-netty</artifactId>
+                                </weaveDependency>
+                            </weaveDependencies>
+                            <showWeaveInfo>true</showWeaveInfo>
+                            <XnoInline>true</XnoInline>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.aspectj</groupId>
+                        <artifactId>aspectjrt</artifactId>
+                        <version>1.9.5</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.aspectj</groupId>
+                        <artifactId>aspectjtools</artifactId>
+                        <version>1.9.5</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>com.sun</groupId>
+                        <artifactId>tools</artifactId>
+                        <version>${java.version}</version>
+                        <scope>system</scope>
+                        <systemPath>${project.basedir}/pom.xml</systemPath>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>

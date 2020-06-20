@@ -26,3 +26,4 @@ benchmark_outputs
 node_modules
 product-test-reports
 run_server.sh
+external_dependencies/
