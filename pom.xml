@@ -144,11 +144,16 @@
         <module>presto-bigquery</module>
         <module>presto-pinot</module>
         <module>presto-oracle</module>
-        <module>presto-logs-aspect</module>
     </modules>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>br.com.simbiose</groupId>
+                <artifactId>debug_log</artifactId>
+                <version>0.0.1</version>
+            </dependency>
+
             <dependency>
                 <groupId>io.prestosql</groupId>
                 <artifactId>presto-spi</artifactId>

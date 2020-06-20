@@ -17,6 +17,13 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjrt</artifactId>
+            <version>1.9.5</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
             <groupId>br.com.simbiose</groupId>
             <artifactId>debug_log</artifactId>
         </dependency>
@@ -433,7 +440,7 @@
                     <encoding>UTF-8</encoding>
                     <source>11</source>
                     <target>11</target>
-                    <complianceLevel>11</complianceLevel>
+                    <complianceLevel>1.11</complianceLevel>
                 </configuration>
                 <executions>
                     <execution>
