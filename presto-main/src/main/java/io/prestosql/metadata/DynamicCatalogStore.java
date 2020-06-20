@@ -199,6 +199,11 @@ public class DynamicCatalogStore
             }
         }
         updateConnectorIds(announcer, catalogManager);
+        finishAspectLogging();
+    }
+
+    private void finishAspectLogging()
+    {
     }
 
     private static void updateConnectorIds(Announcer announcer, CatalogManager metadata)
