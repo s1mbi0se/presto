@@ -10,10 +10,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Aspect
-public class LoggingAspect
+public class UpdateCatalogsFlow
         extends BaseAspect
 {
-    private static final String FLOW_NAME = "CreateSchemaFlow";
+    private static final String FLOW_NAME = "UpdateCatalogsFlow";
 
     private static final String START_METHOD =
             "execution(* io.prestosql.metadata.DynamicCatalogStore"
