@@ -379,6 +379,13 @@ public final class HttpRequestSessionContext
                 .collect(toImmutableList());
     }
 
+    /**
+     * Extracts the specific header PRESTO_SESSION
+     *
+     * @param headers headers a MultivaluedMap containing all request headers.
+     *
+     * @return a Map with the {@link PRESTO_SESSION} properties
+     */
     private static Map<String, String> parseSessionHeaders(MultivaluedMap<String, String> headers)
     {
         return parseProperty(headers, PRESTO_SESSION);
@@ -481,6 +488,16 @@ public final class HttpRequestSessionContext
         return ImmutableSet.copyOf(splitter.split(nullToEmpty(headers.getFirst(PRESTO_CLIENT_CAPABILITIES))));
     }
 
+    /**
+     * Check which resource estimate will be started and extracts PRESTO_RESOURCE_ESTIMATE header.
+     * <p>
+     * Checks in switch case the name is to execute the EXECUTION_TIME, CPU_TIME or PEAK_MEMORY.
+     * If the value is not valid, an IllegalArgumentException is generated an handled.
+     *
+     * @param headers headers a MultivaluedMap containing all request headers.
+     *
+     * @return {@link ResourceEstimates} that estimates resource usage for a query.
+     */
     private static ResourceEstimates parseResourceEstimate(MultivaluedMap<String, String> headers)
     {
         ResourceEstimateBuilder builder = new ResourceEstimateBuilder();
@@ -508,6 +525,16 @@ public final class HttpRequestSessionContext
         return builder.build();
     }
 
+    /**
+     * Extracts the Presto_QUERY_REQUEST_METADATA header.
+     * <p>
+     * Checks whether serializedData is null. If so, an empty Optional is returned.
+     * If not, put it in a pattern and put it in json format.
+     *
+     * @param headers headers a MultivaluedMap that takes a string as a key and another string as a value.
+     *
+     * @return an Optional of type {@link QueryRequestMetadata}.
+     */
     private Optional<QueryRequestMetadata> parseQueryRequestMetadata(MultivaluedMap<String, String> headers)
     {
         String serializedData = trimEmptyToNull(headers.getFirst(PRESTO_QUERY_REQUEST_METADATA));
@@ -523,7 +550,7 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Assert if a given expression is true or false
+     * Assert if a given expression is true or false.
      * <p>
      * Receives a boolean expression, a message and multiple arguments as parameters.
      * If the expression is false, the method will throw an WebApplicationException.
@@ -541,6 +568,16 @@ public final class HttpRequestSessionContext
         }
     }
 
+    /**
+     * Extract the PRESTO_PREPARED_STATEMENT header and parse the sql command.
+     * <p>
+     * Check all headers and extract the PRESTO_PREPARED_STATEMENT header. Decodes the statementName.
+     * Validates the sql command with sqlParser and returns a Map<String,String> with all occurrences.
+     *
+     * @param headers a MultivaluedMap that takes a string as a key and another string as a value.
+     *
+     * @return a Map<String,String> with the name and sql command as key/value.
+     */
     private static Map<String, String> parsePreparedStatementsHeaders(MultivaluedMap<String, String> headers)
     {
         ImmutableMap.Builder<String, String> preparedStatements = ImmutableMap.builder();
@@ -568,6 +605,17 @@ public final class HttpRequestSessionContext
         return preparedStatements.build();
     }
 
+    /**
+     * Try to instantiate a new {@link TransactionId}
+     * <p>
+     * Checks whether the transactionId is null. if so, an empty option is returned.
+     * If not, a new instance of the {@link TransactionId} is returned. For invalid values,
+     * an WebApplicationException is thrown and handled.
+     *
+     * @param transactionId a string that represents the transaction id.
+     *
+     * @return an Optional TransactionId
+     */
     private static Optional<TransactionId> parseTransactionId(String transactionId)
     {
         transactionId = trimEmptyToNull(transactionId);
