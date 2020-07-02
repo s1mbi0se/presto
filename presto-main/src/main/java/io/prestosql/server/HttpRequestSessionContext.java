@@ -211,9 +211,9 @@ public final class HttpRequestSessionContext
     /**
      * Creates a session identity.
      *
-     * @param authenticatedIdentity an Optional of {@link Identity}
+     * @param authenticatedIdentity an Optional Session {@link Identity}
      * @param headers a MultivaluedMap containing all request headers.
-     * @param groupProvider a {@link GroupProvider} interface implementation
+     * @param groupProvider a {@link GroupProvider} object.
      *
      * @return a session identity object.
      */
@@ -380,7 +380,7 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts a specific header PRESTO_SESSION
+     * Extracts the specific header PRESTO_SESSION
      *
      * @param headers headers a MultivaluedMap containing all request headers.
      *
@@ -419,7 +419,7 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts a specific header PRESTO_EXTRA_CREDENTIAL
+     * Extracts the specific header PRESTO_EXTRA_CREDENTIAL
      *
      * @param headers a MultivaluedMap containing all request headers.
      *
@@ -478,7 +478,7 @@ public final class HttpRequestSessionContext
      * Extracts the header PRESTO_CLIENT_CAPABILITIES.
      * <p>
      * Extract the header and add it to a Set.
-     * Returns a Set with the extracted {@code PRESTO_CLIENT_CAPABILITIES} headers.
+     * Returns a Set with the extracted {@code PRESTO_CLIENT_CAPABILITIES} header.
      *
      * @param headers headers a MultivaluedMap containing all request headers.
      *
@@ -528,8 +528,7 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts the Presto_QUERY_REQUEST_METADATA header, parses escaped slashes and double quotes, than
-     * deserialize to QueryRequestMetadata with a json codec.
+     * Extracts the Presto_QUERY_REQUEST_METADATA header.
      * <p>
      * Checks whether serializedData is null. If so, an empty Optional is returned.
      * If not, put it in a pattern and put it in json format.
@@ -572,7 +571,7 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extract the PRESTO_PREPARED_STATEMENT header and parser the sql command.
+     * Extract the PRESTO_PREPARED_STATEMENT header and parse the sql command.
      * <p>
      * Check all headers and extract the PRESTO_PREPARED_STATEMENT header. Decodes the statementName.
      * Validates the sql command with sqlParser and returns a Map<String,String> with all occurrences.
