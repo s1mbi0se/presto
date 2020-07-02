@@ -213,9 +213,9 @@ public final class HttpRequestSessionContext
      * <p>
      * Checks if the user is non-null, add header, add extraCredentials and add groups to build a session identity.
      *
-     * @param authenticatedIdentity
+     * @param authenticatedIdentity an Optional of {@link Identity}
      * @param headers a MultivaluedMap string
-     * @param groupProvider a Interface
+     * @param groupProvider a {@link GroupProvider} interface implementation
      *
      * @return an identity to a session
      */
@@ -360,7 +360,7 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts a header from a headers map in the for of List<String>. Breaks each value with a comma, removes spaces and omits empty string,
+     * Extracts a header from a headers map in the for of List<String>. Breaks each value with a comma, removes spaces and omits empty string.
      * Returns a flat (non-nested) list of resulting values ​​or an empty list
      *
      * @param headers a MultivaluedMap string
@@ -407,11 +407,11 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts a specific header {@code PRESTO_EXTRA_CREDENTIAL}
+     * Extracts a specific header PRESTO_EXTRA_CREDENTIAL
      *
      * @param headers a MultivaluedMap string
      *
-     * @return parseProperty
+     * @return a Map with the {@link PRESTO_EXTRA_CREDENTIAL} properties
      */
     private static Map<String, String> parseExtraCredentials(MultivaluedMap<String, String> headers)
     {
@@ -445,12 +445,28 @@ public final class HttpRequestSessionContext
         return properties;
     }
 
+    /**
+     * Extracts a header from a headers map, break each value with a comma, remove spaces and omit empty strings.
+     * Returns a Set<String> with the extracted {@code PRESTO_CLIENT_TAGS} header.
+     *
+     * @param headers a MultivaluedMap string
+     *
+     * @return a Set<String> with {@code PRESTO_CLIENT_TAGS} headers.
+     */
     private static Set<String> parseClientTags(MultivaluedMap<String, String> headers)
     {
         Splitter splitter = Splitter.on(',').trimResults().omitEmptyStrings();
         return ImmutableSet.copyOf(splitter.split(nullToEmpty(headers.getFirst(PRESTO_CLIENT_TAGS))));
     }
 
+    /**
+     * Extracts a header from a headers map, break each value with a comma, remove spaces and omit empty strings.
+     * Returns a Set<String> with the extracted {@code PRESTO_CLIENT_CAPABILITIES} headers.
+     *
+     * @param headers a MultivaluedMap string
+     *
+     * @return a Set<String> with {@code PRESTO_CLIENT_CAPABILITIES} headers.
+     */
     private static Set<String> parseClientCapabilities(MultivaluedMap<String, String> headers)
     {
         Splitter splitter = Splitter.on(',').trimResults().omitEmptyStrings();
@@ -568,14 +584,14 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Returns the given string if is non-null and nonempty.
+     * Returns the given string if is non-null and non-empty.
      * <p>
-     * Checks if the parameter is non-null and nonempty as well as checks the amount of bits
+     * Checks if the parameter is non-null and non-empty as well as checks the amount of bits
      * to classify it according to the Unicode standard.
      *
      * @param value a string that represents PrestoHeaders
      *
-     * @return {@code string} itself if it is non-null and nonempty.
+     * @return {@code string} itself if it is non-null and non-empty.
      *
      * @see io.prestosql.client.PrestoHeaders
      */
