@@ -10,18 +10,6 @@
         </directory>
     </fileSet>
 
-    <fileSet to="/configs">
-        <directory path="${basedir}/../configs"/>
-    </fileSet>
-
-    <fileSet to="/scripts">
-        <directory path="${basedir}/../scripts"/>
-    </fileSet>
-
-    <fileSet to="/logs">
-        <directory path="${basedir}/../logs"/>
-    </fileSet>
-
     <!-- Launcher -->
     <artifactSet to="bin">
         <artifact id="io.airlift:launcher:tar.gz:bin:${dep.packaging.version}">
@@ -158,11 +146,11 @@
 <!--        </artifact>-->
 <!--    </artifactSet>-->
 
-<!--    <artifactSet to="plugin/postgresql">-->
-<!--        <artifact id="${project.groupId}:presto-postgresql:zip:${project.version}">-->
-<!--            <unpack />-->
-<!--        </artifact>-->
-<!--    </artifactSet>-->
+    <artifactSet to="plugin/postgresql">
+        <artifact id="${project.groupId}:presto-postgresql:zip:${project.version}">
+            <unpack />
+        </artifact>
+    </artifactSet>
 
 <!--    <artifactSet to="plugin/prometheus">-->
 <!--        <artifact id="${project.groupId}:presto-prometheus:zip:${project.version}">-->

@@ -1,0 +1,20 @@
+# ---- {Docker Behavior Section} ------
+PRESTO_PROJECT_NAME=presto
+PRESTO_BEHAVIOR=developer
+
+# ---------------------------- {API CONFIG} -----------------------------
+# API endpoint to fetch data connections
+API_DATA_CONNECTIONS_ENDPOINT=/v1/data_connections/all
+
+# API host addresses - Can have multiple values separated by ;
+API_DATA_CONNECTIONS_URL=api
+
+# API user key to authenticate
+API_USER_KEY=
+
+# API crypto key to decrypt secured info
+API_CRYPTO_KEY=
+
+# Modules to build
+PRESTO_PACKAGES='!presto-server-rpm,!presto-docs,!presto-proxy,!presto-testing-server-launcher,!presto-verifier'
+
