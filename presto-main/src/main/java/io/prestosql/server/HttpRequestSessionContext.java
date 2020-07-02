@@ -348,6 +348,18 @@ public final class HttpRequestSessionContext
         return queryRequestMetadata;
     }
 
+    /**
+     * <p>
+     * Creates a list of values, checks if the headers parameter ins non-null. Separets strings by comma, remove spaces
+     * and omit empty strings.
+     * Transforms the list values to stream, then splits each element of the list by the method map and then turns it
+     * into an immutableList.
+     *
+     * @param headers a MultivaluedMap string
+     * @param name a string that represents PrestoHeader's name
+     *
+     * @return a list of all HttpHeaders and their names
+     */
     private static List<String> splitHttpHeader(MultivaluedMap<String, String> headers, String name)
     {
         List<String> values = firstNonNull(headers.get(name), ImmutableList.of());
@@ -379,11 +391,30 @@ public final class HttpRequestSessionContext
         return roles.build();
     }
 
+    /**
+     * Returns parseProperty Map string with a headerName
+     *
+     * @param headers a MultivaluedMap string
+     *
+     * @return parseProperty
+     */
     private static Map<String, String> parseExtraCredentials(MultivaluedMap<String, String> headers)
     {
         return parseProperty(headers, PRESTO_EXTRA_CREDENTIAL);
     }
 
+    /**
+     * Returns a map string with parsed properties.
+     * <p>
+     * Instantiates a properties HashMap, go through the splitHttpHeader method and add each header to the nameValue list.
+     * Takes the first element from the nameValue list and add it to the properties HashMap as a key and add the second element from
+     * the nameValue list as a value in the properties HashMap.
+     *
+     * @param headers a MultivaluedMap string
+     * @param headerName a string with the header name.
+     *
+     * @return a HashMap with the properties.
+     */
     private static Map<String, String> parseProperty(MultivaluedMap<String, String> headers, String headerName)
     {
         Map<String, String> properties = new HashMap<>();
@@ -453,6 +484,18 @@ public final class HttpRequestSessionContext
         return Optional.ofNullable(queryRequestMetadata);
     }
 
+    /**
+     * Checks whether an expression is true or false.
+     * <p>
+     * Receives a boolean expression, a message and multiple arguments as parameters.
+     * If the expression is false, the method will throw an WebApplicationException.
+     *
+     * @param expression any boolean expression
+     * @param format message that will appear if it is false
+     * @param args multiple arguments that can be inserted in the format
+     *
+     * @throws WebApplicationException will be thrown if the expression is false.
+     */
     private static void assertRequest(boolean expression, String format, Object... args)
     {
         if (!expression) {
@@ -510,6 +553,18 @@ public final class HttpRequestSessionContext
                 .build());
     }
 
+    /**
+     * Returns the given string if is non-null and nonempty.
+     * <p>
+     * Checks if the parameter is non-null and nonempty as well as checks the amount of bits
+     * to classify it according to the Unicode standard.
+     *
+     * @param value a string that represents PrestoHeaders
+     *
+     * @return {@code string} itself if it is non-null and nonempty.
+     *
+     * @see io.prestosql.client.PrestoHeaders
+     */
     private static String trimEmptyToNull(String value)
     {
         return emptyToNull(nullToEmpty(value).trim());
