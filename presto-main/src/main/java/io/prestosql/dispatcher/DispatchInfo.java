@@ -27,6 +27,17 @@ public class DispatchInfo
     private final Duration elapsedTime;
     private final Duration queuedTime;
 
+    /**
+     * Returns a new object of type {@link DispatchInfo}.
+     * <p>
+     * Receives elapsed time of the query and queued time and return
+     * an object of type {@link DispatchInfo}.
+     *
+     * @param elapsedTime time elapsed until the query response
+     * @param queuedTime queue waiting time
+     *
+     * @return a {@link DispatchInfo} object
+     */
     public static DispatchInfo queued(Duration elapsedTime, Duration queuedTime)
     {
         return new DispatchInfo(Optional.empty(), Optional.empty(), elapsedTime, queuedTime);
@@ -52,21 +63,41 @@ public class DispatchInfo
         this.queuedTime = requireNonNull(queuedTime, "queuedTime is null");
     }
 
+    /**
+     * Returns the coordinator's uri.
+     *
+     * @return an Optional {@link CoordinatorLocation}.
+     */
     public Optional<CoordinatorLocation> getCoordinatorLocation()
     {
         return coordinatorLocation;
     }
 
+    /**
+     * Returns detailed information about an executed failure, such as its type, message and cause.
+     *
+     * @return an Optional {@link ExecutionFailureInfo}.
+     */
     public Optional<ExecutionFailureInfo> getFailureInfo()
     {
         return failureInfo;
     }
 
+    /**
+     * Returns the elapsed time of the query.
+     *
+     * @return a {@link Duration} object.
+     */
     public Duration getElapsedTime()
     {
         return elapsedTime;
     }
 
+    /**
+     * Returns the queued time of the query.
+     *
+     * @return a {@link Duration} object.
+     */
     public Duration getQueuedTime()
     {
         return queuedTime;

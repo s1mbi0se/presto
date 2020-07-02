@@ -157,6 +157,18 @@ public class QueuedStatementResource
         queryPurger.shutdownNow();
     }
 
+    /**
+     * Creates new queries to be executed on Presto.
+     * <p>
+     * Receives POST requests that tries to create new queries to be executed on Presto.
+     *
+     * @param statement a sql command.
+     * @param servletRequest an object that provides request information for HTTP servlets.
+     * @param httpHeaders an object containing the HTTP request headers.
+     * @param uriInfo an object containing the uri metadata.
+     *
+     * @return a {@link Response} object.
+     */
     @ResourceSecurity(AUTHENTICATED_USER)
     @POST
     @Produces(APPLICATION_JSON)
@@ -242,6 +254,17 @@ public class QueuedStatementResource
         return query;
     }
 
+    /**
+     * Builds the specific query uri.
+     * <p>
+     * Determines the default path where the query took place and the parameters
+     * defined by the query.
+     *
+     * @param queryId an object containing the query id
+     * @param uriInfo an object containing the uri metadata.
+     *
+     * @return an {@link URI} object.
+     */
     private static URI getQueryHtmlUri(QueryId queryId, UriInfo uriInfo)
     {
         return uriInfo.getRequestUriBuilder()
@@ -250,6 +273,19 @@ public class QueuedStatementResource
                 .build();
     }
 
+    /**
+     * Builds a new QueuedURI for the specified queryId.
+     * <p>
+     * Replaces the existing path and add the query id at the end of the uri.
+     * Then, builds the new QueuedURI for the specified queryId.
+     *
+     * @param queryId an object containing the query id.
+     * @param slug an object responsible for translating a multibyte value into bytes.
+     * @param token generated token.
+     * @param uriInfo an object containing the uri metadata.
+     *
+     * @return a {@link URI} object.
+     */
     private static URI getQueuedUri(QueryId queryId, Slug slug, long token, UriInfo uriInfo)
     {
         return uriInfo.getBaseUriBuilder()
@@ -261,6 +297,19 @@ public class QueuedStatementResource
                 .build();
     }
 
+    /**
+     * Instantiates an object of type {@link QueryResults} with information about
+     * all query related metadata.
+     *
+     * @param queryId an object containing the query identifier.
+     * @param nextUri an object that checks if the query is completed or directs another uri.
+     * @param queryError an object responsible for reporting error in the query.
+     * @param uriInfo an object responsible for taking metadata from the uri.
+     * @param elapsedTime time elapsed until the query response.
+     * @param queuedTime queue waiting time.
+     *
+     * @return a {@link QueryResults} object.
+     */
     private static QueryResults createQueryResults(
             QueryId queryId,
             URI nextUri,
@@ -411,6 +460,20 @@ public class QueuedStatementResource
                     dispatchInfo.getQueuedTime());
         }
 
+        /**
+         * Checks if the query is completed or redirects to another uri.
+         * <p>
+         * Checks if the error message fails, if it fails it is because the query was completed.
+         * If not fail, it takes the coordinator's location and redirects the query to another
+         * uri.
+         *
+         * @param token generated token
+         * @param uriInfo an object containing the uri metadata.
+         * @param dispatchInfo an object responsible for taking the coordinator's location, response time
+         * and waiting time
+         *
+         * @return a {@link URI} object
+         */
         private URI getNextUri(long token, UriInfo uriInfo, DispatchInfo dispatchInfo)
         {
             // if failed, query is complete
