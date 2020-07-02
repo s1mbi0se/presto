@@ -208,6 +208,17 @@ public final class HttpRequestSessionContext
         return identity;
     }
 
+    /**
+     * Creates a session identity.
+     * <p>
+     * Checks if the user is non-null, add header, add extraCredentials and add groups to build a session identity.
+     *
+     * @param authenticatedIdentity
+     * @param headers a MultivaluedMap string
+     * @param groupProvider a Interface
+     *
+     * @return an identity to a session
+     */
     private static Identity buildSessionIdentity(Optional<Identity> authenticatedIdentity, MultivaluedMap<String, String> headers, GroupProvider groupProvider)
     {
         String prestoUser = trimEmptyToNull(headers.getFirst(PRESTO_USER));
@@ -349,11 +360,8 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * <p>
-     * Creates a list of values, checks if the headers parameter ins non-null. Separets strings by comma, remove spaces
-     * and omit empty strings.
-     * Transforms the list values to stream, then splits each element of the list by the method map and then turns it
-     * into an immutableList.
+     * Extracts a header from a headers map in the for of List<String>. Breaks each value with a comma, removes spaces and omits empty string,
+     * Returns a flat (non-nested) list of resulting values ​​or an empty list
      *
      * @param headers a MultivaluedMap string
      * @param name a string that represents PrestoHeader's name
@@ -375,6 +383,13 @@ public final class HttpRequestSessionContext
         return parseProperty(headers, PRESTO_SESSION);
     }
 
+    /**
+     * Analyzes whether the {@code PRESTO_ROLE} header meets the standards. If it does, this header will be extracted,
+     * if it doesn't, a WebApplicationException will be thrown.
+     *
+     * @param headers a MultivaluedMap that takes a string as a key and another string as a value
+     * @return a new ImmutableMap roles
+     */
     private static Map<String, SelectedRole> parseRoleHeaders(MultivaluedMap<String, String> headers)
     {
         ImmutableMap.Builder<String, SelectedRole> roles = ImmutableMap.builder();
@@ -392,7 +407,7 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Returns parseProperty Map string with a headerName
+     * Extracts a specific header {@code PRESTO_EXTRA_CREDENTIAL}
      *
      * @param headers a MultivaluedMap string
      *
@@ -406,9 +421,8 @@ public final class HttpRequestSessionContext
     /**
      * Returns a map string with parsed properties.
      * <p>
-     * Instantiates a properties HashMap, go through the splitHttpHeader method and add each header to the nameValue list.
-     * Takes the first element from the nameValue list and add it to the properties HashMap as a key and add the second element from
-     * the nameValue list as a value in the properties HashMap.
+     * Validates that each header presents a set of key/value and adds the valid values in a HashMap properties. For invalid values, an
+     * IllegalArgumentException is generated and handled.
      *
      * @param headers a MultivaluedMap string
      * @param headerName a string with the header name.
@@ -485,7 +499,7 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Checks whether an expression is true or false.
+     * Its a generic check whether an expression is true or false.
      * <p>
      * Receives a boolean expression, a message and multiple arguments as parameters.
      * If the expression is false, the method will throw an WebApplicationException.
