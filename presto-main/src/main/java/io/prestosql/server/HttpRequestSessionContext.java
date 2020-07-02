@@ -209,9 +209,9 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Creates a session identity.
+     * Create a Session Identity according to the defined parameters headers, credentials and groups.
      *
-     * @param authenticatedIdentity an Optional Session {@link Identity}
+     * @param authenticatedIdentity an Optional Identity object.
      * @param headers a MultivaluedMap containing all request headers.
      * @param groupProvider a {@link GroupProvider} object.
      *
@@ -365,9 +365,9 @@ public final class HttpRequestSessionContext
      * Returns a flat (non-nested) list of resulting values or an empty list
      *
      * @param headers a MultivaluedMap containing all request headers.
-     * @param name a string that represents PrestoHeader's name
+     * @param name a string that represents PrestoHeader's name.
      *
-     * @return  a list of all retrieved HTTP headers from request.
+     * @return a list of all retrieved HTTP headers from request.
      */
     private static List<String> splitHttpHeader(MultivaluedMap<String, String> headers, String name)
     {
@@ -392,7 +392,7 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Checks if the received header PRESTO_ROLE matches the defined headers pattern.
+     * Checks if the header matches to the defined header pattern.
      * <p>
      * Checks if the received headers matches the defined headers pattern. If it does, this header will be extracted,
      * if it doesn't, a WebApplicationException will be thrown.
@@ -431,14 +431,14 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Returns a map containing all extracted properties from a given header
+     * Returns a map containing all extracted properties from a given header.
      * <p>
      * Validates that each header presents a set of key/value and adds the valid values in a HashMap properties. For invalid values, an
      * IllegalArgumentException is generated and handled.
      * Returns a HashMap with valid values as properties.
      *
-     * @param headers headers a MultivaluedMap containing all request headers.
-     * @param headerName a string with the header name.
+     * @param headers a MultivaluedMap containing all request headers.
+     * @param headerName the header name.
      *
      * @return a HashMap with the extracted header properties.
      */
@@ -459,12 +459,11 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts the header PRESTO_CLIENT_TAGS.
+     * Extracts the header PRESTO_CLIENT_TAGS
      * <p>
-     * Extract the header and add it to a Set.
      * Returns a Set with the extracted {@code PRESTO_CLIENT_TAGS} header.
      *
-     * @param headers headers a MultivaluedMap containing all request headers.
+     * @param headers a MultivaluedMap containing all request headers.
      *
      * @return a Set with {@code PRESTO_CLIENT_TAGS} headers.
      */
@@ -477,10 +476,9 @@ public final class HttpRequestSessionContext
     /**
      * Extracts the header PRESTO_CLIENT_CAPABILITIES.
      * <p>
-     * Extract the header and add it to a Set.
-     * Returns a Set with the extracted {@code PRESTO_CLIENT_CAPABILITIES} header.
+     * Returns a Set with the extracted {@code PRESTO_CLIENT_CAPABILITIES} headers.
      *
-     * @param headers headers a MultivaluedMap containing all request headers.
+     * @param headers a MultivaluedMap containing all request headers.
      *
      * @return a Set with {@code PRESTO_CLIENT_CAPABILITIES} headers.
      */
@@ -559,7 +557,7 @@ public final class HttpRequestSessionContext
      *
      * @param expression any boolean expression
      * @param format message that will be returned if the expression is false.
-     * @param args multiple arguments that can be inserted in the format
+     * @param args multiple arguments that can be inserted in the response message.
      *
      * @throws WebApplicationException if the expression is false.
      */
@@ -644,9 +642,9 @@ public final class HttpRequestSessionContext
     /**
      * Check and return a given string if it is non-null and non-empty.
      *
-     * @param value a given string value.
+     * @param value a given string value that represents PrestoHeaders.
      *
-     * @return {@code string} the given string if it is non-null and non-empty
+     * @return The given string if it is non-null and non-empty
      *
      * @see io.prestosql.client.PrestoHeaders
      */
