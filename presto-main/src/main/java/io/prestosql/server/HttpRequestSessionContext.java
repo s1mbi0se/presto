@@ -214,7 +214,7 @@ public final class HttpRequestSessionContext
      * Checks if the user is non-null, add header, add extraCredentials and add groups to build a session identity.
      *
      * @param authenticatedIdentity an Optional of {@link Identity}
-     * @param headers a MultivaluedMap string
+     * @param headers a MultivaluedMap that takes a string as a key and another string as a value
      * @param groupProvider a {@link GroupProvider} interface implementation
      *
      * @return an identity to a session
@@ -363,7 +363,7 @@ public final class HttpRequestSessionContext
      * Extracts a header from a headers map in the for of List<String>. Breaks each value with a comma, removes spaces and omits empty string.
      * Returns a flat (non-nested) list of resulting values ​​or an empty list
      *
-     * @param headers a MultivaluedMap string
+     * @param headers a MultivaluedMap that takes a string as a key and another string as a value
      * @param name a string that represents PrestoHeader's name
      *
      * @return a list of all HttpHeaders and their names
@@ -378,6 +378,13 @@ public final class HttpRequestSessionContext
                 .collect(toImmutableList());
     }
 
+    /**
+     * Extracts a specific header PRESTO_SESSION
+     *
+     * @param headers a MultivaluedMap that takes a string as a key and another string as a value
+     *
+     * @return a Map with the {@link PRESTO_SESSION} properties
+     */
     private static Map<String, String> parseSessionHeaders(MultivaluedMap<String, String> headers)
     {
         return parseProperty(headers, PRESTO_SESSION);
@@ -409,7 +416,7 @@ public final class HttpRequestSessionContext
     /**
      * Extracts a specific header PRESTO_EXTRA_CREDENTIAL
      *
-     * @param headers a MultivaluedMap string
+     * @param headers a MultivaluedMap that takes a string as a key and another string as a value
      *
      * @return a Map with the {@link PRESTO_EXTRA_CREDENTIAL} properties
      */
@@ -424,7 +431,7 @@ public final class HttpRequestSessionContext
      * Validates that each header presents a set of key/value and adds the valid values in a HashMap properties. For invalid values, an
      * IllegalArgumentException is generated and handled.
      *
-     * @param headers a MultivaluedMap string
+     * @param headers a MultivaluedMap that takes a string as a key and another string as a value
      * @param headerName a string with the header name.
      *
      * @return a HashMap with the properties.
@@ -449,7 +456,7 @@ public final class HttpRequestSessionContext
      * Extracts a header from a headers map, break each value with a comma, remove spaces and omit empty strings.
      * Returns a Set<String> with the extracted {@code PRESTO_CLIENT_TAGS} header.
      *
-     * @param headers a MultivaluedMap string
+     * @param headers a MultivaluedMap that takes a string as a key and another string as a value
      *
      * @return a Set<String> with {@code PRESTO_CLIENT_TAGS} headers.
      */
@@ -463,7 +470,7 @@ public final class HttpRequestSessionContext
      * Extracts a header from a headers map, break each value with a comma, remove spaces and omit empty strings.
      * Returns a Set<String> with the extracted {@code PRESTO_CLIENT_CAPABILITIES} headers.
      *
-     * @param headers a MultivaluedMap string
+     * @param headers a MultivaluedMap that takes a string as a key and another string as a value
      *
      * @return a Set<String> with {@code PRESTO_CLIENT_CAPABILITIES} headers.
      */
@@ -473,6 +480,16 @@ public final class HttpRequestSessionContext
         return ImmutableSet.copyOf(splitter.split(nullToEmpty(headers.getFirst(PRESTO_CLIENT_CAPABILITIES))));
     }
 
+    /**
+     * Check which resource will be started.
+     * <p>
+     * Checks in switch case the name is to execute the EXECUTION_TIME, CPU_TIME or PEAK_MEMORY.
+     * If the value is not valid, an IllegalArgumentException is generated an handled.
+     *
+     * @param headers a MultivaluedMap that takes a string as a key and another string as a value.
+     *
+     * @return {@link ResourceEstimates} that estimates resource usage for a query.
+     */
     private static ResourceEstimates parseResourceEstimate(MultivaluedMap<String, String> headers)
     {
         ResourceEstimateBuilder builder = new ResourceEstimateBuilder();
@@ -500,6 +517,16 @@ public final class HttpRequestSessionContext
         return builder.build();
     }
 
+    /**
+     * Sets a default for serializedData and transforms ir to json.
+     * <p>
+     * Checks whether serializedData is null. If so, an empty Optional is returned.
+     * If not, put it in a pattern and put it in json format.
+     *
+     * @param headers headers a MultivaluedMap that takes a string as a key and another string as a value.
+     *
+     * @return an Optional of type {@link QueryRequestMetadata}.
+     */
     private Optional<QueryRequestMetadata> parseQueryRequestMetadata(MultivaluedMap<String, String> headers)
     {
         String serializedData = trimEmptyToNull(headers.getFirst(PRESTO_QUERY_REQUEST_METADATA));
@@ -533,6 +560,16 @@ public final class HttpRequestSessionContext
         }
     }
 
+    /**
+     * Extract the PRESTO_PREPARED_STATEMENT header and parser the sql command.
+     * <p>
+     * Check all headers and extract the PRESTO_PREPARED_STATEMENT header. Decodes the statementName.
+     * Validates the sql command with sqlParser and returns a Map<String,String> with all occurrences.
+     *
+     * @param headers a MultivaluedMap that takes a string as a key and another string as a value.
+     *
+     * @return a Map<String,String> with the name and sql command as key/value.
+     */
     private static Map<String, String> parsePreparedStatementsHeaders(MultivaluedMap<String, String> headers)
     {
         ImmutableMap.Builder<String, String> preparedStatements = ImmutableMap.builder();
@@ -560,6 +597,17 @@ public final class HttpRequestSessionContext
         return preparedStatements.build();
     }
 
+    /**
+     * Checks if the parameter is null and instantiates a new {@link TransactionId}
+     * <p>
+     * Checks whether the transactionId is null. if so, an empty option is returned.
+     * If not, a new instance of the {@link TransactionId} is returned. For invalid values,
+     * an WebApplicationException is thrown and handled.
+     *
+     * @param transactionId an string that represents the transaction id.
+     *
+     * @return an Optional of type TransactionId
+     */
     private static Optional<TransactionId> parseTransactionId(String transactionId)
     {
         transactionId = trimEmptyToNull(transactionId);
