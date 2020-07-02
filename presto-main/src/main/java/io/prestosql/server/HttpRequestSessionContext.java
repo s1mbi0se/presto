@@ -209,9 +209,9 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Creates a session identity.
+     * Create a Session Identity according to the defined parameters headers, credentials and groups.
      * <p>
-     * Checks if the user is non-null, add header, add extraCredentials and add groups to build a session identity.
+     * Checks if the user is non-null, add header, add extraCredentials and add groups to build a session {@link identity}.
      *
      * @param authenticatedIdentity an Optional of {@link Identity}
      * @param headers a MultivaluedMap string
@@ -360,8 +360,11 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts a header from a headers map in the for of List<String>. Breaks each value with a comma, removes spaces and omits empty string.
-     * Returns a flat (non-nested) list of resulting values ​​or an empty list
+     * Returns a List<String> that contains the header and its name.
+     * <p>
+     * Extracts a header from a headers map in the for of List<String>.
+     * Breaks each value with a comma, removes spaces and omits empty string.
+     * Returns a flat (non-nested) list of resulting values or an empty list
      *
      * @param headers a MultivaluedMap string
      * @param name a string that represents PrestoHeader's name
@@ -384,10 +387,13 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Analyzes whether the {@code PRESTO_ROLE} header meets the standards. If it does, this header will be extracted,
+     * Checks if the header matches a pattern.
+     * <p>
+     * Analyzes whether the PRESTO_ROLE header meets the standards. If it does, this header will be extracted,
      * if it doesn't, a WebApplicationException will be thrown.
      *
-     * @param headers a MultivaluedMap that takes a string as a key and another string as a value
+     * @param headers a MultivaluedMap that takes a string as a key and another string as a value.
+     *
      * @return a new ImmutableMap roles
      */
     private static Map<String, SelectedRole> parseRoleHeaders(MultivaluedMap<String, String> headers)
@@ -407,9 +413,9 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts a specific header PRESTO_EXTRA_CREDENTIAL
+     * Extracts the specific header PRESTO_EXTRA_CREDENTIAL
      *
-     * @param headers a MultivaluedMap string
+     * @param headers a MultivaluedMap string that contains all headers.
      *
      * @return a Map with the {@link PRESTO_EXTRA_CREDENTIAL} properties
      */
@@ -419,7 +425,7 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Returns a map string with parsed properties.
+     * Returns a map containing all Presto properties.
      * <p>
      * Validates that each header presents a set of key/value and adds the valid values in a HashMap properties. For invalid values, an
      * IllegalArgumentException is generated and handled.
@@ -446,6 +452,8 @@ public final class HttpRequestSessionContext
     }
 
     /**
+     * Extracts the header PRESTO_CLIENT_TAGS
+     * <p>
      * Extracts a header from a headers map, break each value with a comma, remove spaces and omit empty strings.
      * Returns a Set<String> with the extracted {@code PRESTO_CLIENT_TAGS} header.
      *
@@ -460,6 +468,8 @@ public final class HttpRequestSessionContext
     }
 
     /**
+     * Extracts the header PRESTO_CLIENT_CAPABILITIES.
+     * <p>
      * Extracts a header from a headers map, break each value with a comma, remove spaces and omit empty strings.
      * Returns a Set<String> with the extracted {@code PRESTO_CLIENT_CAPABILITIES} headers.
      *
