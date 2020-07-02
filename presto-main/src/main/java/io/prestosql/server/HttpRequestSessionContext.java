@@ -208,6 +208,15 @@ public final class HttpRequestSessionContext
         return identity;
     }
 
+    /**
+     * Create a Session Identity according to the defined parameters headers, credentials and groups.
+     *
+     * @param authenticatedIdentity an Optional Identity object.
+     * @param headers a MultivaluedMap containing all request headers.
+     * @param groupProvider a {@link GroupProvider} object.
+     *
+     * @return a session identity object.
+     */
     private static Identity buildSessionIdentity(Optional<Identity> authenticatedIdentity, MultivaluedMap<String, String> headers, GroupProvider groupProvider)
     {
         String prestoUser = trimEmptyToNull(headers.getFirst(PRESTO_USER));
@@ -348,6 +357,18 @@ public final class HttpRequestSessionContext
         return queryRequestMetadata;
     }
 
+    /**
+     * Returns a list of the HTTP headers received on the request.
+     * <p>
+     * Extracts the HTTP headers from the received request and creates a list
+     * of these headers to be returned.
+     * Returns a flat (non-nested) list of resulting values or an empty list
+     *
+     * @param headers a MultivaluedMap containing all request headers.
+     * @param name a string that represents PrestoHeader's name.
+     *
+     * @return a list of all retrieved HTTP headers from request.
+     */
     private static List<String> splitHttpHeader(MultivaluedMap<String, String> headers, String name)
     {
         List<String> values = firstNonNull(headers.get(name), ImmutableList.of());
@@ -363,6 +384,17 @@ public final class HttpRequestSessionContext
         return parseProperty(headers, PRESTO_SESSION);
     }
 
+    /**
+     * Checks if the header matches to the defined header pattern.
+     * <p>
+     * Checks if the received headers matches the defined headers pattern. If it does, this header will be extracted,
+     * if it doesn't, a WebApplicationException will be thrown.
+     * Returns a newly-created immutable map with the PRESTO_ROLE header extracted.
+     *
+     * @param headers a MultivaluedMap containing all request headers.
+     *
+     * @return a new ImmutableMap roles with the PRESTO_ROLE header extracted.
+     */
     private static Map<String, SelectedRole> parseRoleHeaders(MultivaluedMap<String, String> headers)
     {
         ImmutableMap.Builder<String, SelectedRole> roles = ImmutableMap.builder();
@@ -379,11 +411,30 @@ public final class HttpRequestSessionContext
         return roles.build();
     }
 
+    /**
+     * Extracts the specific header PRESTO_EXTRA_CREDENTIAL
+     *
+     * @param headers a MultivaluedMap containing all request headers.
+     *
+     * @return a Map with the {@link PRESTO_EXTRA_CREDENTIAL} properties
+     */
     private static Map<String, String> parseExtraCredentials(MultivaluedMap<String, String> headers)
     {
         return parseProperty(headers, PRESTO_EXTRA_CREDENTIAL);
     }
 
+    /**
+     * Returns a map containing all extracted properties from a given header.
+     * <p>
+     * Validates that each header presents a set of key/value and adds the valid values in a HashMap properties. For invalid values, an
+     * IllegalArgumentException is generated and handled.
+     * Returns a HashMap with valid values as properties.
+     *
+     * @param headers a MultivaluedMap containing all request headers.
+     * @param headerName the header name.
+     *
+     * @return a HashMap with the extracted header properties.
+     */
     private static Map<String, String> parseProperty(MultivaluedMap<String, String> headers, String headerName)
     {
         Map<String, String> properties = new HashMap<>();
@@ -400,12 +451,30 @@ public final class HttpRequestSessionContext
         return properties;
     }
 
+    /**
+     * Extracts the header PRESTO_CLIENT_TAGS
+     * <p>
+     * Returns a Set with the extracted {@code PRESTO_CLIENT_TAGS} header.
+     *
+     * @param headers a MultivaluedMap containing all request headers.
+     *
+     * @return a Set with {@code PRESTO_CLIENT_TAGS} headers.
+     */
     private static Set<String> parseClientTags(MultivaluedMap<String, String> headers)
     {
         Splitter splitter = Splitter.on(',').trimResults().omitEmptyStrings();
         return ImmutableSet.copyOf(splitter.split(nullToEmpty(headers.getFirst(PRESTO_CLIENT_TAGS))));
     }
 
+    /**
+     * Extracts the header PRESTO_CLIENT_CAPABILITIES.
+     * <p>
+     * Returns a Set with the extracted {@code PRESTO_CLIENT_CAPABILITIES} headers.
+     *
+     * @param headers a MultivaluedMap containing all request headers.
+     *
+     * @return a Set with {@code PRESTO_CLIENT_CAPABILITIES} headers.
+     */
     private static Set<String> parseClientCapabilities(MultivaluedMap<String, String> headers)
     {
         Splitter splitter = Splitter.on(',').trimResults().omitEmptyStrings();
@@ -453,6 +522,18 @@ public final class HttpRequestSessionContext
         return Optional.ofNullable(queryRequestMetadata);
     }
 
+    /**
+     * Assert if a given expression is true or false
+     * <p>
+     * Receives a boolean expression, a message and multiple arguments as parameters.
+     * If the expression is false, the method will throw an WebApplicationException.
+     *
+     * @param expression any boolean expression
+     * @param format message that will be returned if the expression is false.
+     * @param args multiple arguments that can be inserted in the response message.
+     *
+     * @throws WebApplicationException if the expression is false.
+     */
     private static void assertRequest(boolean expression, String format, Object... args)
     {
         if (!expression) {
@@ -510,6 +591,15 @@ public final class HttpRequestSessionContext
                 .build());
     }
 
+    /**
+     * Check and return a given string if it is non-null and non-empty.
+     *
+     * @param value a given string value that represents PrestoHeaders.
+     *
+     * @return The given string if it is non-null and non-empty
+     *
+     * @see io.prestosql.client.PrestoHeaders
+     */
     private static String trimEmptyToNull(String value)
     {
         return emptyToNull(nullToEmpty(value).trim());
