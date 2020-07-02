@@ -789,9 +789,9 @@ public final class Session
         }
 
         /**
-         * Estimated resource usage for a query.
+         * Estimate the resource usage for an executed query.
          * <p>
-         * Takes the runtime, cpu runtime and amount of memory used.
+         * Takes the estimate of the CPU runtime and memory used for an executed query.
          *
          * @return {@link ResourceEstimates} wich shows estimated resource usage for a query.
          */

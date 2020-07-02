@@ -609,15 +609,15 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Checks if the transactionId is null and instantiates a new {@link TransactionId}
+     * Try to instantiate a new {@link TransactionId}
      * <p>
      * Checks whether the transactionId is null. if so, an empty option is returned.
      * If not, a new instance of the {@link TransactionId} is returned. For invalid values,
      * an WebApplicationException is thrown and handled.
      *
-     * @param transactionId an string that represents the transaction id.
+     * @param transactionId a string that represents the transaction id.
      *
-     * @return an Optional of type TransactionId
+     * @return an Optional TransactionId
      */
     private static Optional<TransactionId> parseTransactionId(String transactionId)
     {
@@ -644,8 +644,6 @@ public final class HttpRequestSessionContext
 
     /**
      * Check and return a given string if it is non-null and non-empty.
-     * <p>
-     * Returns the given string if is non-null and non-empty.
      *
      * @param value a given string value.
      *
