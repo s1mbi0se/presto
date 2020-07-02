@@ -210,14 +210,12 @@ public final class HttpRequestSessionContext
 
     /**
      * Create a Session Identity according to the defined parameters headers, credentials and groups.
-     * <p>
-     * Checks if the user is non-null, add header, add extraCredentials and add groups to build a session {@link identity}.
      *
-     * @param authenticatedIdentity an Optional of {@link Identity}
-     * @param headers a MultivaluedMap string
-     * @param groupProvider a {@link GroupProvider} interface implementation
+     * @param authenticatedIdentity an Optional Identity object.
+     * @param headers a MultivaluedMap containing all request headers.
+     * @param groupProvider a {@link GroupProvider} object.
      *
-     * @return an identity to a session
+     * @return a session identity object.
      */
     private static Identity buildSessionIdentity(Optional<Identity> authenticatedIdentity, MultivaluedMap<String, String> headers, GroupProvider groupProvider)
     {
@@ -360,16 +358,17 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Returns a List<String> that contains the header and its name.
+     * Returns a list of the HTTP headers received on the request.
      * <p>
-     * Extracts a header from a headers map in the for of List<String>.
+     * Extracts the HTTP headers from the received request and creates a list
+     * of these headers to be returned.
      * Breaks each value with a comma, removes spaces and omits empty string.
      * Returns a flat (non-nested) list of resulting values or an empty list
      *
-     * @param headers a MultivaluedMap string
-     * @param name a string that represents PrestoHeader's name
+     * @param headers a MultivaluedMap containing all request headers.
+     * @param name a string that represents PrestoHeader's name.
      *
-     * @return a list of all HttpHeaders and their names
+     * @return a list of all retrieved HTTP headers from request.
      */
     private static List<String> splitHttpHeader(MultivaluedMap<String, String> headers, String name)
     {
@@ -387,14 +386,15 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Checks if the header matches a pattern.
+     * Checks if the header matches to the defined header pattern.
      * <p>
      * Analyzes whether the PRESTO_ROLE header meets the standards. If it does, this header will be extracted,
      * if it doesn't, a WebApplicationException will be thrown.
+     * Returns a newly-created immutable map with the PRESTO_ROLE header extracted.
      *
-     * @param headers a MultivaluedMap that takes a string as a key and another string as a value.
+     * @param headers a MultivaluedMap containing all request headers.
      *
-     * @return a new ImmutableMap roles
+     * @return a new ImmutableMap roles with the PRESTO_ROLE header extracted.
      */
     private static Map<String, SelectedRole> parseRoleHeaders(MultivaluedMap<String, String> headers)
     {
@@ -415,7 +415,7 @@ public final class HttpRequestSessionContext
     /**
      * Extracts the specific header PRESTO_EXTRA_CREDENTIAL
      *
-     * @param headers a MultivaluedMap string that contains all headers.
+     * @param headers a MultivaluedMap containing all request headers.
      *
      * @return a Map with the {@link PRESTO_EXTRA_CREDENTIAL} properties
      */
@@ -425,15 +425,16 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Returns a map containing all Presto properties.
+     * Returns a map containing all extracted properties from a given header.
      * <p>
      * Validates that each header presents a set of key/value and adds the valid values in a HashMap properties. For invalid values, an
      * IllegalArgumentException is generated and handled.
+     * Returns a HashMap with valid values as properties.
      *
-     * @param headers a MultivaluedMap string
-     * @param headerName a string with the header name.
+     * @param headers a MultivaluedMap containing all request headers.
+     * @param headerName the header name.
      *
-     * @return a HashMap with the properties.
+     * @return a HashMap with the extracted header properties.
      */
     private static Map<String, String> parseProperty(MultivaluedMap<String, String> headers, String headerName)
     {
@@ -455,11 +456,11 @@ public final class HttpRequestSessionContext
      * Extracts the header PRESTO_CLIENT_TAGS
      * <p>
      * Extracts a header from a headers map, break each value with a comma, remove spaces and omit empty strings.
-     * Returns a Set<String> with the extracted {@code PRESTO_CLIENT_TAGS} header.
+     * Returns a Set with the extracted {@code PRESTO_CLIENT_TAGS} header.
      *
-     * @param headers a MultivaluedMap string
+     * @param headers a MultivaluedMap containing all request headers.
      *
-     * @return a Set<String> with {@code PRESTO_CLIENT_TAGS} headers.
+     * @return a Set with {@code PRESTO_CLIENT_TAGS} headers.
      */
     private static Set<String> parseClientTags(MultivaluedMap<String, String> headers)
     {
@@ -471,11 +472,11 @@ public final class HttpRequestSessionContext
      * Extracts the header PRESTO_CLIENT_CAPABILITIES.
      * <p>
      * Extracts a header from a headers map, break each value with a comma, remove spaces and omit empty strings.
-     * Returns a Set<String> with the extracted {@code PRESTO_CLIENT_CAPABILITIES} headers.
+     * Returns a Set with the extracted {@code PRESTO_CLIENT_CAPABILITIES} headers.
      *
-     * @param headers a MultivaluedMap string
+     * @param headers a MultivaluedMap containing all request headers.
      *
-     * @return a Set<String> with {@code PRESTO_CLIENT_CAPABILITIES} headers.
+     * @return a Set with {@code PRESTO_CLIENT_CAPABILITIES} headers.
      */
     private static Set<String> parseClientCapabilities(MultivaluedMap<String, String> headers)
     {
@@ -599,7 +600,7 @@ public final class HttpRequestSessionContext
      * Checks if the parameter is non-null and non-empty as well as checks the amount of bits
      * to classify it according to the Unicode standard.
      *
-     * @param value a string that represents PrestoHeaders
+     * @param value a string that represents PrestoHeaders.
      *
      * @return {@code string} itself if it is non-null and non-empty.
      *
