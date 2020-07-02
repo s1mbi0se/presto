@@ -802,6 +802,13 @@ public final class Session
             return this;
         }
 
+        /**
+         * Estimate the resource usage for an executed query.
+         * <p>
+         * Takes the estimate of the CPU runtime and memory used for an executed query.
+         *
+         * @return {@link ResourceEstimates} wich shows estimated resource usage for a query.
+         */
         public ResourceEstimates build()
         {
             return new ResourceEstimates(
