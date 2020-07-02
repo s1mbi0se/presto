@@ -362,7 +362,6 @@ public final class HttpRequestSessionContext
      * <p>
      * Extracts the HTTP headers from the received request and creates a list
      * of these headers to be returned.
-     * Breaks each value with a comma, removes spaces and omits empty string.
      * Returns a flat (non-nested) list of resulting values or an empty list
      *
      * @param headers a MultivaluedMap containing all request headers.
@@ -388,7 +387,7 @@ public final class HttpRequestSessionContext
     /**
      * Checks if the header matches to the defined header pattern.
      * <p>
-     * Analyzes whether the PRESTO_ROLE header meets the standards. If it does, this header will be extracted,
+     * Checks if the received headers matches the defined headers pattern. If it does, this header will be extracted,
      * if it doesn't, a WebApplicationException will be thrown.
      * Returns a newly-created immutable map with the PRESTO_ROLE header extracted.
      *
@@ -455,7 +454,6 @@ public final class HttpRequestSessionContext
     /**
      * Extracts the header PRESTO_CLIENT_TAGS
      * <p>
-     * Extracts a header from a headers map, break each value with a comma, remove spaces and omit empty strings.
      * Returns a Set with the extracted {@code PRESTO_CLIENT_TAGS} header.
      *
      * @param headers a MultivaluedMap containing all request headers.
@@ -471,7 +469,6 @@ public final class HttpRequestSessionContext
     /**
      * Extracts the header PRESTO_CLIENT_CAPABILITIES.
      * <p>
-     * Extracts a header from a headers map, break each value with a comma, remove spaces and omit empty strings.
      * Returns a Set with the extracted {@code PRESTO_CLIENT_CAPABILITIES} headers.
      *
      * @param headers a MultivaluedMap containing all request headers.
@@ -526,16 +523,16 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Its a generic check whether an expression is true or false.
+     * Assert if a given expression is true or false
      * <p>
      * Receives a boolean expression, a message and multiple arguments as parameters.
      * If the expression is false, the method will throw an WebApplicationException.
      *
      * @param expression any boolean expression
-     * @param format message that will appear if it is false
-     * @param args multiple arguments that can be inserted in the format
+     * @param format message that will be returned if the expression is false.
+     * @param args multiple arguments that can be inserted in the response message.
      *
-     * @throws WebApplicationException will be thrown if the expression is false.
+     * @throws WebApplicationException if the expression is false.
      */
     private static void assertRequest(boolean expression, String format, Object... args)
     {
@@ -595,14 +592,11 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Returns the given string if is non-null and non-empty.
-     * <p>
-     * Checks if the parameter is non-null and non-empty as well as checks the amount of bits
-     * to classify it according to the Unicode standard.
+     * Check and return a given string if it is non-null and non-empty.
      *
-     * @param value a string that represents PrestoHeaders.
+     * @param value a given string value that represents PrestoHeaders.
      *
-     * @return {@code string} itself if it is non-null and non-empty.
+     * @return The given string if it is non-null and non-empty
      *
      * @see io.prestosql.client.PrestoHeaders
      */
