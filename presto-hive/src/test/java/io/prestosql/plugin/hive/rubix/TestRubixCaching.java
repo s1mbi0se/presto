@@ -18,7 +18,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closer;
-import com.qubole.rubix.core.utils.DummyClusterManager;
+import com.qubole.rubix.core.CachingFileSystem;
+import com.qubole.rubix.prestosql.CachingPrestoAzureBlobFileSystem;
+import com.qubole.rubix.prestosql.CachingPrestoDistributedFileSystem;
+import com.qubole.rubix.prestosql.CachingPrestoS3FileSystem;
+import com.qubole.rubix.prestosql.CachingPrestoSecureAzureBlobFileSystem;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.prestosql.metadata.InternalNode;
@@ -32,12 +36,16 @@ import io.prestosql.plugin.hive.HiveHdfsConfiguration;
 import io.prestosql.plugin.hive.authentication.NoHdfsAuthentication;
 import io.prestosql.plugin.hive.orc.OrcReaderConfig;
 import io.prestosql.plugin.hive.rubix.RubixConfig.ReadMode;
+import io.prestosql.spi.Node;
 import io.prestosql.spi.session.PropertyMetadata;
 import io.prestosql.testing.TestingConnectorSession;
 import io.prestosql.testing.TestingNodeManager;
+import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FilterFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -62,9 +70,9 @@ import java.util.concurrent.Future;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
-import static com.qubole.rubix.spi.CacheConfig.setPrestoClusterManager;
 import static com.qubole.rubix.spi.CacheConfig.setRemoteFetchProcessInterval;
 import static io.airlift.testing.Assertions.assertGreaterThan;
+import static io.airlift.testing.Assertions.assertInstanceOf;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static io.prestosql.client.NodeVersion.UNKNOWN;
 import static io.prestosql.plugin.hive.HiveTestUtils.getHiveSessionProperties;
@@ -73,6 +81,7 @@ import static io.prestosql.plugin.hive.rubix.RubixConfig.ReadMode.READ_THROUGH;
 import static io.prestosql.plugin.hive.util.RetryDriver.retry;
 import static io.prestosql.testing.assertions.Assert.assertEventually;
 import static java.lang.String.format;
+import static java.net.InetAddress.getLocalHost;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Files.createTempDirectory;
@@ -129,14 +138,25 @@ public class TestRubixCaching
     }
 
     private void initializeCachingFileSystem(RubixConfig rubixConfig)
-            throws IOException
+            throws Exception
     {
         initializeRubix(rubixConfig);
         cachingFileSystem = getCachingFileSystem();
     }
 
     private void initializeRubix(RubixConfig rubixConfig)
-            throws IOException
+            throws Exception
+    {
+        InternalNode coordinatorNode = new InternalNode(
+                "master",
+                URI.create("http://" + getLocalHost().getHostAddress() + ":8080"),
+                UNKNOWN,
+                true);
+        initializeRubix(rubixConfig, ImmutableList.of(coordinatorNode));
+    }
+
+    private void initializeRubix(RubixConfig rubixConfig, List<Node> nodes)
+            throws Exception
     {
         tempDirectory = createTempDirectory(getClass().getSimpleName());
 
@@ -159,14 +179,7 @@ public class TestRubixCaching
                 ImmutableSet.of(
                         // fetch data immediately in async mode
                         config -> setRemoteFetchProcessInterval(config, 0)));
-        InternalNode coordinatorNode = new InternalNode(
-                "master",
-                URI.create("http://127.0.0.1:8080"),
-                UNKNOWN,
-                true);
-        TestingNodeManager nodeManager = new TestingNodeManager(
-                coordinatorNode,
-                ImmutableList.of());
+        TestingNodeManager nodeManager = new TestingNodeManager(nodes);
         rubixInitializer = new RubixInitializer(
                 rubixConfig,
                 nodeManager,
@@ -175,15 +188,21 @@ public class TestRubixCaching
                 Optional.empty());
         rubixConfigInitializer = new RubixConfigurationInitializer(rubixInitializer);
         rubixInitializer.initializeRubix();
+        retry().run("wait for rubix to startup", () -> {
+            if (!rubixInitializer.isServerUp()) {
+                throw new IllegalStateException("Rubix server has not started");
+            }
+            return null;
+        });
     }
 
     private FileSystem getCachingFileSystem()
             throws IOException
     {
-        return getCachingFileSystem(context);
+        return getCachingFileSystem(context, cacheStoragePath);
     }
 
-    private FileSystem getCachingFileSystem(HdfsContext context)
+    private FileSystem getCachingFileSystem(HdfsContext context, Path path)
             throws IOException
     {
         HdfsConfigurationInitializer configurationInitializer = new HdfsConfigurationInitializer(config, ImmutableSet.of());
@@ -192,12 +211,11 @@ public class TestRubixCaching
                 ImmutableSet.of(
                         rubixConfigInitializer,
                         (dynamicConfig, ignoredContext, ignoredUri) -> {
-                            // make sure that dummy cluster manager is used
-                            setPrestoClusterManager(dynamicConfig, DummyClusterManager.class.getName());
                             dynamicConfig.set("fs.file.impl", CachingLocalFileSystem.class.getName());
+                            dynamicConfig.set("fs.azure.account.key", "Zm9vCg==");
                         }));
         HdfsEnvironment environment = new HdfsEnvironment(configuration, config, new NoHdfsAuthentication());
-        return environment.getFileSystem(context, cacheStoragePath);
+        return environment.getFileSystem(context, path);
     }
 
     @AfterClass(alwaysRun = true)
@@ -220,6 +238,8 @@ public class TestRubixCaching
             });
             closer.register(() -> {
                 if (cachingFileSystem != null) {
+                    // reset cluster manager
+                    unwrapCachingFileSystem(cachingFileSystem).setClusterManager(null);
                     cachingFileSystem.close();
                     cachingFileSystem = null;
                 }
@@ -243,6 +263,17 @@ public class TestRubixCaching
         }
     }
 
+    private static CachingFileSystem<?> unwrapCachingFileSystem(FileSystem fileSystem)
+    {
+        if (fileSystem instanceof CachingFileSystem) {
+            return (CachingFileSystem<?>) fileSystem;
+        }
+        if (fileSystem instanceof FilterFileSystem) {
+            return unwrapCachingFileSystem(((FilterFileSystem) fileSystem).getRawFileSystem());
+        }
+        throw new IllegalStateException();
+    }
+
     @DataProvider
     public static Object[][] readMode()
     {
@@ -255,8 +286,8 @@ public class TestRubixCaching
         RubixConfig rubixConfig = new RubixConfig();
         HdfsConfigurationInitializer configurationInitializer = new HdfsConfigurationInitializer(config, ImmutableSet.of());
         InternalNode workerNode = new InternalNode(
-                "master",
-                URI.create("http://127.0.0.1:8080"),
+                "worker",
+                URI.create("http://127.0.0.2:8080"),
                 UNKNOWN,
                 false);
         RubixInitializer rubixInitializer = new RubixInitializer(
@@ -266,9 +297,44 @@ public class TestRubixCaching
                 new CatalogName("catalog"),
                 configurationInitializer,
                 Optional.empty());
-        RubixConfigurationInitializer rubixConfigInitializer = new RubixConfigurationInitializer(rubixInitializer);
         assertThatThrownBy(rubixInitializer::initializeRubix)
                 .hasMessage("No coordinator node available");
+    }
+
+    @Test
+    public void testGetBlockLocations()
+            throws Exception
+    {
+        RubixConfig rubixConfig = new RubixConfig();
+        InternalNode coordinatorNode = new InternalNode(
+                "master",
+                URI.create("http://" + getLocalHost().getHostAddress() + ":8080"),
+                UNKNOWN,
+                true);
+        InternalNode workerNode1 = new InternalNode(
+                "worker1",
+                URI.create("http://127.0.0.2:8080"),
+                UNKNOWN,
+                false);
+        InternalNode workerNode2 = new InternalNode(
+                "worker2",
+                URI.create("http://127.0.0.3:8080"),
+                UNKNOWN,
+                false);
+        initializeRubix(rubixConfig, ImmutableList.of(coordinatorNode, workerNode1, workerNode2));
+        cachingFileSystem = getCachingFileSystem();
+
+        FileStatus file1 = new FileStatus(3, false, 0, 3, 0, new Path("aaa"));
+        FileStatus file2 = new FileStatus(3, false, 0, 3, 0, new Path("bbb"));
+
+        BlockLocation[] file1Locations = cachingFileSystem.getFileBlockLocations(file1, 0, 3);
+        BlockLocation[] file2Locations = cachingFileSystem.getFileBlockLocations(file2, 0, 3);
+
+        assertEquals(file1Locations.length, 1);
+        assertEquals(file2Locations.length, 1);
+
+        assertEquals(file1Locations[0].getHosts()[0], "127.0.0.3");
+        assertEquals(file2Locations[0].getHosts()[0], "127.0.0.2");
     }
 
     @Test(dataProvider = "readMode")
@@ -318,7 +384,7 @@ public class TestRubixCaching
 
     @Test(dataProvider = "readMode")
     public void testCacheWrite(ReadMode readMode)
-            throws IOException
+            throws Exception
     {
         initializeCachingFileSystem(new RubixConfig().setReadMode(readMode));
         Path file = getStoragePath("some_file_write");
@@ -400,6 +466,53 @@ public class TestRubixCaching
                     assertGreaterThan(getCachedReadsCount(), secondCachedReadsCount);
                     assertEquals(getRemoteReadsCount(), secondRemoteReadsCount);
                 });
+    }
+
+    @Test
+    public void testFileSystemBindings()
+            throws Exception
+    {
+        initializeRubix(new RubixConfig());
+
+        try (FileSystem fileSystem = getCachingFileSystem(context, new Path("s3://bucket_name"))) {
+            assertRawFileSystemInstanceOf(fileSystem, CachingPrestoS3FileSystem.class);
+        }
+
+        try (FileSystem fileSystem = getCachingFileSystem(context, new Path("s3a://bucket_name"))) {
+            assertRawFileSystemInstanceOf(fileSystem, CachingPrestoS3FileSystem.class);
+        }
+
+        try (FileSystem fileSystem = getCachingFileSystem(context, new Path("s3n://bucket_name"))) {
+            assertRawFileSystemInstanceOf(fileSystem, CachingPrestoS3FileSystem.class);
+        }
+
+        try (FileSystem fileSystem = getCachingFileSystem(context, new Path("abfs://fileanalysis@foo-bar.dfs.core.windows.net/tutorials"))) {
+            assertRawFileSystemInstanceOf(fileSystem, CachingPrestoAzureBlobFileSystem.class);
+        }
+
+        // TODO: add check for "wasb" Azure FS.
+        // Testing "wasb" Azure FS requires valid Azure credentials as NativeAzureFileSystem tries to connect during initialization
+        // Fix after: https://github.com/prestosql/presto/issues/4159
+
+        try (FileSystem fileSystem = getCachingFileSystem(context, new Path("abfss://fileanalysis@foo-bar.dfs.core.windows.net/tutorials"))) {
+            assertRawFileSystemInstanceOf(fileSystem, CachingPrestoSecureAzureBlobFileSystem.class);
+        }
+
+        // TODO: renable when Rubix doesn't shade GCS connector (https://github.com/qubole/rubix/pull/415)
+        //try (FileSystem fileSystem = getCachingFileSystem(context, new Path("gs://bucket_name"))) {
+        //    assertRawFileSystemInstanceOf(fileSystem, CachingPrestoGoogleHadoopFileSystem.class);
+        //}
+
+        try (FileSystem fileSystem = getCachingFileSystem(context, new Path("hdfs://localhost:7897"))) {
+            assertRawFileSystemInstanceOf(fileSystem, CachingPrestoDistributedFileSystem.class);
+        }
+    }
+
+    private void assertRawFileSystemInstanceOf(FileSystem actual, Class<? extends FileSystem> expectedType)
+    {
+        assertInstanceOf(actual, FilterFileSystem.class);
+        FileSystem rawFileSystem = ((FilterFileSystem) actual).getRawFileSystem();
+        assertInstanceOf(rawFileSystem, expectedType);
     }
 
     private byte[] readFile(FileSystem fileSystem, Path path)

@@ -45,7 +45,7 @@ public class TestQueryStateInfo
     @Test
     public void testQueryStateInfo()
     {
-        InternalResourceGroup.RootInternalResourceGroup root = new InternalResourceGroup.RootInternalResourceGroup("root", (group, export) -> {}, directExecutor());
+        InternalResourceGroup root = new InternalResourceGroup("root", (group, export) -> {}, directExecutor());
         root.setSoftMemoryLimitBytes(DataSize.of(1, MEGABYTE).toBytes());
         root.setMaxQueuedQueries(40);
         root.setHardConcurrencyLimit(0);
@@ -130,6 +130,7 @@ public class TestQueryStateInfo
                         DataSize.valueOf("23GB"),
                         DataSize.valueOf("24GB"),
                         DataSize.valueOf("25GB"),
+                        DataSize.valueOf("30GB"),
                         DataSize.valueOf("26GB"),
                         DataSize.valueOf("27GB"),
                         DataSize.valueOf("28GB"),

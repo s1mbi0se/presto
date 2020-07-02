@@ -29,7 +29,6 @@ import io.prestosql.spi.type.StandardTypes;
 import org.bson.types.ObjectId;
 
 import static io.airlift.slice.Slices.utf8Slice;
-import static io.prestosql.spi.function.OperatorType.BETWEEN;
 import static io.prestosql.spi.function.OperatorType.CAST;
 import static io.prestosql.spi.function.OperatorType.EQUAL;
 import static io.prestosql.spi.function.OperatorType.GREATER_THAN;
@@ -67,7 +66,7 @@ public final class ObjectIdFunctions
     }
 
     @ScalarFunction
-    @SqlType(StandardTypes.TIMESTAMP_WITH_TIME_ZONE) // ObjectId's timestamp is a point in time
+    @SqlType("timestamp(3) with time zone") // ObjectId's timestamp is a point in time
     public static long objectidTimestamp(@SqlType("ObjectId") Slice value)
     {
         int epochSeconds = new ObjectId(value.getBytes()).getTimestamp();
@@ -141,13 +140,6 @@ public final class ObjectIdFunctions
     public static boolean lessThanOrEqual(@SqlType("ObjectId") Slice left, @SqlType("ObjectId") Slice right)
     {
         return compareTo(left, right) <= 0;
-    }
-
-    @ScalarOperator(BETWEEN)
-    @SqlType(StandardTypes.BOOLEAN)
-    public static boolean between(@SqlType("ObjectId") Slice value, @SqlType("ObjectId") Slice min, @SqlType("ObjectId") Slice max)
-    {
-        return compareTo(value, min) >= 0 && compareTo(value, max) <= 0;
     }
 
     @ScalarOperator(HASH_CODE)

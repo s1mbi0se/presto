@@ -95,7 +95,10 @@ import io.prestosql.sql.planner.iterative.rule.PruneSampleColumns;
 import io.prestosql.sql.planner.iterative.rule.PruneSemiJoinColumns;
 import io.prestosql.sql.planner.iterative.rule.PruneSemiJoinFilteringSourceColumns;
 import io.prestosql.sql.planner.iterative.rule.PruneSortColumns;
+import io.prestosql.sql.planner.iterative.rule.PruneSpatialJoinChildrenColumns;
+import io.prestosql.sql.planner.iterative.rule.PruneSpatialJoinColumns;
 import io.prestosql.sql.planner.iterative.rule.PruneTableScanColumns;
+import io.prestosql.sql.planner.iterative.rule.PruneTableWriterSourceColumns;
 import io.prestosql.sql.planner.iterative.rule.PruneTopNColumns;
 import io.prestosql.sql.planner.iterative.rule.PruneTopNRowNumberColumns;
 import io.prestosql.sql.planner.iterative.rule.PruneUnionColumns;
@@ -104,6 +107,7 @@ import io.prestosql.sql.planner.iterative.rule.PruneUnnestColumns;
 import io.prestosql.sql.planner.iterative.rule.PruneUnnestSourceColumns;
 import io.prestosql.sql.planner.iterative.rule.PruneValuesColumns;
 import io.prestosql.sql.planner.iterative.rule.PruneWindowColumns;
+import io.prestosql.sql.planner.iterative.rule.PushAggregationIntoTableScan;
 import io.prestosql.sql.planner.iterative.rule.PushAggregationThroughOuterJoin;
 import io.prestosql.sql.planner.iterative.rule.PushDeleteIntoConnector;
 import io.prestosql.sql.planner.iterative.rule.PushDownDereferenceThroughFilter;
@@ -145,6 +149,7 @@ import io.prestosql.sql.planner.iterative.rule.RemoveFullSample;
 import io.prestosql.sql.planner.iterative.rule.RemoveRedundantCrossJoin;
 import io.prestosql.sql.planner.iterative.rule.RemoveRedundantDistinctLimit;
 import io.prestosql.sql.planner.iterative.rule.RemoveRedundantEnforceSingleRowNode;
+import io.prestosql.sql.planner.iterative.rule.RemoveRedundantExists;
 import io.prestosql.sql.planner.iterative.rule.RemoveRedundantIdentityProjections;
 import io.prestosql.sql.planner.iterative.rule.RemoveRedundantJoin;
 import io.prestosql.sql.planner.iterative.rule.RemoveRedundantLimit;
@@ -299,7 +304,10 @@ public class PlanOptimizers
                 new PruneSemiJoinColumns(),
                 new PruneSemiJoinFilteringSourceColumns(),
                 new PruneSortColumns(),
-                new PruneTableScanColumns(metadata, typeAnalyzer),
+                new PruneSpatialJoinChildrenColumns(),
+                new PruneSpatialJoinColumns(),
+                new PruneTableScanColumns(metadata),
+                new PruneTableWriterSourceColumns(),
                 new PruneTopNColumns(),
                 new PruneTopNRowNumberColumns(),
                 new PruneUnionColumns(),
@@ -405,6 +413,7 @@ public class PlanOptimizers
                                         new RemoveRedundantCrossJoin(),
                                         new RemoveRedundantJoin(),
                                         new RemoveRedundantEnforceSingleRowNode(),
+                                        new RemoveRedundantExists(),
                                         new ImplementFilteredAggregations(metadata),
                                         new SingleDistinctAggregationToGroupBy(),
                                         new MultipleDistinctAggregationToMarkDistinct(),
@@ -504,6 +513,7 @@ public class PlanOptimizers
                                 .add(new PushLimitIntoTableScan(metadata))
                                 .add(new PushPredicateIntoTableScan(metadata, typeAnalyzer))
                                 .add(new PushSampleIntoTableScan(metadata))
+                                .add(new PushAggregationIntoTableScan(metadata))
                                 .build()),
                 new IterativeOptimizer(
                         ruleStats,
@@ -665,8 +675,7 @@ public class PlanOptimizers
         // and to pushdown dynamic filters
         builder.add(new StatsRecordingPlanOptimizer(
                 optimizerStats,
-                new PredicatePushDown(metadata, typeAnalyzer, true, true)));
-        builder.add(new RemoveUnsupportedDynamicFilters(metadata));
+                new PredicatePushDown(metadata, typeAnalyzer, true, false)));
         builder.add(simplifyOptimizer); // Should be always run after PredicatePushDown
         builder.add(new IterativeOptimizer(
                 ruleStats,

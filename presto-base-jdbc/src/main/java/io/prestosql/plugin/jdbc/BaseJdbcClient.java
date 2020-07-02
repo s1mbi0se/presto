@@ -48,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -80,7 +81,7 @@ import static io.prestosql.plugin.jdbc.StandardColumnMappings.tinyintWriteFuncti
 import static io.prestosql.plugin.jdbc.StandardColumnMappings.varbinaryWriteFunction;
 import static io.prestosql.plugin.jdbc.StandardColumnMappings.varcharReadFunction;
 import static io.prestosql.plugin.jdbc.StandardColumnMappings.varcharWriteFunction;
-import static io.prestosql.plugin.jdbc.TypeHandlingJdbcPropertiesProvider.getUnsupportedTypeHandling;
+import static io.prestosql.plugin.jdbc.TypeHandlingJdbcSessionProperties.getUnsupportedTypeHandling;
 import static io.prestosql.plugin.jdbc.UnsupportedTypeHandling.CONVERT_TO_VARCHAR;
 import static io.prestosql.plugin.jdbc.UnsupportedTypeHandling.IGNORE;
 import static io.prestosql.spi.StandardErrorCode.NOT_FOUND;
@@ -106,7 +107,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
 
-public class BaseJdbcClient
+public abstract class BaseJdbcClient
         implements JdbcClient
 {
     private static final Logger log = Logger.get(BaseJdbcClient.class);
@@ -249,6 +250,12 @@ public class BaseJdbcClient
             int allColumns = 0;
             List<JdbcColumnHandle> columns = new ArrayList<>();
             while (resultSet.next()) {
+                // skip if table doesn't match expected
+                if (!(Objects.equals(tableHandle.getCatalogName(), resultSet.getString("TABLE_CAT"))
+                        && Objects.equals(tableHandle.getSchemaName(), resultSet.getString("TABLE_SCHEM"))
+                        && Objects.equals(tableHandle.getTableName(), resultSet.getString("TABLE_NAME")))) {
+                    continue;
+                }
                 allColumns++;
                 String columnName = resultSet.getString("COLUMN_NAME");
                 JdbcTypeHandle typeHandle = new JdbcTypeHandle(
@@ -256,6 +263,7 @@ public class BaseJdbcClient
                         Optional.ofNullable(resultSet.getString("TYPE_NAME")),
                         resultSet.getInt("COLUMN_SIZE"),
                         resultSet.getInt("DECIMAL_DIGITS"),
+                        Optional.empty(),
                         Optional.empty());
                 Optional<ColumnMapping> columnMapping = toPrestoType(session, connection, typeHandle);
                 log.debug("Mapping data type of '%s' column '%s': %s mapped to %s", tableHandle.getSchemaTableName(), columnName, typeHandle, columnMapping);
@@ -290,7 +298,7 @@ public class BaseJdbcClient
         }
     }
 
-    protected static ResultSet getColumns(JdbcTableHandle tableHandle, DatabaseMetaData metadata)
+    protected ResultSet getColumns(JdbcTableHandle tableHandle, DatabaseMetaData metadata)
             throws SQLException
     {
         return metadata.getColumns(
@@ -370,6 +378,7 @@ public class BaseJdbcClient
                 table.getCatalogName(),
                 table.getSchemaName(),
                 table.getTableName(),
+                table.getGroupingSets(),
                 columns,
                 table.getConstraint(),
                 split.getAdditionalPredicate(),

@@ -47,25 +47,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 public abstract class BaseElasticsearchSmokeTest
         extends AbstractTestIntegrationSmokeTest
 {
-    private final String elasticVersion;
+    private final String image;
     private ElasticsearchServer elasticsearch;
     private RestHighLevelClient client;
 
-    BaseElasticsearchSmokeTest(String elasticVersion)
+    BaseElasticsearchSmokeTest(String image)
     {
-        this.elasticVersion = elasticVersion;
+        this.image = image;
     }
 
     @Override
     protected QueryRunner createQueryRunner()
             throws Exception
     {
-        elasticsearch = new ElasticsearchServer(elasticVersion);
+        elasticsearch = new ElasticsearchServer(image, ImmutableMap.of());
 
         HostAndPort address = elasticsearch.getAddress();
         client = new RestHighLevelClient(RestClient.builder(new HttpHost(address.getHost(), address.getPort())));
 
-        return createElasticsearchQueryRunner(elasticsearch.getAddress(), TpchTable.getTables(), ImmutableMap.of());
+        return createElasticsearchQueryRunner(elasticsearch.getAddress(), TpchTable.getTables(), ImmutableMap.of(), ImmutableMap.of());
     }
 
     @AfterClass(alwaysRun = true)
@@ -92,7 +92,7 @@ public abstract class BaseElasticsearchSmokeTest
                 .row("clerk", "varchar", "", "")
                 .row("comment", "varchar", "", "")
                 .row("custkey", "bigint", "", "")
-                .row("orderdate", "timestamp", "", "")
+                .row("orderdate", "timestamp(3)", "", "")
                 .row("orderkey", "bigint", "", "")
                 .row("orderpriority", "varchar", "", "")
                 .row("orderstatus", "varchar", "", "")
@@ -111,7 +111,7 @@ public abstract class BaseElasticsearchSmokeTest
                         "   clerk varchar,\n" +
                         "   comment varchar,\n" +
                         "   custkey bigint,\n" +
-                        "   orderdate timestamp,\n" +
+                        "   orderdate timestamp(3),\n" +
                         "   orderkey bigint,\n" +
                         "   orderpriority varchar,\n" +
                         "   orderstatus varchar,\n" +

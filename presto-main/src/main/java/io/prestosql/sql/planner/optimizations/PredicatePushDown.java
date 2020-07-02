@@ -36,6 +36,7 @@ import io.prestosql.sql.planner.TypeProvider;
 import io.prestosql.sql.planner.plan.AggregationNode;
 import io.prestosql.sql.planner.plan.AssignUniqueId;
 import io.prestosql.sql.planner.plan.Assignments;
+import io.prestosql.sql.planner.plan.DynamicFilterId;
 import io.prestosql.sql.planner.plan.ExchangeNode;
 import io.prestosql.sql.planner.plan.FilterNode;
 import io.prestosql.sql.planner.plan.GroupIdNode;
@@ -77,6 +78,7 @@ import java.util.stream.Collectors;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Verify.verify;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static io.prestosql.SystemSessionProperties.isEnableDynamicFiltering;
 import static io.prestosql.SystemSessionProperties.isPredicatePushdownUseTableProperties;
 import static io.prestosql.sql.DynamicFilters.createDynamicFilterExpression;
@@ -309,7 +311,7 @@ public class PredicatePushDown
         {
             Map<Symbol, SymbolReference> commonGroupingSymbolMapping = node.getGroupingColumns().entrySet().stream()
                     .filter(entry -> node.getCommonGroupingColumns().contains(entry.getKey()))
-                    .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().toSymbolReference()));
+                    .collect(toImmutableMap(Map.Entry::getKey, entry -> entry.getValue().toSymbolReference()));
 
             Predicate<Expression> pushdownEligiblePredicate = conjunct -> commonGroupingSymbolMapping.keySet().containsAll(SymbolsExtractor.extractUnique(conjunct));
 
@@ -460,12 +462,12 @@ public class PredicatePushDown
             Assignments.Builder leftProjections = Assignments.builder();
             leftProjections.putAll(node.getLeft()
                     .getOutputSymbols().stream()
-                    .collect(Collectors.toMap(key -> key, Symbol::toSymbolReference)));
+                    .collect(toImmutableMap(key -> key, Symbol::toSymbolReference)));
 
             Assignments.Builder rightProjections = Assignments.builder();
             rightProjections.putAll(node.getRight()
                     .getOutputSymbols().stream()
-                    .collect(Collectors.toMap(key -> key, Symbol::toSymbolReference)));
+                    .collect(toImmutableMap(key -> key, Symbol::toSymbolReference)));
 
             // Create new projections for the new join clauses
             List<JoinNode.EquiJoinClause> equiJoinClauses = new ArrayList<>();
@@ -496,7 +498,7 @@ public class PredicatePushDown
             }
 
             DynamicFiltersResult dynamicFiltersResult = createDynamicFilters(node, equiJoinClauses, session, idAllocator);
-            Map<String, Symbol> dynamicFilters = dynamicFiltersResult.getDynamicFilters();
+            Map<DynamicFilterId, Symbol> dynamicFilters = dynamicFiltersResult.getDynamicFilters();
             leftPredicate = combineConjuncts(metadata, leftPredicate, combineConjuncts(metadata, dynamicFiltersResult.getPredicates()));
 
             PlanNode leftSource;
@@ -568,19 +570,24 @@ public class PredicatePushDown
 
         private DynamicFiltersResult createDynamicFilters(JoinNode node, List<JoinNode.EquiJoinClause> equiJoinClauses, Session session, PlanNodeIdAllocator idAllocator)
         {
-            Map<String, Symbol> dynamicFilters = ImmutableMap.of();
+            Map<DynamicFilterId, Symbol> dynamicFilters = ImmutableMap.of();
             List<Expression> predicates = ImmutableList.of();
             if (node.getType() == INNER && isEnableDynamicFiltering(session) && dynamicFiltering) {
                 // New equiJoinClauses could potentially not contain symbols used in current dynamic filters.
                 // Since we use PredicatePushdown to push dynamic filters themselves,
                 // instead of separate ApplyDynamicFilters rule we derive dynamic filters within PredicatePushdown itself.
                 // Even if equiJoinClauses.equals(node.getCriteria), current dynamic filters may not match equiJoinClauses
-                ImmutableMap.Builder<String, Symbol> dynamicFiltersBuilder = ImmutableMap.builder();
+                ImmutableMap.Builder<DynamicFilterId, Symbol> dynamicFiltersBuilder = ImmutableMap.builder();
                 ImmutableList.Builder<Expression> predicatesBuilder = ImmutableList.builder();
+                // reuse existing dynamic filters to make planning more stable
+                Map<Symbol, DynamicFilterId> buildSymbolToDynamicFilter = new HashMap<>(node.getDynamicFilters().entrySet().stream()
+                        .collect(toImmutableMap(Map.Entry::getValue, Map.Entry::getKey)));
                 for (JoinNode.EquiJoinClause clause : equiJoinClauses) {
                     Symbol probeSymbol = clause.getLeft();
                     Symbol buildSymbol = clause.getRight();
-                    String id = "df_" + idAllocator.getNextId().toString();
+                    DynamicFilterId id = buildSymbolToDynamicFilter.computeIfAbsent(
+                            buildSymbol,
+                            key -> new DynamicFilterId("df_" + idAllocator.getNextId().toString()));
                     predicatesBuilder.add(createDynamicFilterExpression(metadata, id, symbolAllocator.getTypes().get(probeSymbol), probeSymbol.toSymbolReference()));
                     dynamicFiltersBuilder.put(id, buildSymbol);
                 }
@@ -592,16 +599,16 @@ public class PredicatePushDown
 
         private static class DynamicFiltersResult
         {
-            private final Map<String, Symbol> dynamicFilters;
+            private final Map<DynamicFilterId, Symbol> dynamicFilters;
             private final List<Expression> predicates;
 
-            public DynamicFiltersResult(Map<String, Symbol> dynamicFilters, List<Expression> predicates)
+            public DynamicFiltersResult(Map<DynamicFilterId, Symbol> dynamicFilters, List<Expression> predicates)
             {
                 this.dynamicFilters = dynamicFilters;
                 this.predicates = predicates;
             }
 
-            public Map<String, Symbol> getDynamicFilters()
+            public Map<DynamicFilterId, Symbol> getDynamicFilters()
             {
                 return dynamicFilters;
             }
@@ -676,12 +683,12 @@ public class PredicatePushDown
                 Assignments.Builder leftProjections = Assignments.builder();
                 leftProjections.putAll(node.getLeft()
                         .getOutputSymbols().stream()
-                        .collect(Collectors.toMap(key -> key, Symbol::toSymbolReference)));
+                        .collect(toImmutableMap(key -> key, Symbol::toSymbolReference)));
 
                 Assignments.Builder rightProjections = Assignments.builder();
                 rightProjections.putAll(node.getRight()
                         .getOutputSymbols().stream()
-                        .collect(Collectors.toMap(key -> key, Symbol::toSymbolReference)));
+                        .collect(toImmutableMap(key -> key, Symbol::toSymbolReference)));
 
                 leftSource = new ProjectNode(idAllocator.getNextId(), leftSource, leftProjections.build());
                 rightSource = new ProjectNode(idAllocator.getNextId(), rightSource, rightProjections.build());

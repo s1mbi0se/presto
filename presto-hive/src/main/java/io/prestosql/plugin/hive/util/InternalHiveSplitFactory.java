@@ -14,7 +14,7 @@
 package io.prestosql.plugin.hive.util;
 
 import com.google.common.collect.ImmutableList;
-import io.prestosql.plugin.hive.DeleteDeltaLocations;
+import io.prestosql.plugin.hive.AcidInfo;
 import io.prestosql.plugin.hive.HiveColumnHandle;
 import io.prestosql.plugin.hive.HivePartitionKey;
 import io.prestosql.plugin.hive.HiveSplit.BucketConversion;
@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Properties;
+import java.util.function.BooleanSupplier;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -59,6 +60,7 @@ public class InternalHiveSplitFactory
     private final List<HivePartitionKey> partitionKeys;
     private final Optional<Domain> pathDomain;
     private final TableToPartitionMapping tableToPartitionMapping;
+    private final BooleanSupplier partitionMatchSupplier;
     private final Optional<BucketConversion> bucketConversion;
     private final boolean forceLocalScheduling;
     private final boolean s3SelectPushdownEnabled;
@@ -70,6 +72,7 @@ public class InternalHiveSplitFactory
             Properties schema,
             List<HivePartitionKey> partitionKeys,
             TupleDomain<HiveColumnHandle> effectivePredicate,
+            BooleanSupplier partitionMatchSupplier,
             TableToPartitionMapping tableToPartitionMapping,
             Optional<BucketConversion> bucketConversion,
             boolean forceLocalScheduling,
@@ -81,6 +84,7 @@ public class InternalHiveSplitFactory
         this.schema = requireNonNull(schema, "schema is null");
         this.partitionKeys = requireNonNull(partitionKeys, "partitionKeys is null");
         pathDomain = getPathDomain(requireNonNull(effectivePredicate, "effectivePredicate is null"));
+        this.partitionMatchSupplier = requireNonNull(partitionMatchSupplier, "partitionMatchSupplier is null");
         this.tableToPartitionMapping = requireNonNull(tableToPartitionMapping, "tableToPartitionMapping is null");
         this.bucketConversion = requireNonNull(bucketConversion, "bucketConversion is null");
         this.forceLocalScheduling = forceLocalScheduling;
@@ -92,7 +96,7 @@ public class InternalHiveSplitFactory
         return partitionName;
     }
 
-    public Optional<InternalHiveSplit> createInternalHiveSplit(LocatedFileStatus status, OptionalInt bucketNumber, boolean splittable, Optional<DeleteDeltaLocations> deleteDeltaLocations)
+    public Optional<InternalHiveSplit> createInternalHiveSplit(LocatedFileStatus status, OptionalInt bucketNumber, boolean splittable, Optional<AcidInfo> acidInfo)
     {
         splittable = splittable && isSplittable(inputFormat, fileSystem, status.getPath());
         return createInternalHiveSplit(
@@ -104,7 +108,7 @@ public class InternalHiveSplitFactory
                 status.getModificationTime(),
                 bucketNumber,
                 splittable,
-                deleteDeltaLocations);
+                acidInfo);
     }
 
     public Optional<InternalHiveSplit> createInternalHiveSplit(FileSplit split)
@@ -132,10 +136,16 @@ public class InternalHiveSplitFactory
             long fileModificationTime,
             OptionalInt bucketNumber,
             boolean splittable,
-            Optional<DeleteDeltaLocations> deleteDeltaLocations)
+            Optional<AcidInfo> acidInfo)
     {
         String pathString = path.toString();
         if (!pathMatchesPredicate(pathDomain, pathString)) {
+            return Optional.empty();
+        }
+
+        // Dynamic filter may not have been ready when partition was loaded in BackgroundHiveSplitLoader,
+        // but it might be ready when splits are enumerated lazily.
+        if (!partitionMatchSupplier.getAsBoolean()) {
             return Optional.empty();
         }
 
@@ -189,7 +199,7 @@ public class InternalHiveSplitFactory
                 tableToPartitionMapping,
                 bucketConversion,
                 s3SelectPushdownEnabled && S3SelectPushdown.isCompressionCodecSupported(inputFormat, path),
-                deleteDeltaLocations));
+                acidInfo));
     }
 
     private static void checkBlocks(List<InternalHiveBlock> blocks, long start, long length)

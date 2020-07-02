@@ -37,6 +37,7 @@ import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.connector.ColumnHandle;
 import io.prestosql.spi.connector.ConnectorSession;
 import io.prestosql.spi.predicate.TupleDomain;
+import io.prestosql.spi.type.TypeManager;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -71,7 +72,9 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BooleanSupplier;
 import java.util.function.IntPredicate;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -85,6 +88,7 @@ import static io.prestosql.plugin.hive.HiveErrorCode.HIVE_INVALID_BUCKET_FILES;
 import static io.prestosql.plugin.hive.HiveErrorCode.HIVE_INVALID_METADATA;
 import static io.prestosql.plugin.hive.HiveErrorCode.HIVE_INVALID_PARTITION_VALUE;
 import static io.prestosql.plugin.hive.HiveErrorCode.HIVE_UNKNOWN_ERROR;
+import static io.prestosql.plugin.hive.HivePartitionManager.partitionMatches;
 import static io.prestosql.plugin.hive.HiveSessionProperties.isForceLocalScheduling;
 import static io.prestosql.plugin.hive.metastore.MetastoreUtil.getHiveSchema;
 import static io.prestosql.plugin.hive.metastore.MetastoreUtil.getPartitionLocation;
@@ -97,6 +101,7 @@ import static io.prestosql.plugin.hive.util.HiveUtil.checkCondition;
 import static io.prestosql.plugin.hive.util.HiveUtil.getFooterCount;
 import static io.prestosql.plugin.hive.util.HiveUtil.getHeaderCount;
 import static io.prestosql.plugin.hive.util.HiveUtil.getInputFormat;
+import static io.prestosql.plugin.hive.util.HiveUtil.getPartitionKeyColumnHandles;
 import static io.prestosql.spi.StandardErrorCode.NOT_SUPPORTED;
 import static java.lang.Integer.parseInt;
 import static java.lang.Math.max;
@@ -107,18 +112,23 @@ import static org.apache.hadoop.hive.common.FileUtils.HIDDEN_FILES_PATH_FILTER;
 public class BackgroundHiveSplitLoader
         implements HiveSplitLoader
 {
+    // See https://github.com/apache/hive/commit/ffee30e6267e85f00a22767262192abb9681cfb7#diff-5fe26c36b4e029dcd344fc5d484e7347R165
+    private static final Pattern BUCKET_WITH_OPTIONAL_ATTEMPT_ID_PATTERN = Pattern.compile("bucket_(\\d+)(_\\d+)?$");
+
     private static final Iterable<Pattern> BUCKET_PATTERNS = ImmutableList.of(
             // legacy Presto naming pattern (current version matches Hive)
             Pattern.compile("\\d{8}_\\d{6}_\\d{5}_[a-z0-9]{5}_bucket-(\\d+)(?:[-_.].*)?"),
             // Hive naming pattern per `org.apache.hadoop.hive.ql.exec.Utilities#getBucketIdFromFile()`
             Pattern.compile("(\\d+)_\\d+.*"),
-            // Hive ACID
-            Pattern.compile("bucket_(\\d+)"));
+            // Hive ACID with optional direct insert attempt id
+            BUCKET_WITH_OPTIONAL_ATTEMPT_ID_PATTERN);
 
     private static final ListenableFuture<?> COMPLETED_FUTURE = immediateFuture(null);
 
     private final Table table;
     private final TupleDomain<? extends ColumnHandle> compactEffectivePredicate;
+    private final Supplier<TupleDomain<ColumnHandle>> dynamicFilterSupplier;
+    private final TypeManager typeManager;
     private final Optional<BucketSplitInfo> tableBucketInfo;
     private final HdfsEnvironment hdfsEnvironment;
     private final HdfsContext hdfsContext;
@@ -157,6 +167,8 @@ public class BackgroundHiveSplitLoader
             Table table,
             Iterable<HivePartitionMetadata> partitions,
             TupleDomain<? extends ColumnHandle> compactEffectivePredicate,
+            Supplier<TupleDomain<ColumnHandle>> dynamicFilterSupplier,
+            TypeManager typeManager,
             Optional<BucketSplitInfo> tableBucketInfo,
             ConnectorSession session,
             HdfsEnvironment hdfsEnvironment,
@@ -170,6 +182,8 @@ public class BackgroundHiveSplitLoader
     {
         this.table = table;
         this.compactEffectivePredicate = compactEffectivePredicate;
+        this.dynamicFilterSupplier = dynamicFilterSupplier;
+        this.typeManager = typeManager;
         this.tableBucketInfo = tableBucketInfo;
         this.loaderConcurrency = loaderConcurrency;
         this.session = session;
@@ -302,10 +316,18 @@ public class BackgroundHiveSplitLoader
     private ListenableFuture<?> loadPartition(HivePartitionMetadata partition)
             throws IOException
     {
-        String partitionName = partition.getHivePartition().getPartitionId();
+        HivePartition hivePartition = partition.getHivePartition();
+        String partitionName = hivePartition.getPartitionId();
         Properties schema = getPartitionSchema(table, partition.getPartition());
         List<HivePartitionKey> partitionKeys = getPartitionKeys(table, partition.getPartition());
         TupleDomain<HiveColumnHandle> effectivePredicate = compactEffectivePredicate.transform(HiveColumnHandle.class::cast);
+
+        List<HiveColumnHandle> partitionColumns = getPartitionKeyColumnHandles(table, typeManager);
+        BooleanSupplier partitionMatchSupplier = () -> partitionMatches(partitionColumns, dynamicFilterSupplier.get(), hivePartition);
+        if (!partitionMatchSupplier.getAsBoolean()) {
+            // Avoid listing files and creating splits from a partition if it has been pruned due to dynamic filters
+            return COMPLETED_FUTURE;
+        }
 
         Path path = new Path(getPartitionLocation(table, partition.getPartition()));
         Configuration configuration = hdfsEnvironment.getConfiguration(hdfsContext, path);
@@ -349,6 +371,7 @@ public class BackgroundHiveSplitLoader
                         schema,
                         partitionKeys,
                         effectivePredicate,
+                        partitionMatchSupplier,
                         partition.getTableToPartitionMapping(),
                         Optional.empty(),
                         isForceLocalScheduling(session),
@@ -386,6 +409,7 @@ public class BackgroundHiveSplitLoader
                 schema,
                 partitionKeys,
                 effectivePredicate,
+                partitionMatchSupplier,
                 partition.getTableToPartitionMapping(),
                 bucketConversionRequiresWorkerParticipation ? bucketConversion : Optional.empty(),
                 isForceLocalScheduling(session),
@@ -410,7 +434,7 @@ public class BackgroundHiveSplitLoader
         }
 
         List<Path> readPaths;
-        Optional<DeleteDeltaLocations> deleteDeltaLocations;
+        Optional<AcidInfo> acidInfo;
         if (AcidUtils.isTransactionalTable(table.getParameters())) {
             AcidUtils.Directory directory = hdfsEnvironment.doAs(hdfsContext.getIdentity().getUser(), () -> AcidUtils.getAcidState(
                     path,
@@ -449,18 +473,18 @@ public class BackgroundHiveSplitLoader
             }
 
             // Create a registry of delete_delta directories for the partition
-            DeleteDeltaLocations.Builder deleteDeltaLocationsBuilder = DeleteDeltaLocations.builder(path);
+            AcidInfo.Builder acidInfoBuilder = AcidInfo.builder(path);
             for (AcidUtils.ParsedDelta delta : directory.getCurrentDirectories()) {
                 if (delta.isDeleteDelta()) {
-                    deleteDeltaLocationsBuilder.addDeleteDelta(delta.getPath(), delta.getMinWriteId(), delta.getMaxWriteId(), delta.getStatementId());
+                    acidInfoBuilder.addDeleteDelta(delta.getPath(), delta.getMinWriteId(), delta.getMaxWriteId(), delta.getStatementId());
                 }
             }
 
-            deleteDeltaLocations = deleteDeltaLocationsBuilder.build();
+            acidInfo = acidInfoBuilder.build();
         }
         else {
             readPaths = ImmutableList.of(path);
-            deleteDeltaLocations = Optional.empty();
+            acidInfo = Optional.empty();
         }
 
         // S3 Select pushdown works at the granularity of individual S3 objects,
@@ -471,13 +495,13 @@ public class BackgroundHiveSplitLoader
         if (tableBucketInfo.isPresent()) {
             ListenableFuture<?> lastResult = immediateFuture(null); // TODO document in addToQueue() that it is sufficient to hold on to last returned future
             for (Path readPath : readPaths) {
-                lastResult = hiveSplitSource.addToQueue(getBucketedSplits(readPath, fs, splitFactory, tableBucketInfo.get(), bucketConversion, splittable, deleteDeltaLocations));
+                lastResult = hiveSplitSource.addToQueue(getBucketedSplits(readPath, fs, splitFactory, tableBucketInfo.get(), bucketConversion, splittable, acidInfo));
             }
             return lastResult;
         }
 
         for (Path readPath : readPaths) {
-            fileIterators.addLast(createInternalHiveSplitIterator(readPath, fs, splitFactory, splittable, deleteDeltaLocations));
+            fileIterators.addLast(createInternalHiveSplitIterator(readPath, fs, splitFactory, splittable, acidInfo));
         }
 
         return COMPLETED_FUTURE;
@@ -507,16 +531,16 @@ public class BackgroundHiveSplitLoader
                 .anyMatch(name -> name.equals("UseFileSplitsFromInputFormat"));
     }
 
-    private Iterator<InternalHiveSplit> createInternalHiveSplitIterator(Path path, FileSystem fileSystem, InternalHiveSplitFactory splitFactory, boolean splittable, Optional<DeleteDeltaLocations> deleteDeltaLocations)
+    private Iterator<InternalHiveSplit> createInternalHiveSplitIterator(Path path, FileSystem fileSystem, InternalHiveSplitFactory splitFactory, boolean splittable, Optional<AcidInfo> acidInfo)
     {
         return Streams.stream(new HiveFileIterator(table, path, fileSystem, directoryLister, namenodeStats, recursiveDirWalkerEnabled ? RECURSE : IGNORED, ignoreAbsentPartitions))
-                .map(status -> splitFactory.createInternalHiveSplit(status, OptionalInt.empty(), splittable, deleteDeltaLocations))
+                .map(status -> splitFactory.createInternalHiveSplit(status, OptionalInt.empty(), splittable, acidInfo))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .iterator();
     }
 
-    private List<InternalHiveSplit> getBucketedSplits(Path path, FileSystem fileSystem, InternalHiveSplitFactory splitFactory, BucketSplitInfo bucketSplitInfo, Optional<BucketConversion> bucketConversion, boolean splittable, Optional<DeleteDeltaLocations> deleteDeltaLocations)
+    private List<InternalHiveSplit> getBucketedSplits(Path path, FileSystem fileSystem, InternalHiveSplitFactory splitFactory, BucketSplitInfo bucketSplitInfo, Optional<BucketConversion> bucketConversion, boolean splittable, Optional<AcidInfo> acidInfo)
     {
         int readBucketCount = bucketSplitInfo.getReadBucketCount();
         int tableBucketCount = bucketSplitInfo.getTableBucketCount();
@@ -602,9 +626,9 @@ public class BackgroundHiveSplitLoader
             }
             if (containsEligibleTableBucket) {
                 for (LocatedFileStatus file : bucketFiles.get(partitionBucketNumber)) {
-                    // OrcDeletedRows will load only delete delta files matching current bucket (same file name),
+                    // OrcDeletedRows will load only delete delta files matching current bucket id,
                     // so we can pass all delete delta locations here, without filtering.
-                    splitFactory.createInternalHiveSplit(file, OptionalInt.of(readBucketNumber), splittable, deleteDeltaLocations)
+                    splitFactory.createInternalHiveSplit(file, OptionalInt.of(readBucketNumber), splittable, acidInfo)
                             .ifPresent(splitList::add);
                 }
             }
@@ -622,6 +646,12 @@ public class BackgroundHiveSplitLoader
             }
         }
         return OptionalInt.empty();
+    }
+
+    public static boolean hasAttemptId(String bucketFilename)
+    {
+        Matcher matcher = BUCKET_WITH_OPTIONAL_ATTEMPT_ID_PATTERN.matcher(bucketFilename);
+        return matcher.matches() && matcher.group(2) != null;
     }
 
     private static List<Path> getTargetPathsFromSymlink(FileSystem fileSystem, Path symlinkDir)
@@ -656,7 +686,7 @@ public class BackgroundHiveSplitLoader
         for (int i = 0; i < keys.size(); i++) {
             String name = keys.get(i).getName();
             HiveType hiveType = keys.get(i).getType();
-            if (!hiveType.isSupportedType()) {
+            if (!hiveType.isSupportedType(table.getStorage().getStorageFormat())) {
                 throw new PrestoException(NOT_SUPPORTED, format("Unsupported Hive type %s found in partition keys of table %s.%s", hiveType, table.getDatabaseName(), table.getTableName()));
             }
             String value = values.get(i);

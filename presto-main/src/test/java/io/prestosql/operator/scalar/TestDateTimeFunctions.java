@@ -22,7 +22,6 @@ import org.testng.annotations.Test;
 import java.time.Instant;
 
 import static io.prestosql.spi.type.TimestampWithTimeZoneType.TIMESTAMP_WITH_TIME_ZONE;
-import static io.prestosql.spi.type.VarcharType.createVarcharType;
 
 public class TestDateTimeFunctions
         extends TestDateTimeFunctionsBase
@@ -30,12 +29,6 @@ public class TestDateTimeFunctions
     public TestDateTimeFunctions()
     {
         super(false);
-    }
-
-    @Test
-    public void testToIso8601ForTimestampWithoutTimeZone()
-    {
-        assertFunction("to_iso8601(" + TIMESTAMP_LITERAL + ")", createVarcharType(35), TIMESTAMP_ISO8601_STRING_NO_TIME_ZONE);
     }
 
     @Test

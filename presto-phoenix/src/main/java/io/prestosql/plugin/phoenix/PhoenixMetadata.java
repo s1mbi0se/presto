@@ -19,9 +19,12 @@ import io.airlift.slice.Slice;
 import io.prestosql.plugin.jdbc.JdbcColumnHandle;
 import io.prestosql.plugin.jdbc.JdbcIdentity;
 import io.prestosql.plugin.jdbc.JdbcMetadata;
+import io.prestosql.plugin.jdbc.JdbcMetadataConfig;
 import io.prestosql.plugin.jdbc.JdbcOutputTableHandle;
 import io.prestosql.plugin.jdbc.JdbcTableHandle;
 import io.prestosql.spi.PrestoException;
+import io.prestosql.spi.connector.AggregateFunction;
+import io.prestosql.spi.connector.AggregationApplicationResult;
 import io.prestosql.spi.connector.ColumnHandle;
 import io.prestosql.spi.connector.ColumnMetadata;
 import io.prestosql.spi.connector.ConnectorInsertTableHandle;
@@ -89,9 +92,9 @@ public class PhoenixMetadata
     private final PhoenixClient phoenixClient;
 
     @Inject
-    public PhoenixMetadata(PhoenixClient phoenixClient)
+    public PhoenixMetadata(PhoenixClient phoenixClient, JdbcMetadataConfig metadataConfig)
     {
-        super(phoenixClient, true);
+        super(phoenixClient, metadataConfig.isAllowDropTable());
         this.phoenixClient = requireNonNull(phoenixClient, "client is null");
     }
 
@@ -389,5 +392,17 @@ public class PhoenixMetadata
             }
             throw new PrestoException(PHOENIX_METADATA_ERROR, "Error creating Phoenix table", e);
         }
+    }
+
+    @Override
+    public Optional<AggregationApplicationResult<ConnectorTableHandle>> applyAggregation(
+            ConnectorSession session,
+            ConnectorTableHandle table,
+            List<AggregateFunction> aggregates,
+            Map<String, ColumnHandle> assignments,
+            List<List<ColumnHandle>> groupingSets)
+    {
+        // TODO support aggregation pushdown
+        return Optional.empty();
     }
 }

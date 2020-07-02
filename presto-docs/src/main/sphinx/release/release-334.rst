@@ -30,7 +30,7 @@ General Changes
 JDBC Driver
 -----------
 
-* Implement ``toString()`` for ``java.sqlArray`` results. (:issue:`3803`)
+* Implement ``toString()`` for ``java.sql.Array`` results. (:issue:`3803`)
 
 CLI Changes
 -----------
@@ -40,7 +40,7 @@ CLI Changes
 Web UI Changes
 --------------
 
-* Add ``fixed`, ``certificate``, ``JWT``, and ``Kerberos`` to UI authentication. (:issue:`3433`)
+* Add ``fixed``, ``certificate``, ``JWT``, and ``Kerberos`` to UI authentication. (:issue:`3433`)
 * Show join distribution type in Live Plan. (:issue:`1323`)
 
 JDBC Driver Changes

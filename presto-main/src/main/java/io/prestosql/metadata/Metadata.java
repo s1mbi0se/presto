@@ -17,11 +17,12 @@ import io.airlift.slice.Slice;
 import io.prestosql.Session;
 import io.prestosql.connector.CatalogName;
 import io.prestosql.operator.aggregation.InternalAggregationFunction;
-import io.prestosql.operator.scalar.ScalarFunctionImplementation;
 import io.prestosql.operator.window.WindowFunctionSupplier;
 import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.block.BlockEncoding;
 import io.prestosql.spi.block.BlockEncodingSerde;
+import io.prestosql.spi.connector.AggregateFunction;
+import io.prestosql.spi.connector.AggregationApplicationResult;
 import io.prestosql.spi.connector.CatalogSchemaName;
 import io.prestosql.spi.connector.ColumnHandle;
 import io.prestosql.spi.connector.ColumnMetadata;
@@ -36,6 +37,7 @@ import io.prestosql.spi.connector.ProjectionApplicationResult;
 import io.prestosql.spi.connector.SampleType;
 import io.prestosql.spi.connector.SystemTable;
 import io.prestosql.spi.expression.ConnectorExpression;
+import io.prestosql.spi.function.InvocationConvention;
 import io.prestosql.spi.function.OperatorType;
 import io.prestosql.spi.predicate.TupleDomain;
 import io.prestosql.spi.security.GrantInfo;
@@ -141,6 +143,7 @@ public interface Metadata
 
     /**
      * Creates a schema.
+     *
      * @param principal TODO
      */
     void createSchema(Session session, CatalogSchemaName schema, Map<String, Object> properties, PrestoPrincipal principal);
@@ -352,6 +355,13 @@ public interface Metadata
 
     Optional<TableHandle> applySample(Session session, TableHandle table, SampleType sampleType, double sampleRatio);
 
+    Optional<AggregationApplicationResult<TableHandle>> applyAggregation(
+            Session session,
+            TableHandle table,
+            List<AggregateFunction> aggregations,
+            Map<String, ColumnHandle> assignments,
+            List<List<ColumnHandle>> groupingSets);
+
     default void validateScan(Session session, TableHandle table) {}
 
     //
@@ -374,6 +384,12 @@ public interface Metadata
      * List available roles in specified catalog.
      */
     Set<String> listRoles(Session session, String catalog);
+
+    /**
+     * List all role grants in the specified catalog,
+     * optionally filtered by passed role, grantee, and limit predicates.
+     */
+    Set<RoleGrant> listAllRoleGrants(Session session, String catalog, Optional<Set<String>> roles, Optional<Set<String>> grantees, OptionalLong limit);
 
     /**
      * List roles grants in the specified catalog for a given principal, not recursively.
@@ -448,8 +464,6 @@ public interface Metadata
 
     List<FunctionMetadata> listFunctions();
 
-    FunctionInvokerProvider getFunctionInvokerProvider();
-
     ResolvedFunction resolveFunction(QualifiedName name, List<TypeSignatureProvider> parameterTypes);
 
     ResolvedFunction resolveOperator(OperatorType operatorType, List<? extends Type> argumentTypes)
@@ -478,7 +492,7 @@ public interface Metadata
 
     InternalAggregationFunction getAggregateFunctionImplementation(ResolvedFunction resolvedFunction);
 
-    ScalarFunctionImplementation getScalarFunctionImplementation(ResolvedFunction resolvedFunction);
+    FunctionInvoker getScalarFunctionInvoker(ResolvedFunction resolvedFunction, Optional<InvocationConvention> invocationConvention);
 
     ProcedureRegistry getProcedureRegistry();
 

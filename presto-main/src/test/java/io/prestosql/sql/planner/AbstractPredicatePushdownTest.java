@@ -497,9 +497,6 @@ public abstract class AbstractPredicatePushdownTest
                 "SELECT t1.orderstatus " +
                         "FROM (SELECT orderstatus FROM orders WHERE rand() = orderkey AND orderkey = 123) t1, (VALUES 'F', 'K') t2(col) " +
                         "WHERE t1.orderstatus = t2.col AND (t2.col = 'F' OR t2.col = 'K') AND length(t1.orderstatus) < 42",
-                Session.builder(getQueryRunner().getDefaultSession())
-                        .setSystemProperty(ENABLE_DYNAMIC_FILTERING, "false")
-                        .build(),
                 anyTree(
                         node(
                                 JoinNode.class,
@@ -523,6 +520,20 @@ public abstract class AbstractPredicatePushdownTest
                         node(JoinNode.class,
                                 anyTree(
                                         filter("CAST(NAME AS varchar(1)) IN ('F', 'O')",
+                                                tableScan(
+                                                        "nation",
+                                                        ImmutableMap.of("NAME", "name")))),
+                                anyTree(
+                                        tableScan(
+                                                "orders",
+                                                ImmutableMap.of("ORDERSTATUS", "orderstatus"))))));
+
+        assertPlan(
+                "SELECT * FROM orders JOIN nation ON orderstatus = CAST(nation.name AS varchar(1))",
+                anyTree(
+                        node(JoinNode.class,
+                                anyTree(
+                                        filter("CAST(NAME AS varchar(1)) IN ('F', 'O', 'P')",
                                                 tableScan(
                                                         "nation",
                                                         ImmutableMap.of("NAME", "name")))),

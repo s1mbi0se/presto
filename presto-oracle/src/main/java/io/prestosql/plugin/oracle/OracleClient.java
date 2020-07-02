@@ -31,7 +31,6 @@ import io.prestosql.spi.type.CharType;
 import io.prestosql.spi.type.Chars;
 import io.prestosql.spi.type.DecimalType;
 import io.prestosql.spi.type.Decimals;
-import io.prestosql.spi.type.TimestampType;
 import io.prestosql.spi.type.Type;
 import io.prestosql.spi.type.VarcharType;
 import oracle.jdbc.OraclePreparedStatement;
@@ -72,7 +71,7 @@ import static io.prestosql.plugin.jdbc.StandardColumnMappings.smallintWriteFunct
 import static io.prestosql.plugin.jdbc.StandardColumnMappings.tinyintWriteFunction;
 import static io.prestosql.plugin.jdbc.StandardColumnMappings.varbinaryWriteFunction;
 import static io.prestosql.plugin.jdbc.StandardColumnMappings.varcharWriteFunction;
-import static io.prestosql.plugin.jdbc.TypeHandlingJdbcPropertiesProvider.getUnsupportedTypeHandling;
+import static io.prestosql.plugin.jdbc.TypeHandlingJdbcSessionProperties.getUnsupportedTypeHandling;
 import static io.prestosql.plugin.jdbc.UnsupportedTypeHandling.CONVERT_TO_VARCHAR;
 import static io.prestosql.plugin.oracle.OracleSessionProperties.getNumberDefaultScale;
 import static io.prestosql.plugin.oracle.OracleSessionProperties.getNumberRoundingMode;
@@ -124,7 +123,6 @@ public class OracleClient
     private static final int PRECISION_OF_UNSPECIFIED_NUMBER = 127;
 
     private final boolean synonymsEnabled;
-    private final int fetchSize = 1000;
 
     private static final Map<Type, WriteMapping> WRITE_MAPPINGS = ImmutableMap.<Type, WriteMapping>builder()
             .put(BOOLEAN, oracleBooleanWriteMapping())
@@ -177,7 +175,7 @@ public class OracleClient
             throws SQLException
     {
         PreparedStatement statement = connection.prepareStatement(sql);
-        statement.setFetchSize(fetchSize);
+        statement.setFetchSize(1000);
         return statement;
     }
 
@@ -430,7 +428,7 @@ public class OracleClient
             }
             return WriteMapping.sliceMapping(dataType, longDecimalWriteFunction((DecimalType) type));
         }
-        if (type instanceof TimestampType) {
+        if (type.equals(TIMESTAMP)) {
             return WriteMapping.longMapping("timestamp(3)", oracleTimestampWriteFunction(session));
         }
         WriteMapping writeMapping = WRITE_MAPPINGS.get(type);

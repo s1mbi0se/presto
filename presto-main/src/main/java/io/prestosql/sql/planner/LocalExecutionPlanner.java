@@ -124,6 +124,7 @@ import io.prestosql.spi.connector.ColumnHandle;
 import io.prestosql.spi.connector.ConnectorIndex;
 import io.prestosql.spi.connector.ConnectorSession;
 import io.prestosql.spi.connector.RecordSet;
+import io.prestosql.spi.predicate.Domain;
 import io.prestosql.spi.predicate.NullableValue;
 import io.prestosql.spi.predicate.TupleDomain;
 import io.prestosql.spi.type.Type;
@@ -148,6 +149,7 @@ import io.prestosql.sql.planner.plan.AssignUniqueId;
 import io.prestosql.sql.planner.plan.Assignments;
 import io.prestosql.sql.planner.plan.DeleteNode;
 import io.prestosql.sql.planner.plan.DistinctLimitNode;
+import io.prestosql.sql.planner.plan.DynamicFilterId;
 import io.prestosql.sql.planner.plan.EnforceSingleRowNode;
 import io.prestosql.sql.planner.plan.ExchangeNode;
 import io.prestosql.sql.planner.plan.ExplainAnalyzeNode;
@@ -607,6 +609,11 @@ public class LocalExecutionPlanner
             return dynamicFiltersCollector;
         }
 
+        private void addDynamicFilter(Map<DynamicFilterId, Domain> dynamicTupleDomain)
+        {
+            taskContext.collectDynamicTupleDomain(dynamicTupleDomain);
+        }
+
         public Optional<IndexSourceContext> getIndexSourceContext()
         {
             return indexSourceContext;
@@ -925,13 +932,27 @@ public class LocalExecutionPlanner
                 ResolvedFunction resolvedFunction = entry.getValue().getResolvedFunction();
                 ImmutableList.Builder<Integer> arguments = ImmutableList.builder();
                 for (Expression argument : function.getArguments()) {
-                    Symbol argumentSymbol = Symbol.from(argument);
-                    arguments.add(source.getLayout().get(argumentSymbol));
+                    if (!(argument instanceof LambdaExpression)) {
+                        Symbol argumentSymbol = Symbol.from(argument);
+                        arguments.add(source.getLayout().get(argumentSymbol));
+                    }
                 }
                 Symbol symbol = entry.getKey();
                 WindowFunctionSupplier windowFunctionSupplier = metadata.getWindowFunctionImplementation(resolvedFunction);
                 Type type = metadata.getType(resolvedFunction.getSignature().getReturnType());
-                windowFunctionsBuilder.add(window(windowFunctionSupplier, type, frameInfo, function.isIgnoreNulls(), arguments.build()));
+
+                List<LambdaExpression> lambdaExpressions = function.getArguments().stream()
+                        .filter(LambdaExpression.class::isInstance)
+                        .map(LambdaExpression.class::cast)
+                        .collect(toImmutableList());
+                List<FunctionType> functionTypes = resolvedFunction.getSignature().getArgumentTypes().stream()
+                        .filter(typeSignature -> typeSignature.getBase().equals(FunctionType.NAME))
+                        .map(metadata::getType)
+                        .map(FunctionType.class::cast)
+                        .collect(toImmutableList());
+
+                List<LambdaProvider> lambdaProviders = makeLambdaProviders(lambdaExpressions, windowFunctionSupplier.getLambdaInterfaces(), functionTypes);
+                windowFunctionsBuilder.add(window(windowFunctionSupplier, type, frameInfo, function.isIgnoreNulls(), lambdaProviders, arguments.build()));
                 windowFunctionOutputSymbolsBuilder.add(symbol);
             }
 
@@ -2105,14 +2126,14 @@ public class LocalExecutionPlanner
         }
 
         private DynamicFilterSourceOperatorFactory createDynamicFilterSourceOperatorFactory(
-                LocalDynamicFilter dynamicFilter,
+                LocalDynamicFilterConsumer dynamicFilter,
                 JoinNode node,
                 PhysicalOperation buildSource,
                 LocalExecutionPlanContext context)
         {
             List<DynamicFilterSourceOperator.Channel> filterBuildChannels = dynamicFilter.getBuildChannels().entrySet().stream()
                     .map(entry -> {
-                        String filterId = entry.getKey();
+                        DynamicFilterId filterId = entry.getKey();
                         int index = entry.getValue();
                         Type type = buildSource.getTypes().get(index);
                         return new DynamicFilterSourceOperator.Channel(filterId, type, index);
@@ -2127,7 +2148,7 @@ public class LocalExecutionPlanner
                     getDynamicFilteringMaxPerDriverSize(context.getSession()));
         }
 
-        private Optional<LocalDynamicFilter> createDynamicFilter(PhysicalOperation buildSource, JoinNode node, LocalExecutionPlanContext context, int partitionCount)
+        private Optional<LocalDynamicFilterConsumer> createDynamicFilter(PhysicalOperation buildSource, JoinNode node, LocalExecutionPlanContext context, int partitionCount)
         {
             if (node.getDynamicFilters().isEmpty()) {
                 return Optional.empty();
@@ -2137,14 +2158,12 @@ public class LocalExecutionPlanner
                     "Dynamic filtering cannot be used with grouped execution");
             log.debug("[Join] Dynamic filters: %s", node.getDynamicFilters());
             LocalDynamicFiltersCollector collector = context.getDynamicFiltersCollector();
-            return LocalDynamicFilter
-                    .create(node, context.getTypes(), partitionCount)
-                    .map(filter -> {
-                        // Intersect dynamic filters' predicates when they become ready,
-                        // in order to support multiple join nodes in the same plan fragment.
-                        addSuccessCallback(filter.getResultFuture(), collector::addDynamicFilter);
-                        return filter;
-                    });
+            LocalDynamicFilterConsumer filterConsumer = LocalDynamicFilterConsumer.create(node, buildSource.getTypes(), partitionCount);
+            // Intersect dynamic filters' predicates when they become ready,
+            // in order to support multiple join nodes in the same plan fragment.
+            addSuccessCallback(filterConsumer.getDynamicFilterDomains(), context::addDynamicFilter);
+            addSuccessCallback(filterConsumer.getNodeLocalDynamicFilterForSymbols(), collector::addDynamicFilter);
+            return Optional.of(filterConsumer);
         }
 
         private JoinFilterFunctionFactory compileJoinFilterFunction(
@@ -2625,18 +2644,46 @@ public class LocalExecutionPlanner
                 }
             }
 
-            List<LambdaProvider> lambdaProviders = new ArrayList<>();
             List<LambdaExpression> lambdaExpressions = aggregation.getArguments().stream()
                     .filter(LambdaExpression.class::isInstance)
                     .map(LambdaExpression.class::cast)
                     .collect(toImmutableList());
-            if (!lambdaExpressions.isEmpty()) {
-                List<FunctionType> functionTypes = aggregation.getResolvedFunction().getSignature().getArgumentTypes().stream()
-                        .filter(typeSignature -> typeSignature.getBase().equals(FunctionType.NAME))
-                        .map(metadata::getType)
-                        .map(FunctionType.class::cast)
+            List<FunctionType> functionTypes = aggregation.getResolvedFunction().getSignature().getArgumentTypes().stream()
+                    .filter(typeSignature -> typeSignature.getBase().equals(FunctionType.NAME))
+                    .map(metadata::getType)
+                    .map(FunctionType.class::cast)
+                    .collect(toImmutableList());
+
+            List<LambdaProvider> lambdaProviders = makeLambdaProviders(lambdaExpressions, internalAggregationFunction.getLambdaInterfaces(), functionTypes);
+
+            Optional<Integer> maskChannel = aggregation.getMask().map(value -> source.getLayout().get(value));
+            List<SortOrder> sortOrders = ImmutableList.of();
+            List<Symbol> sortKeys = ImmutableList.of();
+            if (aggregation.getOrderingScheme().isPresent()) {
+                OrderingScheme orderingScheme = aggregation.getOrderingScheme().get();
+                sortKeys = orderingScheme.getOrderBy();
+                sortOrders = sortKeys.stream()
+                        .map(orderingScheme::getOrdering)
                         .collect(toImmutableList());
-                List<Class<?>> lambdaInterfaces = internalAggregationFunction.getLambdaInterfaces();
+            }
+
+            return internalAggregationFunction.bind(
+                    valueChannels,
+                    maskChannel,
+                    source.getTypes(),
+                    getChannelsForSymbols(sortKeys, source.getLayout()),
+                    sortOrders,
+                    pagesIndexFactory,
+                    aggregation.isDistinct(),
+                    joinCompiler,
+                    lambdaProviders,
+                    session);
+        }
+
+        private List<LambdaProvider> makeLambdaProviders(List<LambdaExpression> lambdaExpressions, List<Class<?>> lambdaInterfaces, List<FunctionType> functionTypes)
+        {
+            List<LambdaProvider> lambdaProviders = new ArrayList<>();
+            if (!lambdaExpressions.isEmpty()) {
                 verify(lambdaExpressions.size() == functionTypes.size());
                 verify(lambdaExpressions.size() == lambdaInterfaces.size());
 
@@ -2684,29 +2731,7 @@ public class LocalExecutionPlanner
                     }
                 }
             }
-
-            Optional<Integer> maskChannel = aggregation.getMask().map(value -> source.getLayout().get(value));
-            List<SortOrder> sortOrders = ImmutableList.of();
-            List<Symbol> sortKeys = ImmutableList.of();
-            if (aggregation.getOrderingScheme().isPresent()) {
-                OrderingScheme orderingScheme = aggregation.getOrderingScheme().get();
-                sortKeys = orderingScheme.getOrderBy();
-                sortOrders = sortKeys.stream()
-                        .map(orderingScheme::getOrdering)
-                        .collect(toImmutableList());
-            }
-
-            return internalAggregationFunction.bind(
-                    valueChannels,
-                    maskChannel,
-                    source.getTypes(),
-                    getChannelsForSymbols(sortKeys, source.getLayout()),
-                    sortOrders,
-                    pagesIndexFactory,
-                    aggregation.isDistinct(),
-                    joinCompiler,
-                    lambdaProviders,
-                    session);
+            return lambdaProviders;
         }
 
         private PhysicalOperation planGlobalAggregation(AggregationNode node, PhysicalOperation source, LocalExecutionPlanContext context)

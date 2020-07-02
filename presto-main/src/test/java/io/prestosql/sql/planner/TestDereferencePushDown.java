@@ -42,18 +42,18 @@ public class TestDereferencePushDown
     public void testDereferencePushdownMultiLevel()
     {
         assertPlan("WITH t(msg) AS (VALUES ROW(CAST(ROW(1, 2.0) AS ROW(x BIGINT, y DOUBLE)))) " +
-                "SELECT a.msg.x, a.msg, b.msg.y FROM t a CROSS JOIN t b",
+                        "SELECT a.msg.x, a.msg, b.msg.y FROM t a CROSS JOIN t b",
                 output(ImmutableList.of("a_msg_x", "a_msg", "b_msg_y"),
-                    strictProject(
-                        ImmutableMap.of(
-                            "a_msg_x", PlanMatchPattern.expression("a_msg.x"),
-                            "a_msg", PlanMatchPattern.expression("a_msg"),
-                            "b_msg_y", PlanMatchPattern.expression("b_msg_y")),
-                        join(INNER, ImmutableList.of(),
-                            values("a_msg"),
-                            strictProject(
-                                ImmutableMap.of("b_msg_y", PlanMatchPattern.expression("b_msg.y")),
-                                values("b_msg"))))));
+                        strictProject(
+                                ImmutableMap.of(
+                                        "a_msg_x", PlanMatchPattern.expression("a_msg.x"),
+                                        "a_msg", PlanMatchPattern.expression("a_msg"),
+                                        "b_msg_y", PlanMatchPattern.expression("b_msg_y")),
+                                join(INNER, ImmutableList.of(),
+                                        values("a_msg"),
+                                        strictProject(
+                                                ImmutableMap.of("b_msg_y", PlanMatchPattern.expression("b_msg.y")),
+                                                values("b_msg"))))));
     }
 
     @Test
@@ -75,12 +75,12 @@ public class TestDereferencePushDown
         assertPlan("WITH t(msg) AS (VALUES ROW(CAST(ROW(1, 2.0) AS ROW(x BIGINT, y DOUBLE))))" +
                         "SELECT a.msg.y " +
                         "FROM t a JOIN t b ON a.msg.y = b.msg.y " +
-                        "WHERE a.msg.x > bigint '5'",
+                        "WHERE a.msg.x > BIGINT '5'",
                 output(ImmutableList.of("a_y"),
                         join(INNER, ImmutableList.of(equiJoinClause("a_y", "b_y")),
                                 anyTree(
                                         strictProject(ImmutableMap.of("a_y", expression("msg.y")),
-                                                filter("msg.x > bigint '5'",
+                                                filter("msg.x > BIGINT '5'",
                                                         values("msg")))),
                                 anyTree(
                                         strictProject(ImmutableMap.of("b_y", expression("msg.y")),
@@ -91,7 +91,7 @@ public class TestDereferencePushDown
                         "FROM t a JOIN t b ON a.msg.y = b.msg.y " +
                         "WHERE a.msg.x + b.msg.x < BIGINT '10'",
                 output(ImmutableList.of("b_x"),
-                        join(INNER, ImmutableList.of(equiJoinClause("a_y", "b_y")), Optional.of("a_x + b_x < bigint '10'"),
+                        join(INNER, ImmutableList.of(equiJoinClause("a_y", "b_y")), Optional.of("a_x + b_x < BIGINT '10'"),
                                 anyTree(
                                         strictProject(ImmutableMap.of("a_y", expression("msg.y"), "a_x", expression("msg.x")),
                                                 values("msg"))),
@@ -182,7 +182,7 @@ public class TestDereferencePushDown
     public void testDereferencePushdownLimit()
     {
         assertPlan("WITH t(msg) AS (VALUES ROW(CAST(ROW(1, 2.0) AS ROW(x BIGINT, y DOUBLE))), ROW(CAST(ROW(3, 4.0) AS ROW(x BIGINT, y DOUBLE))))" +
-                "SELECT msg.x * 3  FROM t limit 1",
+                        "SELECT msg.x * 3  FROM t limit 1",
                 anyTree(
                         strictProject(ImmutableMap.of("x_into_3", expression("msg_x * BIGINT '3'")),
                                 limit(1,
@@ -210,7 +210,7 @@ public class TestDereferencePushDown
                 anyTree(join(INNER, ImmutableList.of(equiJoinClause("a_y", "b_y")),
                         anyTree(
                                 strictProject(ImmutableMap.of("a_y", expression("msg.y")),
-                                        filter("msg.x > bigint '5'",
+                                        filter("msg.x > BIGINT '5'",
                                                 values("msg")))),
                         anyTree(
                                 strictProject(ImmutableMap.of("b_y", expression("msg.y")),
@@ -221,7 +221,7 @@ public class TestDereferencePushDown
                         "FROM t a JOIN t b ON a.msg.y = b.msg.y " +
                         "WHERE a.msg.x + b.msg.x < BIGINT '10' " +
                         "LIMIT 100",
-                anyTree(join(INNER, ImmutableList.of(equiJoinClause("a_y", "b_y")), Optional.of("a_x + b_x < bigint '10'"),
+                anyTree(join(INNER, ImmutableList.of(equiJoinClause("a_y", "b_y")), Optional.of("a_x + b_x < BIGINT '10'"),
                         anyTree(
                                 strictProject(ImmutableMap.of("a_y", expression("msg.y"), "a_x", expression("msg.x")),
                                         values("msg"))),
@@ -242,7 +242,7 @@ public class TestDereferencePushDown
                         strictProject(ImmutableMap.of("expr", expression("a_x")),
                                 unnest(
                                         join(INNER, ImmutableList.of(equiJoinClause("a_y", "b_y")),
-                                                Optional.of("a_x + b_x < bigint '10'"),
+                                                Optional.of("a_x + b_x < BIGINT '10'"),
                                                 anyTree(
                                                         strictProject(ImmutableMap.of("a_y", expression("msg.y"), "a_x", expression("msg.x"), "a_z", expression("array")),
                                                                 values("msg", "array"))),

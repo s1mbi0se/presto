@@ -41,6 +41,16 @@ public class AllowAllAccessControl
     }
 
     @Override
+    public void checkCanReadSystemInformation(Identity identity)
+    {
+    }
+
+    @Override
+    public void checkCanWriteSystemInformation(Identity identity)
+    {
+    }
+
+    @Override
     public void checkCanExecuteQuery(Identity identity)
     {
     }
@@ -247,6 +257,11 @@ public class AllowAllAccessControl
 
     @Override
     public void checkCanSetRole(SecurityContext context, String role, String catalogName)
+    {
+    }
+
+    @Override
+    public void checkCanShowRoleAuthorizationDescriptors(SecurityContext context, String catalogName)
     {
     }
 

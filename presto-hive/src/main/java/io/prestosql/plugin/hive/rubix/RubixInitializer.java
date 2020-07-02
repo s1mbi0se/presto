@@ -53,14 +53,14 @@ import static com.qubole.rubix.spi.CacheConfig.enableHeartbeat;
 import static com.qubole.rubix.spi.CacheConfig.setBookKeeperServerPort;
 import static com.qubole.rubix.spi.CacheConfig.setCacheDataDirPrefix;
 import static com.qubole.rubix.spi.CacheConfig.setCacheDataEnabled;
+import static com.qubole.rubix.spi.CacheConfig.setCacheDataExpirationAfterWrite;
+import static com.qubole.rubix.spi.CacheConfig.setCacheDataFullnessPercentage;
 import static com.qubole.rubix.spi.CacheConfig.setClusterNodeRefreshTime;
 import static com.qubole.rubix.spi.CacheConfig.setCoordinatorHostName;
-import static com.qubole.rubix.spi.CacheConfig.setCurrentNodeHostName;
 import static com.qubole.rubix.spi.CacheConfig.setDataTransferServerPort;
 import static com.qubole.rubix.spi.CacheConfig.setEmbeddedMode;
 import static com.qubole.rubix.spi.CacheConfig.setIsParallelWarmupEnabled;
 import static com.qubole.rubix.spi.CacheConfig.setOnMaster;
-import static com.qubole.rubix.spi.CacheConfig.setPrestoClusterManager;
 import static io.prestosql.plugin.hive.DynamicConfigurationProvider.setCacheKey;
 import static io.prestosql.plugin.hive.util.ConfigurationUtils.getInitialConfiguration;
 import static io.prestosql.plugin.hive.util.RetryDriver.DEFAULT_SCALE_FACTOR;
@@ -106,6 +106,8 @@ public class RubixInitializer
     private final boolean startServerOnCoordinator;
     private final boolean parallelWarmupEnabled;
     private final String cacheLocation;
+    private final long cacheTtlMillis;
+    private final int diskUsagePercentage;
     private final int bookKeeperServerPort;
     private final int dataTransferServerPort;
     private final NodeManager nodeManager;
@@ -114,11 +116,8 @@ public class RubixInitializer
     private final Optional<ConfigurationInitializer> extraConfigInitializer;
 
     private volatile boolean cacheReady;
-    private boolean isMaster;
     @Nullable
     private HostAddress masterAddress;
-    @Nullable
-    private String nodeAddress;
     @Nullable
     private BookKeeperServer bookKeeperServer;
 
@@ -146,6 +145,8 @@ public class RubixInitializer
         this.startServerOnCoordinator = rubixConfig.isStartServerOnCoordinator();
         this.parallelWarmupEnabled = rubixConfig.getReadMode().isParallelWarmupEnabled();
         this.cacheLocation = rubixConfig.getCacheLocation();
+        this.cacheTtlMillis = rubixConfig.getCacheTtl().toMillis();
+        this.diskUsagePercentage = rubixConfig.getDiskUsagePercentage();
         this.bookKeeperServerPort = rubixConfig.getBookKeeperServerPort();
         this.dataTransferServerPort = rubixConfig.getDataTransferServerPort();
         this.nodeManager = nodeManager;
@@ -160,6 +161,9 @@ public class RubixInitializer
             // setup JMX metrics on master (instead of starting server) so that JMX connector can be used
             // TODO: remove once https://github.com/prestosql/presto/issues/3821 is fixed
             setupRubixMetrics();
+
+            // enable caching on coordinator so that cached block locations can be obtained
+            cacheReady = true;
             return;
         }
 
@@ -202,6 +206,12 @@ public class RubixInitializer
         setCacheKey(configuration, "rubix_disabled");
     }
 
+    @VisibleForTesting
+    boolean isServerUp()
+    {
+        return LocalDataTransferServer.isServerUp() && bookKeeperServer != null && bookKeeperServer.isServerUp();
+    }
+
     private void waitForCoordinator()
     {
         try {
@@ -231,6 +241,7 @@ public class RubixInitializer
         LocalDataTransferServer.startServer(configuration, metricRegistry, bookKeeper);
 
         CachingFileSystem.setLocalBookKeeper(bookKeeper, "catalog=" + catalogName);
+        PrestoClusterManager.setNodeManager(nodeManager);
         log.info("Rubix initialized successfully");
         cacheReady = true;
     }
@@ -239,15 +250,14 @@ public class RubixInitializer
     {
         Configuration configuration = getRubixServerConfiguration();
         new BookKeeperServer().setupServer(configuration, new MetricRegistry());
-        CachingFileSystem.setLocalBookKeeper(null, "catalog=" + catalogName);
+        CachingFileSystem.setLocalBookKeeper(new DummyBookKeeper(), "catalog=" + catalogName);
+        PrestoClusterManager.setNodeManager(nodeManager);
     }
 
     private Configuration getRubixServerConfiguration()
     {
         Node master = nodeManager.getAllNodes().stream().filter(Node::isCoordinator).findFirst().get();
-        isMaster = nodeManager.getCurrentNode().isCoordinator();
         masterAddress = master.getHostAndPort();
-        nodeAddress = nodeManager.getCurrentNode().getHost();
 
         Configuration configuration = getInitialConfiguration();
         // Perform standard HDFS configuration initialization.
@@ -261,15 +271,14 @@ public class RubixInitializer
     void updateRubixConfiguration(Configuration config)
     {
         checkState(masterAddress != null, "masterAddress is not set");
-        checkState(nodeAddress != null, "nodeAddress is not set");
         setCacheDataEnabled(config, true);
-        setOnMaster(config, isMaster);
+        setOnMaster(config, nodeManager.getCurrentNode().isCoordinator());
         setCoordinatorHostName(config, masterAddress.getHostText());
-        PrestoClusterManager.setPrestoServerPort(config, masterAddress.getPort());
-        setCurrentNodeHostName(config, nodeAddress);
 
         setIsParallelWarmupEnabled(config, parallelWarmupEnabled);
         setCacheDataDirPrefix(config, cacheLocation);
+        setCacheDataExpirationAfterWrite(config, cacheTtlMillis);
+        setCacheDataFullnessPercentage(config, diskUsagePercentage);
         setBookKeeperServerPort(config, bookKeeperServerPort);
         setDataTransferServerPort(config, dataTransferServerPort);
 
@@ -289,9 +298,6 @@ public class RubixInitializer
         config.set("fs.gs.impl", RUBIX_GS_FS_CLASS_NAME);
 
         config.set("fs.hdfs.impl", RUBIX_DISTRIBUTED_FS_CLASS_NAME);
-
-        // TODO: remove after https://github.com/qubole/rubix/pull/385 is merged
-        setPrestoClusterManager(config, "com.qubole.rubix.prestosql.PrestoClusterManager");
 
         extraConfigInitializer.ifPresent(initializer -> initializer.initializeConfiguration(config));
     }

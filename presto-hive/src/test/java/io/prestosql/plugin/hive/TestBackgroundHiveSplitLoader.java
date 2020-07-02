@@ -76,6 +76,7 @@ import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static io.prestosql.plugin.hive.BackgroundHiveSplitLoader.BucketSplitInfo.createBucketSplitInfo;
 import static io.prestosql.plugin.hive.BackgroundHiveSplitLoader.getBucketNumber;
+import static io.prestosql.plugin.hive.BackgroundHiveSplitLoader.hasAttemptId;
 import static io.prestosql.plugin.hive.HiveColumnHandle.createBaseColumn;
 import static io.prestosql.plugin.hive.HiveColumnHandle.pathColumnHandle;
 import static io.prestosql.plugin.hive.HiveStorageFormat.CSV;
@@ -331,6 +332,19 @@ public class TestBackgroundHiveSplitLoader
         assertEquals(getBucketNumber("0234.txt"), OptionalInt.empty());
     }
 
+    @Test
+    public void testGetAttemptId()
+    {
+        assertFalse(hasAttemptId("bucket_00000"));
+        assertTrue(hasAttemptId("bucket_00000_0"));
+        assertTrue(hasAttemptId("bucket_00000_10"));
+        assertTrue(hasAttemptId("bucket_00000_1000"));
+        assertFalse(hasAttemptId("bucket_00000__1000"));
+        assertFalse(hasAttemptId("bucket_00000_a"));
+        assertFalse(hasAttemptId("bucket_00000_ad"));
+        assertFalse(hasAttemptId("base_00000_00"));
+    }
+
     @Test(dataProvider = "testPropagateExceptionDataProvider", timeOut = 60_000)
     public void testPropagateException(boolean error, int threads)
     {
@@ -361,6 +375,8 @@ public class TestBackgroundHiveSplitLoader
                     }
                 },
                 TupleDomain.all(),
+                TupleDomain::all,
+                TYPE_MANAGER,
                 createBucketSplitInfo(Optional.empty(), Optional.empty()),
                 SESSION,
                 new TestingHdfsEnvironment(TEST_FILES),
@@ -645,6 +661,8 @@ public class TestBackgroundHiveSplitLoader
                 table,
                 hivePartitionMetadatas,
                 compactEffectivePredicate,
+                TupleDomain::all,
+                TYPE_MANAGER,
                 createBucketSplitInfo(bucketHandle, hiveBucketFilter),
                 SESSION,
                 hdfsEnvironment,
@@ -672,6 +690,8 @@ public class TestBackgroundHiveSplitLoader
                 SIMPLE_TABLE,
                 hivePartitionMetadatas,
                 TupleDomain.none(),
+                TupleDomain::all,
+                TYPE_MANAGER,
                 Optional.empty(),
                 connectorSession,
                 new TestingHdfsEnvironment(files),
@@ -693,6 +713,8 @@ public class TestBackgroundHiveSplitLoader
                 SIMPLE_TABLE,
                 createPartitionMetadataWithOfflinePartitions(),
                 TupleDomain.all(),
+                TupleDomain::all,
+                TYPE_MANAGER,
                 createBucketSplitInfo(Optional.empty(), Optional.empty()),
                 connectorSession,
                 new TestingHdfsEnvironment(TEST_FILES),

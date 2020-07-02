@@ -19,11 +19,12 @@ import io.airlift.slice.Slice;
 import io.prestosql.Session;
 import io.prestosql.connector.CatalogName;
 import io.prestosql.operator.aggregation.InternalAggregationFunction;
-import io.prestosql.operator.scalar.ScalarFunctionImplementation;
 import io.prestosql.operator.window.WindowFunctionSupplier;
 import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.block.BlockEncoding;
 import io.prestosql.spi.block.BlockEncodingSerde;
+import io.prestosql.spi.connector.AggregateFunction;
+import io.prestosql.spi.connector.AggregationApplicationResult;
 import io.prestosql.spi.connector.CatalogSchemaName;
 import io.prestosql.spi.connector.ColumnHandle;
 import io.prestosql.spi.connector.ColumnMetadata;
@@ -38,6 +39,7 @@ import io.prestosql.spi.connector.ProjectionApplicationResult;
 import io.prestosql.spi.connector.SampleType;
 import io.prestosql.spi.connector.SystemTable;
 import io.prestosql.spi.expression.ConnectorExpression;
+import io.prestosql.spi.function.InvocationConvention;
 import io.prestosql.spi.function.OperatorType;
 import io.prestosql.spi.predicate.TupleDomain;
 import io.prestosql.spi.security.GrantInfo;
@@ -447,6 +449,17 @@ public abstract class AbstractMockMetadata
         return Optional.empty();
     }
 
+    @Override
+    public Optional<AggregationApplicationResult<TableHandle>> applyAggregation(
+            Session session,
+            TableHandle table,
+            List<AggregateFunction> aggregations,
+            Map<String, ColumnHandle> assignments,
+            List<List<ColumnHandle>> groupingSets)
+    {
+        return Optional.empty();
+    }
+
     //
     // Roles and Grants
     //
@@ -489,6 +502,12 @@ public abstract class AbstractMockMetadata
 
     @Override
     public Set<String> listEnabledRoles(Session session, String catalog)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Set<RoleGrant> listAllRoleGrants(Session session, String catalog, Optional<Set<String>> roles, Optional<Set<String>> grantees, OptionalLong limit)
     {
         throw new UnsupportedOperationException();
     }
@@ -574,12 +593,6 @@ public abstract class AbstractMockMetadata
     }
 
     @Override
-    public FunctionInvokerProvider getFunctionInvokerProvider()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public ResolvedFunction resolveFunction(QualifiedName name, List<TypeSignatureProvider> parameterTypes)
     {
         String nameSuffix = name.getSuffix();
@@ -644,7 +657,7 @@ public abstract class AbstractMockMetadata
     }
 
     @Override
-    public ScalarFunctionImplementation getScalarFunctionImplementation(ResolvedFunction resolvedFunction)
+    public FunctionInvoker getScalarFunctionInvoker(ResolvedFunction resolvedFunction, Optional<InvocationConvention> invocationConvention)
     {
         throw new UnsupportedOperationException();
     }

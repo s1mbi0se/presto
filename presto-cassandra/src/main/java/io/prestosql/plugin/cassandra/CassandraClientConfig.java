@@ -22,6 +22,7 @@ import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.ConfigSecuritySensitive;
 import io.airlift.configuration.DefunctConfig;
+import io.airlift.configuration.validation.FileExists;
 import io.airlift.units.Duration;
 import io.airlift.units.MaxDuration;
 import io.airlift.units.MinDuration;
@@ -181,7 +182,7 @@ public class CassandraClientConfig
     }
 
     @Config("cassandra.allow-drop-table")
-    @ConfigDescription("Allow hive connector to drop table")
+    @ConfigDescription("Allow Cassandra connector to drop table")
     public CassandraClientConfig setAllowDropTable(boolean allowDropTable)
     {
         this.allowDropTable = allowDropTable;
@@ -428,7 +429,7 @@ public class CassandraClientConfig
         return this;
     }
 
-    public Optional<File> getKeystorePath()
+    public Optional<@FileExists File> getKeystorePath()
     {
         return Optional.ofNullable(keystorePath);
     }
@@ -453,7 +454,7 @@ public class CassandraClientConfig
         return this;
     }
 
-    public Optional<File> getTruststorePath()
+    public Optional<@FileExists File> getTruststorePath()
     {
         return Optional.ofNullable(truststorePath);
     }

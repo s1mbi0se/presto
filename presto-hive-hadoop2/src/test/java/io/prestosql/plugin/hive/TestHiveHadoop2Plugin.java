@@ -23,6 +23,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static com.google.common.io.MoreFiles.deleteRecursively;
@@ -50,19 +51,22 @@ public class TestHiveHadoop2Plugin
 
     @Test
     public void testS3SecurityMappingAndHiveCachingMutuallyExclusive()
+            throws IOException
     {
+        Path mappingConfig = Files.createTempFile(null, null);
         Plugin plugin = new HiveHadoop2Plugin();
         ConnectorFactory connectorFactory = Iterables.getOnlyElement(plugin.getConnectorFactories());
 
         assertThatThrownBy(() -> connectorFactory.create(
                 "test",
                 ImmutableMap.<String, String>builder()
-                        .put("hive.s3.security-mapping.config-file", "/tmp/blah.txt")
+                        .put("hive.s3.security-mapping.config-file", mappingConfig.toString())
                         .put("hive.cache.enabled", "true")
+                        .put("hive.metastore.uri", "thrift://foo:1234")
+                        .put("hive.cache.location", tempDirectory.toString())
                         .build(),
                 new TestingConnectorContext())
-                .shutdown())
-                .hasMessageContaining("S3 security mapping is not compatible with Hive caching");
+                .shutdown()).hasMessageContaining("S3 security mapping is not compatible with Hive caching");
     }
 
     @Test
@@ -76,10 +80,31 @@ public class TestHiveHadoop2Plugin
                 ImmutableMap.<String, String>builder()
                         .put("hive.gcs.use-access-token", "true")
                         .put("hive.cache.enabled", "true")
+                        .put("hive.metastore.uri", "thrift://foo:1234")
+                        .put("hive.cache.location", tempDirectory.toString())
                         .build(),
                 new TestingConnectorContext())
                 .shutdown())
                 .hasMessageContaining("Use of GCS access token is not compatible with Hive caching");
+    }
+
+    @Test
+    public void testHdfsImpersonationAndHiveCachingMutuallyExclusive()
+    {
+        Plugin plugin = new HiveHadoop2Plugin();
+        ConnectorFactory connectorFactory = Iterables.getOnlyElement(plugin.getConnectorFactories());
+
+        assertThatThrownBy(() -> connectorFactory.create(
+                "test",
+                ImmutableMap.<String, String>builder()
+                        .put("hive.hdfs.impersonation.enabled", "true")
+                        .put("hive.cache.enabled", "true")
+                        .put("hive.metastore.uri", "thrift://foo:1234")
+                        .put("hive.cache.location", tempDirectory.toString())
+                        .build(),
+                new TestingConnectorContext())
+                .shutdown())
+                .hasMessageContaining("Hdfs impersonation is not compatible with Hive caching");
     }
 
     @Test

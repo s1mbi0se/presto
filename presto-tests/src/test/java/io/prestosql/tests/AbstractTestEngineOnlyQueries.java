@@ -130,7 +130,7 @@ public abstract class AbstractTestEngineOnlyQueries
         LocalDateTime localTimeThatDidNotExist = LocalDateTime.of(2017, 4, 2, 2, 10);
         checkState(ZoneId.systemDefault().getRules().getValidOffsets(localTimeThatDidNotExist).isEmpty(), "This test assumes certain JVM time zone");
         // This tests that both Presto runner and H2 can return TIMESTAMP value that never happened in JVM's zone (e.g. is not representable using java.sql.Timestamp)
-        @Language("SQL") String sql = DateTimeFormatter.ofPattern("'SELECT TIMESTAMP '''uuuu-MM-dd HH:mm:ss''").format(localTimeThatDidNotExist);
+        @Language("SQL") String sql = DateTimeFormatter.ofPattern("'SELECT TIMESTAMP '''uuuu-MM-dd HH:mm:ss.SSS''").format(localTimeThatDidNotExist);
         assertEquals(computeScalar(sql), localTimeThatDidNotExist); // this tests Presto and the QueryRunner
         assertQuery(sql); // this tests H2QueryRunner
 
@@ -730,7 +730,28 @@ public abstract class AbstractTestEngineOnlyQueries
         MaterializedResult expected = resultBuilder(session, BIGINT, VARCHAR)
                 .row(0, "unknown")
                 .row(1, "bigint")
-                .row(2, "varchar")
+                .row(2, "varchar(25)")
+                .build();
+        assertEqualsIgnoreOrder(actual, expected);
+
+        session = Session.builder(getSession())
+                .addPreparedStatement(
+                        "my_query",
+                        "SELECT 1 " +
+                                "FROM" +
+                                "  (" +
+                                " VALUES " +
+                                "     (CHAR 'Pi', CAST('PI' AS VARCHAR), TIMESTAMP '2012-03-14 1:59:26.535', TIMESTAMP '2012-03-14 1:59:26.535897', DECIMAL '3.14')" +
+                                ")  AS t (t_char, t_varchar, t_timestamp, t_timestamp_2, t_decimal)" +
+                                "WHERE t_char = ? AND t_varchar = ? AND t_timestamp = ? AND t_timestamp_2 = ? AND t_decimal = ?")
+                .build();
+        actual = computeActual(session, "DESCRIBE INPUT my_query");
+        expected = resultBuilder(session, BIGINT, VARCHAR)
+                .row(0, "char(2)")
+                .row(1, "varchar")
+                .row(2, "timestamp(3)")
+                .row(3, "timestamp(6)")
+                .row(4, "decimal(3,2)")
                 .build();
         assertEqualsIgnoreOrder(actual, expected);
     }

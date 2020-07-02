@@ -80,7 +80,7 @@ public class HiveConfig
     private HiveCompressionCodec hiveCompressionCodec = HiveCompressionCodec.GZIP;
     private boolean respectTableFormat = true;
     private boolean immutablePartitions;
-    private boolean createEmptyBucketFiles = true;
+    private boolean createEmptyBucketFiles;
     private int maxPartitionsPerWriter = 100;
     private int maxOpenSortFiles = 50;
     private int writeValidationThreads = 16;
@@ -885,13 +885,11 @@ public class HiveConfig
         return this;
     }
 
-    @Deprecated
     public boolean isAllowRegisterPartition()
     {
         return allowRegisterPartition;
     }
 
-    @Deprecated
     @Config("hive.allow-register-partition-procedure")
     public HiveConfig setAllowRegisterPartition(boolean allowRegisterPartition)
     {

@@ -29,14 +29,14 @@ import javax.inject.Inject;
 
 import java.io.File;
 
-import static io.prestosql.tests.product.launcher.docker.ContainerUtil.enableJavaDebugger;
 import static io.prestosql.tests.product.launcher.env.common.Hadoop.CONTAINER_PRESTO_HIVE_PROPERTIES;
 import static io.prestosql.tests.product.launcher.env.common.Standard.CONTAINER_PRESTO_CONFIG_PROPERTIES;
 import static io.prestosql.tests.product.launcher.env.common.Standard.CONTAINER_PRESTO_ETC;
 import static io.prestosql.tests.product.launcher.env.common.Standard.CONTAINER_PRESTO_JVM_CONFIG;
 import static io.prestosql.tests.product.launcher.env.common.Standard.createPrestoContainer;
+import static io.prestosql.tests.product.launcher.env.common.Standard.enablePrestoJavaDebugger;
 import static java.util.Objects.requireNonNull;
-import static org.testcontainers.containers.BindMode.READ_ONLY;
+import static org.testcontainers.utility.MountableFile.forHostPath;
 
 @TestsEnvironment
 public final class MultinodeHiveCaching
@@ -72,30 +72,31 @@ public final class MultinodeHiveCaching
     {
         builder.configureContainer("presto-master", container -> {
             container
-                    .withFileSystemBind(dockerFiles.getDockerFilesHostPath("conf/environment/multinode/multinode-master-jvm.config"), CONTAINER_PRESTO_JVM_CONFIG, READ_ONLY)
-                    .withFileSystemBind(dockerFiles.getDockerFilesHostPath("conf/environment/multinode/multinode-master-config.properties"), CONTAINER_PRESTO_CONFIG_PROPERTIES, READ_ONLY)
-                    .withFileSystemBind(dockerFiles.getDockerFilesHostPath("common/hadoop/hive.properties"), CONTAINER_PRESTO_HIVE_NON_CACHED_PROPERTIES, READ_ONLY)
-                    .withFileSystemBind(dockerFiles.getDockerFilesHostPath("conf/environment/multinode-cached/hive.properties"), CONTAINER_PRESTO_HIVE_PROPERTIES, READ_ONLY)
+                    .withCopyFileToContainer(forHostPath(dockerFiles.getDockerFilesHostPath("conf/environment/multinode/multinode-master-jvm.config")), CONTAINER_PRESTO_JVM_CONFIG)
+                    .withCopyFileToContainer(forHostPath(dockerFiles.getDockerFilesHostPath("conf/environment/multinode/multinode-master-config.properties")), CONTAINER_PRESTO_CONFIG_PROPERTIES)
+                    .withCopyFileToContainer(forHostPath(dockerFiles.getDockerFilesHostPath("common/hadoop/hive.properties")), CONTAINER_PRESTO_HIVE_NON_CACHED_PROPERTIES)
+                    .withCopyFileToContainer(forHostPath(dockerFiles.getDockerFilesHostPath("conf/environment/multinode-cached/hive.properties")), CONTAINER_PRESTO_HIVE_PROPERTIES)
                     .withTmpFs(ImmutableMap.of("/tmp/cache", "rw"));
         });
 
-        builder.addContainer("presto-worker", createPrestoWorker());
+        createPrestoWorker(builder, 0);
+        createPrestoWorker(builder, 1);
     }
 
     @SuppressWarnings("resource")
-    private DockerContainer createPrestoWorker()
+    private void createPrestoWorker(Environment.Builder builder, int workerNumber)
     {
         DockerContainer container = createPrestoContainer(dockerFiles, pathResolver, serverPackage, "prestodev/centos7-oj11:" + imagesVersion)
-                .withFileSystemBind(dockerFiles.getDockerFilesHostPath("conf/environment/multinode/multinode-worker-jvm.config"), CONTAINER_PRESTO_JVM_CONFIG, READ_ONLY)
-                .withFileSystemBind(dockerFiles.getDockerFilesHostPath("conf/environment/multinode/multinode-worker-config.properties"), CONTAINER_PRESTO_CONFIG_PROPERTIES, READ_ONLY)
-                .withFileSystemBind(dockerFiles.getDockerFilesHostPath("common/hadoop/hive.properties"), CONTAINER_PRESTO_HIVE_NON_CACHED_PROPERTIES, READ_ONLY)
-                .withFileSystemBind(dockerFiles.getDockerFilesHostPath("conf/environment/multinode-cached/hive.properties"), CONTAINER_PRESTO_HIVE_PROPERTIES, READ_ONLY)
+                .withCopyFileToContainer(forHostPath(dockerFiles.getDockerFilesHostPath("conf/environment/multinode/multinode-worker-jvm.config")), CONTAINER_PRESTO_JVM_CONFIG)
+                .withCopyFileToContainer(forHostPath(dockerFiles.getDockerFilesHostPath("conf/environment/multinode/multinode-worker-config.properties")), CONTAINER_PRESTO_CONFIG_PROPERTIES)
+                .withCopyFileToContainer(forHostPath(dockerFiles.getDockerFilesHostPath("common/hadoop/hive.properties")), CONTAINER_PRESTO_HIVE_NON_CACHED_PROPERTIES)
+                .withCopyFileToContainer(forHostPath(dockerFiles.getDockerFilesHostPath("conf/environment/multinode-cached/hive.properties")), CONTAINER_PRESTO_HIVE_PROPERTIES)
                 .withTmpFs(ImmutableMap.of("/tmp/cache", "rw"));
 
         if (debug) {
-            enableJavaDebugger(container, CONTAINER_PRESTO_JVM_CONFIG, 5008); // debug port
+            enablePrestoJavaDebugger(container, 5008 + workerNumber); // debug port
         }
 
-        return container;
+        builder.addContainer("presto-worker-" + workerNumber, container);
     }
 }

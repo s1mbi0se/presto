@@ -22,13 +22,11 @@ import io.prestosql.Session;
 import io.prestosql.metadata.Metadata;
 import io.prestosql.metadata.TableHandle;
 import io.prestosql.spi.block.SortOrder;
-import io.prestosql.spi.connector.ColumnHandle;
 import io.prestosql.spi.type.Type;
 import io.prestosql.sql.analyzer.Analysis;
+import io.prestosql.sql.analyzer.Analysis.GroupingSetAnalysis;
 import io.prestosql.sql.analyzer.Analysis.SelectExpression;
-import io.prestosql.sql.analyzer.Field;
 import io.prestosql.sql.analyzer.FieldId;
-import io.prestosql.sql.analyzer.RelationType;
 import io.prestosql.sql.analyzer.Scope;
 import io.prestosql.sql.planner.plan.AggregationNode;
 import io.prestosql.sql.planner.plan.AggregationNode.Aggregation;
@@ -75,6 +73,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
@@ -260,17 +259,7 @@ class QueryPlanner
     public DeleteNode plan(Delete node)
     {
         Table table = node.getTable();
-        RelationType descriptor = analysis.getOutputDescriptor(table);
         TableHandle handle = analysis.getTableHandle(table);
-
-        // add table columns
-        ImmutableMap.Builder<Symbol, ColumnHandle> columns = ImmutableMap.builder();
-        ImmutableList.Builder<Field> fields = ImmutableList.builder();
-        for (Field field : descriptor.getAllFields()) {
-            Symbol symbol = symbolAllocator.newSymbol(field);
-            columns.put(symbol, analysis.getColumn(field));
-            fields.add(field);
-        }
 
         // create table scan
         RelationPlan relationPlan = new RelationPlanner(analysis, symbolAllocator, idAllocator, lambdaDeclarationToSymbolMap, metadata, session)
@@ -316,7 +305,10 @@ class QueryPlanner
                     .process(node.getFrom().get(), null);
         }
         else {
-            relationPlan = planImplicitTable();
+            relationPlan = new RelationPlan(
+                    new ValuesNode(idAllocator.getNextId(), ImmutableList.of(), ImmutableList.of(ImmutableList.of())),
+                    analysis.getImplicitFromScope(node),
+                    ImmutableList.of());
         }
 
         return planBuilderFor(relationPlan);
@@ -345,16 +337,6 @@ class QueryPlanner
         translations.setFieldMappings(relationPlan.getFieldMappings());
 
         return new PlanBuilder(translations, relationPlan.getRoot());
-    }
-
-    private RelationPlan planImplicitTable()
-    {
-        List<Expression> emptyRow = ImmutableList.of();
-        Scope scope = Scope.create();
-        return new RelationPlan(
-                new ValuesNode(idAllocator.getNextId(), ImmutableList.of(), ImmutableList.of(emptyRow)),
-                scope,
-                ImmutableList.of());
     }
 
     private PlanBuilder filter(PlanBuilder subPlan, Expression predicate, Node node)
@@ -474,7 +456,7 @@ class QueryPlanner
         analysis.getAggregates(node).stream()
                 .map(FunctionCall::getArguments)
                 .flatMap(List::stream)
-                .filter(exp -> !(exp instanceof LambdaExpression)) // lambda expression is generated at execution time
+                .filter(expression -> !(expression instanceof LambdaExpression)) // lambda expression is generated at execution time
                 .forEach(arguments::add);
 
         analysis.getAggregates(node).stream()
@@ -537,7 +519,7 @@ class QueryPlanner
             // The catch is that simple group-by expressions can be arbitrary expressions (this is a departure from the SQL specification).
             // But, they don't affect the number of grouping sets or the behavior of "distinct" . We can compute all the candidate
             // grouping sets in terms of fieldId, dedup as appropriate and then cross-join them with the complex expressions.
-            Analysis.GroupingSetAnalysis groupingSetAnalysis = analysis.getGroupingSets(node);
+            GroupingSetAnalysis groupingSetAnalysis = analysis.getGroupingSets(node);
             columnOnlyGroupingSets = enumerateGroupingSets(groupingSetAnalysis);
 
             if (node.getGroupBy().get().isDistinct()) {
@@ -653,7 +635,7 @@ class QueryPlanner
         return handleGroupingOperations(subPlan, node, groupIdSymbol, columnOnlyGroupingSets);
     }
 
-    private List<Set<FieldId>> enumerateGroupingSets(Analysis.GroupingSetAnalysis groupingSetAnalysis)
+    private List<Set<FieldId>> enumerateGroupingSets(GroupingSetAnalysis groupingSetAnalysis)
     {
         List<List<Set<FieldId>>> partialSets = new ArrayList<>();
 
@@ -776,7 +758,9 @@ class QueryPlanner
 
             // Pre-project inputs
             ImmutableList.Builder<Expression> inputs = ImmutableList.<Expression>builder()
-                    .addAll(windowFunction.getArguments())
+                    .addAll(windowFunction.getArguments().stream()
+                            .filter(argument -> !(argument instanceof LambdaExpression)) // lambda expression is generated at execution time
+                            .collect(Collectors.toList()))
                     .addAll(window.getPartitionBy())
                     .addAll(getSortItemsFromOrderBy(window.getOrderBy()).stream()
                             .map(SortItem::getSortKey)

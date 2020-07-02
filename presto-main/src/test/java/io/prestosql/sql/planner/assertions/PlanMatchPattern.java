@@ -494,14 +494,19 @@ public final class PlanMatchPattern
 
     public static PlanMatchPattern spatialJoin(String expectedFilter, Optional<String> kdbTree, PlanMatchPattern left, PlanMatchPattern right)
     {
+        return spatialJoin(expectedFilter, kdbTree, Optional.empty(), left, right);
+    }
+
+    public static PlanMatchPattern spatialJoin(String expectedFilter, Optional<String> kdbTree, Optional<List<String>> outputSymbols, PlanMatchPattern left, PlanMatchPattern right)
+    {
         return node(SpatialJoinNode.class, left, right).with(
-                new SpatialJoinMatcher(SpatialJoinNode.Type.INNER, rewriteIdentifiersToSymbolReferences(new SqlParser().createExpression(expectedFilter, new ParsingOptions())), kdbTree));
+                new SpatialJoinMatcher(SpatialJoinNode.Type.INNER, rewriteIdentifiersToSymbolReferences(new SqlParser().createExpression(expectedFilter, new ParsingOptions())), kdbTree, outputSymbols));
     }
 
     public static PlanMatchPattern spatialLeftJoin(String expectedFilter, PlanMatchPattern left, PlanMatchPattern right)
     {
         return node(SpatialJoinNode.class, left, right).with(
-                new SpatialJoinMatcher(SpatialJoinNode.Type.LEFT, rewriteIdentifiersToSymbolReferences(new SqlParser().createExpression(expectedFilter, new ParsingOptions())), Optional.empty()));
+                new SpatialJoinMatcher(SpatialJoinNode.Type.LEFT, rewriteIdentifiersToSymbolReferences(new SqlParser().createExpression(expectedFilter, new ParsingOptions())), Optional.empty(), Optional.empty()));
     }
 
     public static PlanMatchPattern unnest(PlanMatchPattern source)
@@ -611,7 +616,12 @@ public final class PlanMatchPattern
 
     public static PlanMatchPattern filter(Expression expectedPredicate, PlanMatchPattern source)
     {
-        return node(FilterNode.class, source).with(new FilterMatcher(expectedPredicate));
+        return node(FilterNode.class, source).with(new FilterMatcher(expectedPredicate, Optional.empty()));
+    }
+
+    public static PlanMatchPattern filter(Expression expectedPredicate, Expression dynamicFilter, PlanMatchPattern source)
+    {
+        return node(FilterNode.class, source).with(new FilterMatcher(expectedPredicate, Optional.of(dynamicFilter)));
     }
 
     public static PlanMatchPattern apply(List<String> correlationSymbolAliases, Map<String, ExpressionMatcher> subqueryAssignments, PlanMatchPattern inputPattern, PlanMatchPattern subqueryPattern)

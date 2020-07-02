@@ -17,7 +17,9 @@ Presto offers three built-in plugins:
 ================================================== ============================================================
 Plugin Name                                        Description
 ================================================== ============================================================
-``allow-all`` (default value)                      All operations are permitted.
+``default`` (default value)                        All operations are permitted, except for user impersonation.
+
+``allow-all``                                      All operations are permitted.
 
 ``read-only``                                      Operations that read data or metadata are permitted, but
                                                    none of the operations that write data or metadata are
@@ -29,10 +31,15 @@ Plugin Name                                        Description
                                                    See :ref:`file-based-system-access-control` for details.
 ================================================== ============================================================
 
+Default System Access Control
+===============================
+
+All operations are permitted, except for user impersonation. This plugin is enabled by default.
+
 Allow All System Access Control
 ===============================
 
-All operations are permitted under this plugin. This plugin is enabled by default.
+All operations are permitted under this plugin.
 
 .. _read-only-system-access-control:
 
@@ -74,8 +81,9 @@ The config file is specified in JSON format.
 * The query rules specifying which queries can be managed by which user (see Query Rules below).
 * The impersonation rules specify which user impersonations are allowed (see Impersonation Rules below).
 * The principal rules specifying what principals can identify as what users (see Principal Rules below).
+* The system information rules specifying what users can access system management information (see System Information Rules below).
 
-This plugin currently supports catalog access, query, impersonation. and principal
+This plugin currently supports catalog access, query, impersonation, principal, and system information
 rules. If you want to limit access on a system level in any other way, you
 must implement a custom SystemAccessControl plugin
 (see :doc:`/develop/system-access-control`).
@@ -302,3 +310,24 @@ name, and allow ``alice`` and ``bob`` to use a group principal named as
         }
       ]
     }
+
+.. _system_information_rules:
+
+System Information Rules
+------------------------
+
+These rules specify which users can access the system information management interface.
+The user is granted or denied access, based on the first matching rule read from top to
+bottom. If no rules are specified, all access to system information is denied. If
+no rule matches, system access is denied. Each rule is composed of the following fields:
+
+* ``user`` (optional): regex to match against user name. If matched, it
+  will grant or deny the authorization based on the value of ``allow``.
+* ``allow`` (required): set of access permissions granted to user. Values: ``read``, ``write``
+
+For example, if you want to allow only the user ``admin`` to read and write
+system information, allow ``alice`` to read system information, and deny all other access, you
+can use the following rules:
+
+.. literalinclude:: system-information-access.json
+    :language: json

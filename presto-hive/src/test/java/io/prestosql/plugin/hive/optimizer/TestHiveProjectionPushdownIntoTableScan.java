@@ -160,7 +160,7 @@ public class TestHiveProjectionPushdownIntoTableScan
                 format("SELECT col0.x FROM %s WHERE col0.x = col1 + 3 and col0.y = 2", testTable),
                 anyTree(
                         filter(
-                                "col0_y = bigint '2' AND (col0_x =  cast((col1 + 3) as bigint))",
+                                "col0_y = BIGINT '2' AND (col0_x =  cast((col1 + 3) as BIGINT))",
                                 tableScan(
                                         table -> ((HiveTableHandle) table).getCompactEffectivePredicate().getDomains().get()
                                                 .equals(ImmutableMap.of(columnY, Domain.singleValue(BIGINT, 2L))),
@@ -172,7 +172,7 @@ public class TestHiveProjectionPushdownIntoTableScan
                 format("SELECT col0, col0.y expr_y FROM %s WHERE col0.x = 5", testTable),
                 anyTree(
                         filter(
-                                "col0_x = bigint '5'",
+                                "col0_x = BIGINT '5'",
                                 tableScan(
                                         table -> ((HiveTableHandle) table).getCompactEffectivePredicate().getDomains().get()
                                                 .equals(ImmutableMap.of(columnX, Domain.singleValue(BIGINT, 5L))),
@@ -185,25 +185,25 @@ public class TestHiveProjectionPushdownIntoTableScan
                 anyTree(
                         project(
                                 ImmutableMap.of(
-                                       "expr_0_x", expression("expr_0.x"),
-                                       "expr_0", expression("expr_0"),
-                                       "expr_0_y", expression("expr_0.y")),
-                                        join(
-                                                INNER,
-                                                ImmutableList.of(equiJoinClause("t_expr_1", "s_expr_1")),
-                                                anyTree(
-                                                        filter(
-                                                                "expr_0_x = BIGINT '2'",
-                                                                tableScan(
-                                                                        table -> ((HiveTableHandle) table).getCompactEffectivePredicate().getDomains().get()
-                                                                                .equals(ImmutableMap.of(columnX, Domain.singleValue(BIGINT, 2L))),
-                                                                    TupleDomain.all(),
-                                                                    ImmutableMap.of("expr_0_x", equalTo(columnX), "expr_0", equalTo(column0Handle), "t_expr_1", equalTo(column1Handle))))),
-                                                anyTree(
+                                        "expr_0_x", expression("expr_0.x"),
+                                        "expr_0", expression("expr_0"),
+                                        "expr_0_y", expression("expr_0.y")),
+                                join(
+                                        INNER,
+                                        ImmutableList.of(equiJoinClause("t_expr_1", "s_expr_1")),
+                                        anyTree(
+                                                filter(
+                                                        "expr_0_x = BIGINT '2'",
                                                         tableScan(
-                                                                equalTo(tableHandle.get().getConnectorHandle()),
+                                                                table -> ((HiveTableHandle) table).getCompactEffectivePredicate().getDomains().get()
+                                                                        .equals(ImmutableMap.of(columnX, Domain.singleValue(BIGINT, 2L))),
                                                                 TupleDomain.all(),
-                                                                ImmutableMap.of("s_expr_1", equalTo(column1Handle))))))));
+                                                                ImmutableMap.of("expr_0_x", equalTo(columnX), "expr_0", equalTo(column0Handle), "t_expr_1", equalTo(column1Handle))))),
+                                        anyTree(
+                                                tableScan(
+                                                        equalTo(tableHandle.get().getConnectorHandle()),
+                                                        TupleDomain.all(),
+                                                        ImmutableMap.of("s_expr_1", equalTo(column1Handle))))))));
     }
 
     @AfterClass(alwaysRun = true)

@@ -27,7 +27,6 @@ import io.prestosql.GroupByHashPageIndexerFactory;
 import io.prestosql.plugin.base.CatalogName;
 import io.prestosql.plugin.hive.HdfsEnvironment.HdfsContext;
 import io.prestosql.plugin.hive.LocationService.WriteInfo;
-import io.prestosql.plugin.hive.authentication.HiveAuthenticationConfig;
 import io.prestosql.plugin.hive.authentication.HiveIdentity;
 import io.prestosql.plugin.hive.authentication.NoHdfsAuthentication;
 import io.prestosql.plugin.hive.azure.HiveAzureConfig;
@@ -61,6 +60,7 @@ import io.prestosql.plugin.hive.security.SqlStandardAccessControlMetadata;
 import io.prestosql.spi.Page;
 import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.block.Block;
+import io.prestosql.spi.connector.Assignment;
 import io.prestosql.spi.connector.ColumnHandle;
 import io.prestosql.spi.connector.ColumnMetadata;
 import io.prestosql.spi.connector.ConnectorInsertTableHandle;
@@ -85,7 +85,6 @@ import io.prestosql.spi.connector.Constraint;
 import io.prestosql.spi.connector.ConstraintApplicationResult;
 import io.prestosql.spi.connector.DiscretePredicates;
 import io.prestosql.spi.connector.ProjectionApplicationResult;
-import io.prestosql.spi.connector.ProjectionApplicationResult.Assignment;
 import io.prestosql.spi.connector.RecordCursor;
 import io.prestosql.spi.connector.RecordPageSource;
 import io.prestosql.spi.connector.SchemaTableName;
@@ -728,7 +727,7 @@ public abstract class AbstractTestHive
 
         hdfsEnvironment = new HdfsEnvironment(createTestHdfsConfiguration(), new HdfsConfig(), new NoHdfsAuthentication());
         HiveMetastore metastore = cachingHiveMetastore(
-                new BridgingHiveMetastore(new ThriftHiveMetastore(metastoreLocator, new HiveConfig(), new ThriftMetastoreConfig(), new HiveAuthenticationConfig(), hdfsEnvironment)),
+                new BridgingHiveMetastore(new ThriftHiveMetastore(metastoreLocator, new HiveConfig(), new ThriftMetastoreConfig(), hdfsEnvironment, false)),
                 executor,
                 Duration.valueOf("1m"),
                 Optional.of(Duration.valueOf("15s")),
@@ -787,7 +786,8 @@ public abstract class AbstractTestHive
                 hiveConfig.getMaxInitialSplits(),
                 hiveConfig.getSplitLoaderConcurrency(),
                 hiveConfig.getMaxSplitsPerSecond(),
-                false);
+                false,
+                TYPE_MANAGER);
         pageSinkProvider = new HivePageSinkProvider(
                 getDefaultHiveFileWriterFactories(hiveConfig, hdfsEnvironment),
                 hdfsEnvironment,
@@ -3058,7 +3058,7 @@ public abstract class AbstractTestHive
             assertProjectionResult(projectionResult, false, expectedProjections, expectedAssignments);
 
             // Round-2: input projections [symbol_2.int0 and onelevelrow0#f_int0]. Virtual handle is reused.
-            ProjectionApplicationResult.Assignment newlyCreatedColumn = getOnlyElement(projectionResult.get().getAssignments().stream()
+            Assignment newlyCreatedColumn = getOnlyElement(projectionResult.get().getAssignments().stream()
                     .filter(handle -> handle.getVariable().equals("onelevelrow0#f_int0"))
                     .collect(toList()));
             inputAssignments = ImmutableMap.<String, ColumnHandle>builder()
@@ -4200,7 +4200,7 @@ public abstract class AbstractTestHive
                         assertNull(row.getField(index));
                     }
                     else {
-                        SqlTimestamp expected = sqlTimestampOf(2011, 5, 6, 7, 8, 9, 123, timeZone, UTC_KEY, SESSION);
+                        SqlTimestamp expected = sqlTimestampOf(3, 2011, 5, 6, 7, 8, 9, 123, timeZone, UTC_KEY, SESSION);
                         assertEquals(row.getField(index), expected);
                     }
                 }

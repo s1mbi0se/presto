@@ -57,6 +57,18 @@ public abstract class ForwardingAccessControl
     }
 
     @Override
+    public void checkCanReadSystemInformation(Identity identity)
+    {
+        delegate().checkCanReadSystemInformation(identity);
+    }
+
+    @Override
+    public void checkCanWriteSystemInformation(Identity identity)
+    {
+        delegate().checkCanWriteSystemInformation(identity);
+    }
+
+    @Override
     @Deprecated
     public void checkCanSetUser(Optional<Principal> principal, String userName)
     {
@@ -307,6 +319,12 @@ public abstract class ForwardingAccessControl
     public void checkCanSetRole(SecurityContext context, String role, String catalogName)
     {
         delegate().checkCanSetRole(context, role, catalogName);
+    }
+
+    @Override
+    public void checkCanShowRoleAuthorizationDescriptors(SecurityContext context, String catalogName)
+    {
+        delegate().checkCanShowRoleAuthorizationDescriptors(context, catalogName);
     }
 
     @Override

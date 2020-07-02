@@ -29,6 +29,8 @@ import org.apache.hadoop.hive.metastore.api.CommitTxnRequest;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.EnvironmentContext;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
+import org.apache.hadoop.hive.metastore.api.GetPrincipalsInRoleRequest;
+import org.apache.hadoop.hive.metastore.api.GetPrincipalsInRoleResponse;
 import org.apache.hadoop.hive.metastore.api.GetRoleGrantsForPrincipalRequest;
 import org.apache.hadoop.hive.metastore.api.GetRoleGrantsForPrincipalResponse;
 import org.apache.hadoop.hive.metastore.api.GetTableRequest;
@@ -72,7 +74,7 @@ public class ThriftHiveMetastoreClient
     private static final ParameterNamesProvider PARAMETER_NAMES_PROVIDER = new AirliftParameterNamesProvider(ThriftHiveMetastore.Iface.class, ThriftHiveMetastore.Client.class);
 
     private final TTransport transport;
-    private final ThriftHiveMetastore.Iface client;
+    protected final ThriftHiveMetastore.Iface client;
     private final String hostname;
 
     public ThriftHiveMetastoreClient(TTransport transport, String hostname)
@@ -417,6 +419,15 @@ public class ThriftHiveMetastoreClient
         if (!response.isSetSuccess()) {
             throw new MetaException("GrantRevokeResponse missing success field");
         }
+    }
+
+    @Override
+    public List<RolePrincipalGrant> listGrantedPrincipals(String role)
+            throws TException
+    {
+        GetPrincipalsInRoleRequest request = new GetPrincipalsInRoleRequest(role);
+        GetPrincipalsInRoleResponse response = client.get_principals_in_role(request);
+        return ImmutableList.copyOf(response.getPrincipalGrants());
     }
 
     @Override

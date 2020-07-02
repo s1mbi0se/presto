@@ -101,7 +101,7 @@ public class TestOracleDistributedQueries
     protected Optional<DataMappingTestSetup> filterDataMappingSmokeTestData(DataMappingTestSetup dataMappingTestSetup)
     {
         String typeName = dataMappingTestSetup.getPrestoTypeName();
-        if (typeName.equals("timestamp with time zone")
+        if (typeName.equals("timestamp(3) with time zone")
                 || typeName.equals("time")
                 || typeName.equals("varbinary")
                 || typeName.equals("char(3)")) {
@@ -340,7 +340,7 @@ public class TestOracleDistributedQueries
                 .row("custkey", "decimal(19,0)", "", "")
                 .row("orderstatus", "varchar(1)", "", "")
                 .row("totalprice", "double", "", "")
-                .row("orderdate", "timestamp", "", "")
+                .row("orderdate", "timestamp(3)", "", "")
                 .row("orderpriority", "varchar(15)", "", "")
                 .row("clerk", "varchar(15)", "", "")
                 .row("shippriority", "decimal(10,0)", "", "")

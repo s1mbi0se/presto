@@ -13,30 +13,45 @@
  */
 package io.prestosql.tests.hive;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
+import io.airlift.units.Duration;
+import io.prestosql.tempto.query.QueryResult;
 import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static io.prestosql.tempto.assertions.QueryAssert.Row.row;
 import static io.prestosql.tempto.assertions.QueryAssert.assertThat;
 import static io.prestosql.tempto.query.QueryExecutor.query;
+import static io.prestosql.testing.assertions.Assert.assertEventually;
 import static io.prestosql.tests.TestGroups.HIVE_TRANSACTIONAL;
 import static io.prestosql.tests.TestGroups.STORAGE_FORMATS;
+import static io.prestosql.tests.hive.TestHiveTransactionalTable.CompactionMode.MAJOR;
+import static io.prestosql.tests.hive.TestHiveTransactionalTable.CompactionMode.MINOR;
 import static io.prestosql.tests.hive.TransactionalTableType.ACID;
 import static io.prestosql.tests.hive.TransactionalTableType.INSERT_ONLY;
 import static io.prestosql.tests.utils.QueryExecutors.onHive;
+import static java.lang.String.format;
+import static java.util.Locale.ENGLISH;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toUnmodifiableList;
+import static java.util.stream.Collectors.toUnmodifiableSet;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class TestHiveTransactionalTable
         extends HiveProductTest
 {
     @Test(groups = {STORAGE_FORMATS, HIVE_TRANSACTIONAL}, dataProvider = "partitioningAndBucketingTypeDataProvider", timeOut = 5 * 60 * 1000)
     public void testReadFullAcid(boolean isPartitioned, BucketingType bucketingType)
-            throws InterruptedException, ExecutionException, TimeoutException
     {
         if (getHiveVersionMajor() < 3) {
             throw new SkipException("Presto Hive transactional tables are supported with Hive version 3 or above");
@@ -64,7 +79,7 @@ public class TestHiveTransactionalTable
 
             // test minor compacted data read
             onHive().executeQuery("INSERT INTO TABLE " + tableName + hivePartitionString + " VALUES (20, 3)");
-            onHive().executeQuery("ALTER TABLE " + tableName + " " + hivePartitionString + " COMPACT 'MINOR' AND WAIT");
+            compactTableAndWait(MINOR, tableName, hivePartitionString, Duration.valueOf("5m"));
             assertThat(query(selectFromOnePartitionsSql)).containsExactly(row(20, 3), row(21, 1), row(22, 2));
 
             // delete a row
@@ -77,7 +92,7 @@ public class TestHiveTransactionalTable
             assertThat(query(selectFromOnePartitionsSql)).containsExactly(row(20, 3), row(23, 1));
 
             // test major compaction
-            onHive().executeQuery("ALTER TABLE " + tableName + " " + hivePartitionString + " COMPACT 'MAJOR' AND WAIT");
+            compactTableAndWait(MAJOR, tableName, hivePartitionString, Duration.valueOf("5m"));
             assertThat(query(selectFromOnePartitionsSql)).containsExactly(row(20, 3), row(23, 1));
         }
         finally {
@@ -111,16 +126,21 @@ public class TestHiveTransactionalTable
             assertThat(query(selectFromOnePartitionsSql)).containsExactly(row(1), row(2));
 
             // test minor compacted data read
-            onHive().executeQuery("ALTER TABLE " + tableName + " " + hivePartitionString + " COMPACT 'MINOR' AND WAIT");
+            compactTableAndWait(MINOR, tableName, hivePartitionString, Duration.valueOf("5m"));
             assertThat(query(selectFromOnePartitionsSql)).containsExactly(row(1), row(2));
 
             onHive().executeQuery("INSERT OVERWRITE TABLE " + tableName + hivePartitionString + " SELECT 3");
             assertThat(query(selectFromOnePartitionsSql)).containsOnly(row(3));
 
-            // test major compaction
-            onHive().executeQuery("INSERT INTO TABLE " + tableName + hivePartitionString + " SELECT 4");
-            onHive().executeQuery("ALTER TABLE " + tableName + " " + hivePartitionString + " COMPACT 'MAJOR' AND WAIT");
-            assertThat(query(selectFromOnePartitionsSql)).containsOnly(row(3), row(4));
+            if (getHiveVersionMajor() >= 4) {
+                // Major compaction on insert only table does not work prior to Hive 4:
+                // https://issues.apache.org/jira/browse/HIVE-21280
+
+                // test major compaction
+                onHive().executeQuery("INSERT INTO TABLE " + tableName + hivePartitionString + " SELECT 4");
+                compactTableAndWait(MAJOR, tableName, hivePartitionString, Duration.valueOf("5m"));
+                assertThat(query(selectFromOnePartitionsSql)).containsOnly(row(3), row(4));
+            }
         }
         finally {
             onHive().executeQuery("DROP TABLE " + tableName);
@@ -161,9 +181,79 @@ public class TestHiveTransactionalTable
 
     private static String hiveTableProperties(TransactionalTableType transactionalTableType, BucketingType bucketingType)
     {
-        return Stream.concat(
-                transactionalTableType.getHiveTableProperties().stream(),
-                bucketingType.getHiveTableProperties().stream())
-                .collect(joining(",", "TBLPROPERTIES (", ")"));
+        ImmutableList.Builder<String> tableProperties = ImmutableList.builder();
+        tableProperties.addAll(transactionalTableType.getHiveTableProperties());
+        tableProperties.addAll(bucketingType.getHiveTableProperties());
+        tableProperties.add("'NO_AUTO_COMPACTION'='true'");
+        return tableProperties.build().stream().collect(joining(",", "TBLPROPERTIES (", ")"));
+    }
+
+    private static void compactTableAndWait(CompactionMode compactMode, String tableName, String partitionString, Duration timeout)
+    {
+        Set<String> existingCompactionsIds = getTableCompactions(compactMode, tableName)
+                .map(row -> row.get("compactionid"))
+                .collect(toUnmodifiableSet());
+
+        onHive().executeQuery(format("ALTER TABLE %s %s COMPACT '%s'", tableName, partitionString, compactMode.name()));
+
+        Set<String> tableCompactionsIds = Sets.difference(getTableCompactions(compactMode, tableName)
+                .map(row -> row.get("compactionid"))
+                .collect(toUnmodifiableSet()),
+                existingCompactionsIds);
+
+        assertFalse(tableCompactionsIds.isEmpty(), "tableCompactionsIds are empty");
+
+        assertEventually(timeout, () -> {
+            Set<String> completedCompactionsIds = getTableCompactions(compactMode, tableName)
+                    .filter(row -> row.get("state").equals("succeeded"))
+                    .map(row -> row.get("compactionid"))
+                    .collect(toUnmodifiableSet());
+
+            assertTrue(completedCompactionsIds.containsAll(tableCompactionsIds));
+        });
+    }
+
+    private static Stream<Map<String, String>> getTableCompactions(CompactionMode compactionMode, String tableName)
+    {
+        return Stream.of(onHive().executeQuery("SHOW COMPACTIONS")).flatMap(TestHiveTransactionalTable::mapRows)
+                .filter(row -> isCompactionForTable(compactionMode, tableName, row));
+    }
+
+    private static Stream<Map<String, String>> mapRows(QueryResult result)
+    {
+        if (result.getRowsCount() == 0) {
+            return Stream.of();
+        }
+
+        List<?> columnNames = result.row(0).stream()
+                .filter(Objects::nonNull)
+                .collect(toUnmodifiableList());
+
+        ImmutableList.Builder<Map<String, String>> rows = ImmutableList.builder();
+        for (int rowIndex = 1; rowIndex < result.getRowsCount(); rowIndex++) {
+            ImmutableMap.Builder<String, String> singleRow = ImmutableMap.builder();
+            List<?> row = result.row(rowIndex);
+
+            for (int column = 0; column < columnNames.size(); column++) {
+                String columnName = ((String) columnNames.get(column)).toLowerCase(ENGLISH);
+                singleRow.put(columnName, (String) row.get(column));
+            }
+
+            rows.add(singleRow.build());
+        }
+
+        return rows.build().stream();
+    }
+
+    private static boolean isCompactionForTable(CompactionMode compactMode, String tableName, Map<String, String> row)
+    {
+        return row.get("table").equals(tableName.toLowerCase(ENGLISH)) &&
+                row.get("type").equals(compactMode.name());
+    }
+
+    public enum CompactionMode {
+        MAJOR,
+        MINOR,
+        /**/;
     }
 }

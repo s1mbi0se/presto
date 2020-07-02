@@ -22,7 +22,10 @@ import org.testng.annotations.Test;
 
 import static io.prestosql.spi.type.VarcharType.VARCHAR;
 import static io.prestosql.testing.assertions.Assert.assertEquals;
+import static io.prestosql.tpch.TpchTable.CUSTOMER;
+import static io.prestosql.tpch.TpchTable.NATION;
 import static io.prestosql.tpch.TpchTable.ORDERS;
+import static io.prestosql.tpch.TpchTable.REGION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestOracleIntegrationSmokeTest
@@ -35,7 +38,7 @@ public class TestOracleIntegrationSmokeTest
             throws Exception
     {
         oracleServer = new TestingOracleServer();
-        return OracleQueryRunner.createOracleQueryRunner(oracleServer, ORDERS);
+        return OracleQueryRunner.createOracleQueryRunner(oracleServer, CUSTOMER, NATION, ORDERS, REGION);
     }
 
     @AfterClass(alwaysRun = true)
@@ -53,7 +56,7 @@ public class TestOracleIntegrationSmokeTest
                 .row("custkey", "decimal(19,0)", "", "")
                 .row("orderstatus", "varchar(1)", "", "")
                 .row("totalprice", "double", "", "")
-                .row("orderdate", "timestamp", "", "")
+                .row("orderdate", "timestamp(3)", "", "")
                 .row("orderpriority", "varchar(15)", "", "")
                 .row("clerk", "varchar(15)", "", "")
                 .row("shippriority", "decimal(10,0)", "", "")
@@ -74,7 +77,7 @@ public class TestOracleIntegrationSmokeTest
                         "   custkey decimal(19, 0),\n" +
                         "   orderstatus varchar(1),\n" +
                         "   totalprice double,\n" +
-                        "   orderdate timestamp,\n" +
+                        "   orderdate timestamp(3),\n" +
                         "   orderpriority varchar(15),\n" +
                         "   clerk varchar(15),\n" +
                         "   shippriority decimal(10, 0),\n" +
