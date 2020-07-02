@@ -392,7 +392,7 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Checks if the received headers matches the defined headers pattern.
+     * Checks if the received header PRESTO_ROLE matches the defined headers pattern.
      * <p>
      * Checks if the received headers matches the defined headers pattern. If it does, this header will be extracted,
      * if it doesn't, a WebApplicationException will be thrown.
@@ -491,7 +491,7 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Check which resource will be started.
+     * Check which resource estimate will be started and extracts PRESTO_RESOURCE_ESTIMATE header.
      * <p>
      * Checks in switch case the name is to execute the EXECUTION_TIME, CPU_TIME or PEAK_MEMORY.
      * If the value is not valid, an IllegalArgumentException is generated an handled.
@@ -528,7 +528,8 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Sets a default for serializedData and transforms ir to json.
+     * Extracts the Presto_QUERY_REQUEST_METADATA header, parses escaped slashes and double quotes, than
+     * deserialize to QueryRequestMetadata with a json codec.
      * <p>
      * Checks whether serializedData is null. If so, an empty Optional is returned.
      * If not, put it in a pattern and put it in json format.
@@ -608,7 +609,7 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Checks if the parameter is null and instantiates a new {@link TransactionId}
+     * Checks if the transactionId is null and instantiates a new {@link TransactionId}
      * <p>
      * Checks whether the transactionId is null. if so, an empty option is returned.
      * If not, a new instance of the {@link TransactionId} is returned. For invalid values,
