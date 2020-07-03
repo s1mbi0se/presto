@@ -157,6 +157,20 @@ public class QueuedStatementResource
         queryPurger.shutdownNow();
     }
 
+    /**
+     * Gets the information about the query.
+     * <p>
+     * Checks if there is a sql command, takes the remote address from the request, goes
+     * through the headers to instantiate an new object of type {@link HttpRequestSessionContext}
+     * and type {@link Query} and returns a response from the server.
+     *
+     * @param statement a sql command.
+     * @param servletRequest an object that provides request information for HTTP servlets.
+     * @param httpHeaders an object responsible for the http request headers.
+     * @param uriInfo an object responsible for taking information from the uri.
+     *
+     * @return a {@link Response} object.
+     */
     @ResourceSecurity(AUTHENTICATED_USER)
     @POST
     @Produces(APPLICATION_JSON)
@@ -242,6 +256,17 @@ public class QueuedStatementResource
         return query;
     }
 
+    /**
+     * Takes the uri from the html query.
+     * <p>
+     * Replaces the existing path and clean existing query parameters
+     * and then delegate to UriBuilder.query(String).
+     *
+     * @param queryId an object responsible for the query id.
+     * @param uriInfo an object responsible for taking information from the uri.
+     *
+     * @return a {@link URI} object.
+     */
     private static URI getQueryHtmlUri(QueryId queryId, UriInfo uriInfo)
     {
         return uriInfo.getRequestUriBuilder()
@@ -253,15 +278,15 @@ public class QueuedStatementResource
     /**
      * Takes the uri from the queue.
      * <p>
-     * Directs an address through replacePath and takes the id through queryId and places
-     * it in the uri.
+     * Replaces the existing path and add the query id at the end of the uri.
+     * Clear existing query parameters and then delegate to UriBuilder.query(String).
      *
      * @param queryId an object responsible for the query id.
      * @param slug an object responsible for translating a multibyte value into bytes.
      * @param token generated token.
      * @param uriInfo an object responsible for taking information from the uri.
      *
-     * @return a {@link URI} object
+     * @return a {@link URI} object.
      */
     private static URI getQueuedUri(QueryId queryId, Slug slug, long token, UriInfo uriInfo)
     {
@@ -274,6 +299,19 @@ public class QueuedStatementResource
                 .build();
     }
 
+    /**
+     * Instantiates an object of type {@link QueryResults} with information about
+     * the result of the query.
+     *
+     * @param queryId an object responsible for the query id.
+     * @param nextUri an object that checks if the query is completed or directs another uri.
+     * @param queryError an object responsible for reporting error in the query.
+     * @param uriInfo an object responsible for taking information from the uri.
+     * @param elapsedTime time elapsed until the query response.
+     * @param queuedTime queue waiting time.
+     *
+     * @return a {@link QueryResults} object.
+     */
     private static QueryResults createQueryResults(
             QueryId queryId,
             URI nextUri,
