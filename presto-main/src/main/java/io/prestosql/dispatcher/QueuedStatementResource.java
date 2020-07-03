@@ -277,7 +277,6 @@ public class QueuedStatementResource
      * Builds a new QueuedURI for the specified queryId.
      * <p>
      * Replaces the existing path and add the query id at the end of the uri.
-     * Clear existing query parameters and then delegate to UriBuilder.query(String).
      * Then, builds the new QueuedURI for the specified queryId.
      *
      * @param queryId an object responsible for the query id.
@@ -299,8 +298,10 @@ public class QueuedStatementResource
     }
 
     /**
+     *
+     * <p>
      * Instantiates an object of type {@link QueryResults} with information about
-     * the result of the query and also all query related metadata.
+     * all query related metadata.
      *
      * @param queryId an object responsible for the query id.
      * @param nextUri an object that checks if the query is completed or directs another uri.
