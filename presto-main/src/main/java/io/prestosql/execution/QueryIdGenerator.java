@@ -75,9 +75,11 @@ public class QueryIdGenerator
     /**
      * Generate next queryId using the following format:
      * <tt>YYYYMMdd_HHmmss_index_coordId</tt>
-     * <p/>
+     * <p>
      * Index rolls at the start of every day or when it reaches 99,999, and the
      * coordId is a randomly generated when this instance is created.
+     *
+     * @return a {@link QueryId} object
      */
     public synchronized QueryId createNextQueryId()
     {
@@ -107,6 +109,9 @@ public class QueryIdGenerator
         return new QueryId(format("%s_%05d_%s", lastTimestamp, counter++, coordinatorId));
     }
 
+    /**
+     * @return response time in milliseconds
+     */
     @VisibleForTesting
     protected long nowInMillis()
     {

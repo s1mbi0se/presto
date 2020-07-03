@@ -30,6 +30,12 @@ public final class Slug
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
+    /**
+     * Checks if it is a thread safe and returns an instance a new object
+     * of type {@link Slug}.
+     *
+     * @return a {@link Slug} object
+     */
     public static Slug createNew()
     {
         byte[] randomBytes = new byte[16];
@@ -44,6 +50,15 @@ public final class Slug
         this.hmac = Hashing.hmacSha1(requireNonNull(slugKey, "slugKey is null"));
     }
 
+    /**
+     * Computes a hash code based on the data that have been provided
+     * and turns it into a string
+     *
+     * @param context fixed set of constants
+     * @param token generated token
+     *
+     * @return
+     */
     public String makeSlug(Context context, long token)
     {
         // "y" is an arbitrary prefix distinguishing this slug version. Added for troubleshooting purposes.

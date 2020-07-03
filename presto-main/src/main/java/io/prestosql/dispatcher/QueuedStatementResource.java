@@ -250,6 +250,19 @@ public class QueuedStatementResource
                 .build();
     }
 
+    /**
+     * Takes the uri from the queue.
+     * <p>
+     * Directs an address through replacePath and takes the id through queryId and places
+     * it in the uri.
+     *
+     * @param queryId an object responsible for the query id.
+     * @param slug an object responsible for translating a multibyte value into bytes.
+     * @param token generated token.
+     * @param uriInfo an object responsible for taking information from the uri.
+     *
+     * @return a {@link URI} object
+     */
     private static URI getQueuedUri(QueryId queryId, Slug slug, long token, UriInfo uriInfo)
     {
         return uriInfo.getBaseUriBuilder()
@@ -411,6 +424,20 @@ public class QueuedStatementResource
                     dispatchInfo.getQueuedTime());
         }
 
+        /**
+         * Checks if the query is completed or directs to another uri.
+         * <p>
+         * Checks if the error message fails, if it fails it is because the query was completed.
+         * If it doesn't fail, it takes the coordinator's location and redirects the query to another
+         * uri.
+         *
+         * @param token generated token
+         * @param uriInfo an object responsible for taking information from the uri.
+         * @param dispatchInfo an object responsible for taking the coodinator's location, response time
+         * and waiting time
+         *
+         * @return a {@link URI} object
+         */
         private URI getNextUri(long token, UriInfo uriInfo, DispatchInfo dispatchInfo)
         {
             // if failed, query is complete

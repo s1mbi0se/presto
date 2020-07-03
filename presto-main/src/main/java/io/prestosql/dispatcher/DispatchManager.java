@@ -129,6 +129,11 @@ public class DispatchManager
         return stats;
     }
 
+    /**
+     * Generates next queryId.
+     *
+     * @return a {@link QueryId} object
+     */
     public QueryId createQueryId()
     {
         return queryIdGenerator.createNextQueryId();
