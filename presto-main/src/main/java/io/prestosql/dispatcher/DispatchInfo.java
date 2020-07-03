@@ -95,7 +95,7 @@ public class DispatchInfo
     }
 
     /**
-     * Returns the wait time that the query has not yet started.
+     * Returns the queued time.
      *
      * @return a {@link Duration} object.
      */
