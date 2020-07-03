@@ -28,9 +28,9 @@ public class DispatchInfo
     private final Duration queuedTime;
 
     /**
-     * Takes the waiting time and the elapsed time.
+     * Returns a new object of type {@link DispatchInfo}.
      * <p>
-     * Receives elapsed time and waiting time and return
+     * Receives elapsed time of the query and queued time and return
      * an object of type {@link DispatchInfo}.
      *
      * @param elapsedTime time elapsed until the query response
@@ -66,7 +66,7 @@ public class DispatchInfo
     /**
      * Returns the coordinator's uri.
      *
-     * @return an Option {@link CoordinatorLocation}.
+     * @return an Optional {@link CoordinatorLocation}.
      */
     public Optional<CoordinatorLocation> getCoordinatorLocation()
     {
@@ -74,8 +74,7 @@ public class DispatchInfo
     }
 
     /**
-     * If there was a failure, it returns detailed information such as the type, the message
-     * and cause.
+     * Returns detailed information about an executed failure, such as its type, message and cause.
      *
      * @return an Optional {@link ExecutionFailureInfo}.
      */
@@ -95,7 +94,7 @@ public class DispatchInfo
     }
 
     /**
-     * Returns the queued time.
+     * Returns the queued time of the query.
      *
      * @return a {@link Duration} object.
      */

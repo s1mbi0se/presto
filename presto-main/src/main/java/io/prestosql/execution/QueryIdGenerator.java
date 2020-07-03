@@ -110,6 +110,8 @@ public class QueryIdGenerator
     }
 
     /**
+     * Returns the actual time in milliseconds.
+     *
      * @return response time in milliseconds
      */
     @VisibleForTesting

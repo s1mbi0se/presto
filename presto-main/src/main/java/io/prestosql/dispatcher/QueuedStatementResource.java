@@ -158,14 +158,14 @@ public class QueuedStatementResource
     }
 
     /**
-     * Creates new queries on Presto.
+     * Creates new queries to be executed on Presto.
      * <p>
-     * Receives instruction requests that create new queries on Presto.
+     * Receives POST requests that tries to create new queries to be executed on Presto.
      *
      * @param statement a sql command.
      * @param servletRequest an object that provides request information for HTTP servlets.
-     * @param httpHeaders an object responsible for the http request headers.
-     * @param uriInfo an object responsible for taking information from the uri.
+     * @param httpHeaders an object containing the HTTP request headers.
+     * @param uriInfo an object responsible for taking metadata from the uri.
      *
      * @return a {@link Response} object.
      */
@@ -255,13 +255,13 @@ public class QueuedStatementResource
     }
 
     /**
-     * Builds a new QueryHTMLURI for the specified queryId.
+     * Builds the uri that leads to the query.
      * <p>
-     * Replaces the existing path and clean existing query parameters
-     * and then delegate to UriBuilder.query(String).
+     * Determines the default path where the query took place and the parameters
+     * passed by the query.
      *
      * @param queryId an object responsible for the query id.
-     * @param uriInfo an object responsible for taking information from the uri.
+     * @param uriInfo an object responsible for taking metadata from the uri.
      *
      * @return a {@link URI} object.
      */
@@ -278,11 +278,12 @@ public class QueuedStatementResource
      * <p>
      * Replaces the existing path and add the query id at the end of the uri.
      * Clear existing query parameters and then delegate to UriBuilder.query(String).
+     * Then, builds the new QueuedURI for the specified queryId.
      *
      * @param queryId an object responsible for the query id.
      * @param slug an object responsible for translating a multibyte value into bytes.
      * @param token generated token.
-     * @param uriInfo an object responsible for taking information from the uri.
+     * @param uriInfo an object responsible for taking metadata from the uri.
      *
      * @return a {@link URI} object.
      */
@@ -304,7 +305,7 @@ public class QueuedStatementResource
      * @param queryId an object responsible for the query id.
      * @param nextUri an object that checks if the query is completed or directs another uri.
      * @param queryError an object responsible for reporting error in the query.
-     * @param uriInfo an object responsible for taking information from the uri.
+     * @param uriInfo an object responsible for taking metadata from the uri.
      * @param elapsedTime time elapsed until the query response.
      * @param queuedTime queue waiting time.
      *
@@ -468,8 +469,8 @@ public class QueuedStatementResource
          * uri.
          *
          * @param token generated token
-         * @param uriInfo an object responsible for taking information from the uri.
-         * @param dispatchInfo an object responsible for taking the coodinator's location, response time
+         * @param uriInfo an object responsible for taking metadata from the uri.
+         * @param dispatchInfo an object responsible for taking the coordinator's location, response time
          * and waiting time
          *
          * @return a {@link URI} object

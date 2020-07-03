@@ -32,6 +32,8 @@ public final class Slug
 
     /**
      * Instantiates a new Slug object.
+     * <p>
+     * A slug object is a one-time security token protecting query results from other users.
      *
      * @return a {@link Slug} object
      */
@@ -56,7 +58,7 @@ public final class Slug
      * @param context fixed set of constants
      * @param token generated token
      *
-     * @return
+     * @return a slug as a string.
      */
     public String makeSlug(Context context, long token)
     {

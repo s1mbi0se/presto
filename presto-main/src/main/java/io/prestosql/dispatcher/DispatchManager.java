@@ -130,7 +130,7 @@ public class DispatchManager
     }
 
     /**
-     * Generates next queryId.
+     * Generates the next query identifier.
      *
      * @return a {@link QueryId} object
      */
