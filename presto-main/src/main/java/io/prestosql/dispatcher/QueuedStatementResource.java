@@ -158,7 +158,7 @@ public class QueuedStatementResource
     }
 
     /**
-     * Gets the information about the query.
+     * Creates new queries on Presto.
      * <p>
      * Receives instruction requests that create new queries in the future.
      *
