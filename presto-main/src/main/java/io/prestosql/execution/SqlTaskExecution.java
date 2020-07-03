@@ -603,6 +603,13 @@ public class SqlTaskExecution
         }
     }
 
+    /**
+     * Lists all plans nodes id for a noMoreSplits condition.
+     * <p>
+     *
+     *
+     * @return a Set of running node ids.
+     */
     public synchronized Set<PlanNodeId> getNoMoreSplits()
     {
         ImmutableSet.Builder<PlanNodeId> noMoreSplits = ImmutableSet.builder();
