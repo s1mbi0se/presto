@@ -74,7 +74,8 @@ public class DispatchInfo
     }
 
     /**
-     * Returns if there was a failure during the query.
+     * If there was a failure, it returns detailed information such the type, the message
+     * and cause.
      *
      * @return an Optional {@link ExecutionFailureInfo}.
      */
@@ -94,7 +95,7 @@ public class DispatchInfo
     }
 
     /**
-     * Returns the waiting time for a query.
+     * Returns the wait time that the query has not yet started.
      *
      * @return a {@link Duration} object.
      */

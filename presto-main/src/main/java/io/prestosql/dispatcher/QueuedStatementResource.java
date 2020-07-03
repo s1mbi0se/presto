@@ -160,9 +160,7 @@ public class QueuedStatementResource
     /**
      * Gets the information about the query.
      * <p>
-     * Checks if there is a sql command, takes the remote address from the request, goes
-     * through the headers to instantiate an new object of type {@link HttpRequestSessionContext}
-     * and type {@link Query} and returns a response from the server.
+     * Receives instruction requests that create new queries in the future.
      *
      * @param statement a sql command.
      * @param servletRequest an object that provides request information for HTTP servlets.
@@ -257,7 +255,7 @@ public class QueuedStatementResource
     }
 
     /**
-     * Takes the uri from the html query.
+     * Builds a new QueryHTMLURI for the specified queryId.
      * <p>
      * Replaces the existing path and clean existing query parameters
      * and then delegate to UriBuilder.query(String).
@@ -276,7 +274,7 @@ public class QueuedStatementResource
     }
 
     /**
-     * Takes the uri from the queue.
+     * Builds a new QueuedURI for the specified queryId.
      * <p>
      * Replaces the existing path and add the query id at the end of the uri.
      * Clear existing query parameters and then delegate to UriBuilder.query(String).
@@ -301,7 +299,7 @@ public class QueuedStatementResource
 
     /**
      * Instantiates an object of type {@link QueryResults} with information about
-     * the result of the query.
+     * the result of the query and also all query related metadata.
      *
      * @param queryId an object responsible for the query id.
      * @param nextUri an object that checks if the query is completed or directs another uri.
@@ -463,7 +461,7 @@ public class QueuedStatementResource
         }
 
         /**
-         * Checks if the query is completed or directs to another uri.
+         * Checks if the query is completed or redirects to another uri.
          * <p>
          * Checks if the error message fails, if it fails it is because the query was completed.
          * If it doesn't fail, it takes the coordinator's location and redirects the query to another

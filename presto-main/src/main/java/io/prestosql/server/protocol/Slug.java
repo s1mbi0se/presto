@@ -31,8 +31,7 @@ public final class Slug
     private static final SecureRandom RANDOM = new SecureRandom();
 
     /**
-     * Checks if it is a thread safe and returns an instance a new object
-     * of type {@link Slug}.
+     * Instantiates a new Slug object.
      *
      * @return a {@link Slug} object
      */
@@ -52,7 +51,7 @@ public final class Slug
 
     /**
      * Computes a hash code based on the data that have been provided
-     * and turns it into a string
+     * and turns it into a string slug.
      *
      * @param context fixed set of constants
      * @param token generated token
