@@ -158,9 +158,9 @@ public class QueuedStatementResource
     }
 
     /**
-     * Gets the information about the query.
+     * Creates new queries on Presto.
      * <p>
-     * Receives instruction requests that create new queries in the future.
+     * Receives instruction requests that create new queries on Presto.
      *
      * @param statement a sql command.
      * @param servletRequest an object that provides request information for HTTP servlets.

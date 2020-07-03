@@ -74,7 +74,7 @@ public class DispatchInfo
     }
 
     /**
-     * If there was a failure, it returns detailed information such the type, the message
+     * If there was a failure, it returns detailed information such as the type, the message
      * and cause.
      *
      * @return an Optional {@link ExecutionFailureInfo}.
