@@ -165,7 +165,7 @@ public class QueuedStatementResource
      * @param statement a sql command.
      * @param servletRequest an object that provides request information for HTTP servlets.
      * @param httpHeaders an object containing the HTTP request headers.
-     * @param uriInfo an object responsible for taking metadata from the uri.
+     * @param uriInfo an object containing the uri metadata.
      *
      * @return a {@link Response} object.
      */
@@ -255,15 +255,15 @@ public class QueuedStatementResource
     }
 
     /**
-     * Builds the uri that leads to the query.
+     * Builds the specific query uri.
      * <p>
      * Determines the default path where the query took place and the parameters
-     * passed by the query.
+     * defined by the query.
      *
-     * @param queryId an object responsible for the query id.
-     * @param uriInfo an object responsible for taking metadata from the uri.
+     * @param queryId an object containing the query id
+     * @param uriInfo an object containing the uri metadata.
      *
-     * @return a {@link URI} object.
+     * @return an {@link URI} object.
      */
     private static URI getQueryHtmlUri(QueryId queryId, UriInfo uriInfo)
     {
@@ -279,10 +279,10 @@ public class QueuedStatementResource
      * Replaces the existing path and add the query id at the end of the uri.
      * Then, builds the new QueuedURI for the specified queryId.
      *
-     * @param queryId an object responsible for the query id.
+     * @param queryId an object containing the query id.
      * @param slug an object responsible for translating a multibyte value into bytes.
      * @param token generated token.
-     * @param uriInfo an object responsible for taking metadata from the uri.
+     * @param uriInfo an object containing the uri metadata.
      *
      * @return a {@link URI} object.
      */
@@ -298,12 +298,10 @@ public class QueuedStatementResource
     }
 
     /**
-     *
-     * <p>
      * Instantiates an object of type {@link QueryResults} with information about
      * all query related metadata.
      *
-     * @param queryId an object responsible for the query id.
+     * @param queryId an object containing the query identifier.
      * @param nextUri an object that checks if the query is completed or directs another uri.
      * @param queryError an object responsible for reporting error in the query.
      * @param uriInfo an object responsible for taking metadata from the uri.
@@ -466,11 +464,11 @@ public class QueuedStatementResource
          * Checks if the query is completed or redirects to another uri.
          * <p>
          * Checks if the error message fails, if it fails it is because the query was completed.
-         * If it doesn't fail, it takes the coordinator's location and redirects the query to another
+         * If not fail, it takes the coordinator's location and redirects the query to another
          * uri.
          *
          * @param token generated token
-         * @param uriInfo an object responsible for taking metadata from the uri.
+         * @param uriInfo an object containing the uri metadata.
          * @param dispatchInfo an object responsible for taking the coordinator's location, response time
          * and waiting time
          *
