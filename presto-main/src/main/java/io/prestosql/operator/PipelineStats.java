@@ -461,7 +461,7 @@ public class PipelineStats
     }
 
     /**
-     * Returns an object of type {@link DataSize} that contains the physical written data size.
+     * Returns an object of type {@link DataSize} that contains the physical written data size in bytes.
      *
      * @return the physical written data size.
      */
