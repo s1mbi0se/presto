@@ -360,7 +360,7 @@ public class QueuedStatementResource
          * Checks whether the token is the last one or the next one, comparing the value
          * of last token and the value expected.
          * At the end, results of the query is returned. Containing the token, the uriInfo
-         * containing the metadata and the queued time and elapsed time.
+         * containing the metadata and the query statistics.
          *
          * @param token generated token.
          * @param uriInfo an object containing the uri metadata.

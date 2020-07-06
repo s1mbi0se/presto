@@ -356,7 +356,7 @@ public class PipelineStats
     }
 
     /**
-     * Returns a property that represents the physical input positions of the pipeline stats.
+     * Returns a property that represents the physical input positions of the PipelineStats.
      *
      * @return the physical input positions.
      */
@@ -395,7 +395,7 @@ public class PipelineStats
     }
 
     /**
-     * Returns a property that represents the input positions of the raw data of the pipeline stats.
+     * Returns a property that represents the input positions of the raw input positions of the PipelineStats.
      *
      * @return the raw input positions.
      */
@@ -417,7 +417,7 @@ public class PipelineStats
     }
 
     /**
-     * Returns a property that represents the processed input positions of the pipeline stats.
+     * Returns a property that represents the processed input positions of the PipelineStats.
      *
      * @return the processed input positions.
      */
@@ -450,7 +450,7 @@ public class PipelineStats
     }
 
     /**
-     * Returns a property that represents the output positions of the pipeline stats.
+     * Returns a property that represents the output positions of the PipelineStats.
      *
      * @return the output positions.
      */
