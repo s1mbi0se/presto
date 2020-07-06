@@ -354,6 +354,11 @@ public class TaskContext
         return stat;
     }
 
+    /**
+     * Returns an object that contains the duration between start and finish an object.
+     *
+     * @return an object of type {@link Duration}
+     */
     public Duration getFullGcTime()
     {
         long startFullGcTimeNanos = this.startFullGcTimeNanos.get();
@@ -368,6 +373,14 @@ public class TaskContext
         return new Duration(max(0, endFullGcTimeNanos - startFullGcTimeNanos), NANOSECONDS);
     }
 
+    /**
+     * verifies how many objects were moved to the Garbage Collector.
+     * <p>
+     * Verifies how many objects were started and how many objects were finished and returns
+     * the total that were moved to the Garbage Collector.
+     *
+     * @return a int that represents the objects that were be moved to the Garbage Collector.
+     */
     public int getFullGcCount()
     {
         long startFullGcCount = this.startFullGcCount.get();
