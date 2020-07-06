@@ -428,7 +428,7 @@ public class PipelineStats
     }
 
     /**
-     * Returns an object of type {@link Duration} that contains the input read time.
+     * Returns an object of type {@link Duration} that contains the physical input read time.
      *
      * @return the physical input read time.
      */
