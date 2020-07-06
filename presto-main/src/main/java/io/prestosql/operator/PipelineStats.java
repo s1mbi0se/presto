@@ -395,7 +395,7 @@ public class PipelineStats
     }
 
     /**
-     * Returns a property that represents the input positions of the raw input positions of the PipelineStats.
+     * Returns a property that represents the raw input positions of the PipelineStats.
      *
      * @return the raw input positions.
      */
