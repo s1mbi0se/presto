@@ -355,7 +355,7 @@ public class TaskContext
     }
 
     /**
-     * Returns an object that contains the duration between start and finish an object.
+     * Returns an object that contains the duration between start and finish of a Presto Task.
      *
      * @return an object of type {@link Duration}
      */
