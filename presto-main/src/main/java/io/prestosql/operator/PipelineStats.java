@@ -344,18 +344,35 @@ public class PipelineStats
         return blockedReasons;
     }
 
+    /**
+     * Returns an object of the type {@link DataSize} that contains the
+     * amount physical input data size.
+     *
+     * @return the size of the input data.
+     */
     @JsonProperty
     public DataSize getPhysicalInputDataSize()
     {
         return physicalInputDataSize;
     }
 
+    /**
+     * physicalInputPositions is a variable that represents the input positions.
+     *
+     * @return the physical input positions.
+     */
     @JsonProperty
     public long getPhysicalInputPositions()
     {
         return physicalInputPositions;
     }
 
+    /**
+     * Returns an object of the type {@link DataSize} that contains the
+     * internal network input data size.
+     *
+     * @return the internal network input data size.
+     */
     @JsonProperty
     public DataSize getInternalNetworkInputDataSize()
     {
@@ -368,6 +385,12 @@ public class PipelineStats
         return internalNetworkInputPositions;
     }
 
+    /**
+     * Returns an object of the type {@link DataSize} that contains the
+     * raw input data size.
+     *
+     * @return the raw input data size.
+     */
     @JsonProperty
     public DataSize getRawInputDataSize()
     {
@@ -392,6 +415,12 @@ public class PipelineStats
         return processedInputPositions;
     }
 
+    /**
+     * Returns an object of the type {@link Duration} that contains the
+     * input read time.
+     *
+     * @return the physical input read time.
+     */
     @JsonProperty
     public Duration getPhysicalInputReadTime()
     {

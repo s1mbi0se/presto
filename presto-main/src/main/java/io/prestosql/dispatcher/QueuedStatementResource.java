@@ -354,6 +354,21 @@ public class QueuedStatementResource
             return dispatchManager.waitForDispatched(queryId);
         }
 
+        /**
+         * Verifies the token of the query and returns the result.
+         * <p>
+         * Checks whether the token is the last one or the next one, comparing the value
+         * of last token and the value expected.
+         * At the end, results of the query is returned. Containing the token, the uriInfo
+         * containing the metadata and the queued time and elapsed time.
+         *
+         * @param token generated token.
+         * @param uriInfo an object containing the uri metadata.
+         *
+         * @return the next token, the uri metadata and the informations about the query.
+         * @throws WebApplicationException If the token wouldn't be the last one or
+         * if the dispatchInfo would be empty.
+         */
         public QueryResults getQueryResults(long token, UriInfo uriInfo)
         {
             long lastToken = this.lastToken.get();
