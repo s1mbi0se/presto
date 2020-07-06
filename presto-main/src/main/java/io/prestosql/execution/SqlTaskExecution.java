@@ -608,7 +608,7 @@ public class SqlTaskExecution
      * <p>
      *
      *
-     * @return a Set of running node ids.
+     * @return a Set of plan node ids.
      */
     public synchronized Set<PlanNodeId> getNoMoreSplits()
     {
