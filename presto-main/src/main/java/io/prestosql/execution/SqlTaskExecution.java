@@ -604,7 +604,9 @@ public class SqlTaskExecution
     }
 
     /**
-     * Lists all plans nodes id for a noMoreSplits condition.
+     * Lists all plan node ids for a noMoreSplits condition.
+     * A noMoreSplits conditions means all splits have been received from scheduler for plan
+     * execution.
      *
      * @return a Set of plan node ids.
      */

@@ -355,19 +355,18 @@ public class QueuedStatementResource
         }
 
         /**
-         * Verifies the token of the query and returns the result.
+         * Validate the query token to return the result.
          * <p>
-         * Checks whether the token is the last one or the next one, comparing the value
-         * of last token and the value expected.
-         * At the end, results of the query is returned. Containing the token, the uriInfo
-         * containing the metadata and the query statistics.
+         * Validates if the token is the last one or the next one or if the query was abandoned.
+         * If not, throws a {@link WebApplicationException}. Otherwise, create the query results to be
+         * returned.
          *
-         * @param token generated token.
+         * @param token generated token for the client.
          * @param uriInfo an object containing the uri metadata.
          *
-         * @return the next token, the uri metadata and the informations about the query.
-         * @throws WebApplicationException If the token wouldn't be the last one or
-         * if the dispatchInfo would be empty.
+         * @return an {@link QueryResults} object.
+         * @throws WebApplicationException If the token isn't the last one or
+         * the dispatchInfo is empty.
          */
         public QueryResults getQueryResults(long token, UriInfo uriInfo)
         {

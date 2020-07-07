@@ -345,7 +345,7 @@ public class PipelineStats
     }
 
     /**
-     * Returns an object of type {@link DataSize} that contains the physical input data size in bytes.
+     * Returns an object of type {@link DataSize} that contains the data size before decompression.
      *
      * @return the size of the input data in bytes.
      */
@@ -356,7 +356,7 @@ public class PipelineStats
     }
 
     /**
-     * Returns a property that represents the physical input positions of the PipelineStats.
+     * Returns a property that represents the position of the data before decompression.
      *
      * @return the physical input positions.
      */
