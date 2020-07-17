@@ -80,40 +80,26 @@ public class DispatchInfo
     }
 
     /**
-     * Returns the coordinator's uri.
+     * Returns an object with information about coordinator's URI.
      *
-     * @return an Optional {@link CoordinatorLocation}.
+     * @return an Optional object with information about coordinator's URI
+     * @see java.net.URI
      */
     public Optional<CoordinatorLocation> getCoordinatorLocation()
     {
         return coordinatorLocation;
     }
 
-    /**
-     * Returns detailed information about an executed failure, such as its type, message and cause.
-     *
-     * @return an Optional {@link ExecutionFailureInfo}.
-     */
     public Optional<ExecutionFailureInfo> getFailureInfo()
     {
         return failureInfo;
     }
 
-    /**
-     * Returns the elapsed time of the query.
-     *
-     * @return a {@link Duration} object.
-     */
     public Duration getElapsedTime()
     {
         return elapsedTime;
     }
 
-    /**
-     * Returns the queued time of the query.
-     *
-     * @return a {@link Duration} object.
-     */
     public Duration getQueuedTime()
     {
         return queuedTime;
