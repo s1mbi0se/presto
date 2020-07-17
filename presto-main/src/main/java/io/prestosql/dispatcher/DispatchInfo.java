@@ -43,6 +43,15 @@ public class DispatchInfo
         return new DispatchInfo(Optional.empty(), Optional.empty(), elapsedTime, queuedTime);
     }
 
+    /**
+     * Creates a new DispatchInfo object with information about a query that
+     * is being processed.
+     *
+     * @param coordinatorLocation an object that contains information about the URI of the coordinator
+     * @param elapsedTime time elapsed until the query response
+     * @param queuedTime time the query waited to be executed
+     * @return a new DispatchInfo instance with information about a query that is being processed
+     */
     public static DispatchInfo dispatched(CoordinatorLocation coordinatorLocation, Duration elapsedTime, Duration queuedTime)
     {
         requireNonNull(coordinatorLocation, "coordinatorLocation is null");
