@@ -79,6 +79,12 @@ public class DispatchInfo
         this.queuedTime = requireNonNull(queuedTime, "queuedTime is null");
     }
 
+    /**
+     * Returns an object with information about coordinator's URI.
+     *
+     * @return an Optional object with information about coordinator's URI
+     * @see java.net.URI
+     */
     public Optional<CoordinatorLocation> getCoordinatorLocation()
     {
         return coordinatorLocation;
