@@ -90,6 +90,12 @@ public class DispatchInfo
         return coordinatorLocation;
     }
 
+    /**
+     * Returns detailed information about a failure during query execution, such as its type,
+     * message and cause.
+     *
+     * @return an Optional object with detailed information about a failure during query execution
+     */
     public Optional<ExecutionFailureInfo> getFailureInfo()
     {
         return failureInfo;
@@ -100,6 +106,11 @@ public class DispatchInfo
         return elapsedTime;
     }
 
+    /**
+     * Returns the time the query waited to be processed.
+     *
+     * @return the time the query waited to be processed
+     */
     public Duration getQueuedTime()
     {
         return queuedTime;
