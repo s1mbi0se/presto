@@ -268,15 +268,12 @@ public class QueuedStatementResource
     }
 
     /**
-     * Builds the specific query uri.
-     * <p>
-     * Determines the default path where the query took place and the parameters
-     * defined by the query.
+     * Builds the path where query will be available through Presto's web interface.
      *
      * @param queryId an object containing the query id
-     * @param uriInfo an object containing the uri metadata.
+     * @param uriInfo an object containing the uri metadata
      *
-     * @return an {@link URI} object.
+     * @return an URI with this format: ui/query.html?queryId
      */
     private static URI getQueryHtmlUri(QueryId queryId, UriInfo uriInfo)
     {
