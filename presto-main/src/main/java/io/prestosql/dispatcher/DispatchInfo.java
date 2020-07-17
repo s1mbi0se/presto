@@ -112,9 +112,9 @@ public class DispatchInfo
     }
 
     /**
-     * Returns the time the query waited to be processed.
+     * Returns the time query waited to be processed.
      *
-     * @return the time the query waited to be processed
+     * @return the time query waited to be processed
      */
     public Duration getQueuedTime()
     {
