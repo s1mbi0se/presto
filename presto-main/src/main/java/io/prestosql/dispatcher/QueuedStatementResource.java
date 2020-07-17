@@ -242,6 +242,14 @@ public class QueuedStatementResource
         return query;
     }
 
+    /**
+     * Builds the path where query will be available through Presto's web interface.
+     *
+     * @param queryId an object containing the query id
+     * @param uriInfo an object containing the uri metadata
+     *
+     * @return an URI with this format: ui/query.html?queryId
+     */
     private static URI getQueryHtmlUri(QueryId queryId, UriInfo uriInfo)
     {
         return uriInfo.getRequestUriBuilder()
