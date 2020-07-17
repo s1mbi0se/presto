@@ -28,15 +28,12 @@ public class DispatchInfo
     private final Duration queuedTime;
 
     /**
-     * Returns a new object of type {@link DispatchInfo}.
-     * <p>
-     * Receives elapsed time of the query and queued time and return
-     * an object of type {@link DispatchInfo}.
+     * Creates a new DispatchInfo object with information about a query waiting
+     * to be processed.
      *
      * @param elapsedTime time elapsed until the query response
-     * @param queuedTime queue waiting time
-     *
-     * @return a {@link DispatchInfo} object
+     * @param queuedTime time the query is waiting to be executed
+     * @return a new DispatchInfo instance with information about a query waiting to be processed
      */
     public static DispatchInfo queued(Duration elapsedTime, Duration queuedTime)
     {
@@ -58,9 +55,19 @@ public class DispatchInfo
         return new DispatchInfo(Optional.of(coordinatorLocation), Optional.empty(), elapsedTime, queuedTime);
     }
 
+    /**
+     * Creates a new DispatchInfo object with information about a query that failed during
+     * its execution.
+     *
+     * @param failureInfo an object with details about failures that occurred during query
+     * execution
+     * @param elapsedTime time elapsed until the query response
+     * @param queuedTime time the query waited to be executed
+     * @return a query that failed during its execution
+     */
     public static DispatchInfo failed(ExecutionFailureInfo failureInfo, Duration elapsedTime, Duration queuedTime)
     {
-        requireNonNull(failureInfo, "coordinatorLocation is null");
+        requireNonNull(failureInfo, "failureInfo is null");
         return new DispatchInfo(Optional.empty(), Optional.of(failureInfo), elapsedTime, queuedTime);
     }
 
