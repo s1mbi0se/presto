@@ -344,18 +344,33 @@ public class PipelineStats
         return blockedReasons;
     }
 
+    /**
+     * Returns an object of type {@link DataSize} that contains the data size before decompression.
+     *
+     * @return the size of the input data in bytes.
+     */
     @JsonProperty
     public DataSize getPhysicalInputDataSize()
     {
         return physicalInputDataSize;
     }
 
+    /**
+     * Returns a property that represents the position of the data before decompression.
+     *
+     * @return the physical input positions.
+     */
     @JsonProperty
     public long getPhysicalInputPositions()
     {
         return physicalInputPositions;
     }
 
+    /**
+     * Returns an object of type {@link DataSize} that contains the internal network input data size in bytes.
+     *
+     * @return the internal network input data size in bytes.
+     */
     @JsonProperty
     public DataSize getInternalNetworkInputDataSize()
     {
@@ -368,48 +383,88 @@ public class PipelineStats
         return internalNetworkInputPositions;
     }
 
+    /**
+     * Returns an object of type {@link DataSize} that contains the raw input data size in bytes.
+     *
+     * @return the raw input data size in bytes.
+     */
     @JsonProperty
     public DataSize getRawInputDataSize()
     {
         return rawInputDataSize;
     }
 
+    /**
+     * Returns a property that represents the raw input positions of the PipelineStats.
+     *
+     * @return the raw input positions.
+     */
     @JsonProperty
     public long getRawInputPositions()
     {
         return rawInputPositions;
     }
 
+    /**
+     * Returns an object of type {@link DataSize} that contains the processed input data size in bytes.
+     *
+     * @return the processed input data size in bytes.
+     */
     @JsonProperty
     public DataSize getProcessedInputDataSize()
     {
         return processedInputDataSize;
     }
 
+    /**
+     * Returns a property that represents the processed input positions of the PipelineStats.
+     *
+     * @return the processed input positions.
+     */
     @JsonProperty
     public long getProcessedInputPositions()
     {
         return processedInputPositions;
     }
 
+    /**
+     * Returns an object of type {@link Duration} that contains the physical input read time.
+     *
+     * @return the physical input read time.
+     */
     @JsonProperty
     public Duration getPhysicalInputReadTime()
     {
         return physicalInputReadTime;
     }
 
+    /**
+     * Returns an object of type {@link DataSize} that contains the output data size in bytes.
+     *
+     * @return the output data size.
+     */
     @JsonProperty
     public DataSize getOutputDataSize()
     {
         return outputDataSize;
     }
 
+    /**
+     * Returns a property that represents the output positions of the PipelineStats.
+     *
+     * @return the output positions.
+     */
     @JsonProperty
     public long getOutputPositions()
     {
         return outputPositions;
     }
 
+    /**
+     * Returns an object of type {@link DataSize} that contains the physical written data size in bytes.
+     *
+     * @return the physical written data size.
+     */
     @JsonProperty
     public DataSize getPhysicalWrittenDataSize()
     {

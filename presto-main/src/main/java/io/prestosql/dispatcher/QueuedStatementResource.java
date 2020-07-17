@@ -403,6 +403,20 @@ public class QueuedStatementResource
             return dispatchManager.waitForDispatched(queryId);
         }
 
+        /**
+         * Validate the query token to return the result.
+         * <p>
+         * Validates if the token is the last one or the next one or if the query was abandoned.
+         * If not, throws a {@link WebApplicationException}. Otherwise, create the query results to be
+         * returned.
+         *
+         * @param token generated token for the client.
+         * @param uriInfo an object containing the uri metadata.
+         *
+         * @return an {@link QueryResults} object.
+         * @throws WebApplicationException If the token isn't the last one or
+         * the dispatchInfo is empty.
+         */
         public QueryResults getQueryResults(long token, UriInfo uriInfo)
         {
             long lastToken = this.lastToken.get();

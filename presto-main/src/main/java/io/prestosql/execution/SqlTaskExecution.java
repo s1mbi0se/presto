@@ -603,6 +603,13 @@ public class SqlTaskExecution
         }
     }
 
+    /**
+     * Lists all plan node ids for a noMoreSplits condition.
+     * A noMoreSplits conditions means all splits have been received from scheduler for plan
+     * execution.
+     *
+     * @return a Set of plan node ids.
+     */
     public synchronized Set<PlanNodeId> getNoMoreSplits()
     {
         ImmutableSet.Builder<PlanNodeId> noMoreSplits = ImmutableSet.builder();
