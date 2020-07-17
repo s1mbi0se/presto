@@ -103,7 +103,6 @@ public final class TypeConverter
             .put(RealType.class, Types.FloatType.get())
             .put(IntegerType.class, Types.IntegerType.get())
             .put(TimeType.class, Types.TimeType.get())
-            .put(TimestampType.class, Types.TimestampType.withoutZone())
             .put(TimestampWithTimeZoneType.class, Types.TimestampType.withZone())
             .put(VarcharType.class, Types.StringType.get())
             .build();
@@ -176,6 +175,9 @@ public final class TypeConverter
         }
         if (type instanceof MapType) {
             return fromMap((MapType) type);
+        }
+        if (type.equals(TIMESTAMP)) {
+            return Types.TimestampType.withoutZone();
         }
         throw new PrestoException(NOT_SUPPORTED, "Type not supported for Iceberg: " + type.getDisplayName());
     }
@@ -286,7 +288,7 @@ public final class TypeConverter
                     throw new IllegalArgumentException(format("Expected all parameters to be named type, but got %s", parameter));
                 }
                 NamedTypeSignature namedTypeSignature = parameter.getNamedTypeSignature();
-                if (!namedTypeSignature.getName().isPresent()) {
+                if (namedTypeSignature.getName().isEmpty()) {
                     throw new PrestoException(NOT_SUPPORTED, format("Anonymous row type is not supported in Hive. Please give each field a name: %s", type));
                 }
                 fieldNames.add(namedTypeSignature.getName().get());

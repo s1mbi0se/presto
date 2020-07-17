@@ -42,6 +42,11 @@ public final class Patterns
         return typeOf(AggregationNode.class);
     }
 
+    public static Pattern<GroupIdNode> groupId()
+    {
+        return typeOf(GroupIdNode.class);
+    }
+
     public static Pattern<ApplyNode> applyNode()
     {
         return typeOf(ApplyNode.class);
@@ -65,6 +70,11 @@ public final class Patterns
     public static Pattern<FilterNode> filter()
     {
         return typeOf(FilterNode.class);
+    }
+
+    public static Pattern<IndexJoinNode> indexJoin()
+    {
+        return typeOf(IndexJoinNode.class);
     }
 
     public static Pattern<IndexSourceNode> indexSource()
@@ -157,6 +167,11 @@ public final class Patterns
         return typeOf(ValuesNode.class);
     }
 
+    public static Pattern<UnnestNode> unnest()
+    {
+        return typeOf(UnnestNode.class);
+    }
+
     public static Pattern<WindowNode> window()
     {
         return typeOf(WindowNode.class);
@@ -165,6 +180,11 @@ public final class Patterns
     public static Pattern<RowNumberNode> rowNumber()
     {
         return typeOf(RowNumberNode.class);
+    }
+
+    public static Pattern<TopNRowNumberNode> topNRowNumber()
+    {
+        return typeOf(TopNRowNumberNode.class);
     }
 
     public static Pattern<DistinctLimitNode> distinctLimit()

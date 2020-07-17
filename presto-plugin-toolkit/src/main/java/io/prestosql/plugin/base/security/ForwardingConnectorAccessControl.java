@@ -85,6 +85,12 @@ public abstract class ForwardingConnectorAccessControl
     }
 
     @Override
+    public void checkCanShowCreateSchema(ConnectorSecurityContext context, String schemaName)
+    {
+        delegate().checkCanShowCreateSchema(context, schemaName);
+    }
+
+    @Override
     public void checkCanShowCreateTable(ConnectorSecurityContext context, SchemaTableName tableName)
     {
         delegate().checkCanShowCreateTable(context, tableName);
@@ -244,6 +250,12 @@ public abstract class ForwardingConnectorAccessControl
     public void checkCanSetRole(ConnectorSecurityContext context, String role, String catalogName)
     {
         delegate().checkCanSetRole(context, role, catalogName);
+    }
+
+    @Override
+    public void checkCanShowRoleAuthorizationDescriptors(ConnectorSecurityContext context, String catalogName)
+    {
+        delegate().checkCanShowRoleAuthorizationDescriptors(context, catalogName);
     }
 
     @Override

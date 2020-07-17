@@ -13,6 +13,7 @@
  */
 package io.prestosql.tests;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -72,6 +73,7 @@ import static io.prestosql.tests.QueryTemplate.parameter;
 import static io.prestosql.tests.QueryTemplate.queryTemplate;
 import static io.prestosql.type.UnknownType.UNKNOWN;
 import static java.lang.String.format;
+import static java.util.Collections.nCopies;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
@@ -128,7 +130,7 @@ public abstract class AbstractTestEngineOnlyQueries
         LocalDateTime localTimeThatDidNotExist = LocalDateTime.of(2017, 4, 2, 2, 10);
         checkState(ZoneId.systemDefault().getRules().getValidOffsets(localTimeThatDidNotExist).isEmpty(), "This test assumes certain JVM time zone");
         // This tests that both Presto runner and H2 can return TIMESTAMP value that never happened in JVM's zone (e.g. is not representable using java.sql.Timestamp)
-        @Language("SQL") String sql = DateTimeFormatter.ofPattern("'SELECT TIMESTAMP '''uuuu-MM-dd HH:mm:ss''").format(localTimeThatDidNotExist);
+        @Language("SQL") String sql = DateTimeFormatter.ofPattern("'SELECT TIMESTAMP '''uuuu-MM-dd HH:mm:ss.SSS''").format(localTimeThatDidNotExist);
         assertEquals(computeScalar(sql), localTimeThatDidNotExist); // this tests Presto and the QueryRunner
         assertQuery(sql); // this tests H2QueryRunner
 
@@ -211,6 +213,12 @@ public abstract class AbstractTestEngineOnlyQueries
     }
 
     @Test
+    public void testLargeQuerySuccess()
+    {
+        assertQuery("SELECT " + Joiner.on(" AND ").join(nCopies(500, "1 = 1")), "SELECT true");
+    }
+
+    @Test
     public void testLargeInArray()
     {
         String arrayValues = range(0, 5000)
@@ -287,6 +295,8 @@ public abstract class AbstractTestEngineOnlyQueries
                 ImmutableList.of(zonedDateTime("1970-01-01 00:01:00.000 UTC"), zonedDateTime("1970-01-01 08:01:00.000 +08:00")));
         assertQuery("SELECT COUNT(*) FROM (values 1) t(x) WHERE x IN (null, 0)", "SELECT 0");
         assertQuery("SELECT d IN (DECIMAL '2.0', DECIMAL '30.0') FROM (VALUES (2.0E0)) t(d)", "SELECT true"); // coercion with type only coercion inside IN list
+        assertQuery("SELECT REAL '-0.0' IN (VALUES REAL '1.0', REAL '0.0')", "SELECT true");
+        assertQuery("SELECT -0e0 IN (VALUES 1e0, 0e0)", "SELECT true");
     }
 
     @Test
@@ -532,6 +542,18 @@ public abstract class AbstractTestEngineOnlyQueries
     }
 
     @Test
+    public void testComplexCast()
+    {
+        Session session = Session.builder(getSession())
+                .setSystemProperty(SystemSessionProperties.OPTIMIZE_DISTINCT_AGGREGATIONS, "true")
+                .build();
+        // This is optimized using CAST(null AS interval day to second) which may be problematic to deserialize on worker
+        assertQuery(session, "WITH t(a, b) AS (VALUES (1, INTERVAL '1' SECOND)) " +
+                        "SELECT count(DISTINCT a), CAST(max(b) AS VARCHAR) FROM t",
+                "VALUES (1, '0 00:00:01.000')");
+    }
+
+    @Test
     public void testInvalidCast()
     {
         assertQueryFails(
@@ -708,7 +730,28 @@ public abstract class AbstractTestEngineOnlyQueries
         MaterializedResult expected = resultBuilder(session, BIGINT, VARCHAR)
                 .row(0, "unknown")
                 .row(1, "bigint")
-                .row(2, "varchar")
+                .row(2, "varchar(25)")
+                .build();
+        assertEqualsIgnoreOrder(actual, expected);
+
+        session = Session.builder(getSession())
+                .addPreparedStatement(
+                        "my_query",
+                        "SELECT 1 " +
+                                "FROM" +
+                                "  (" +
+                                " VALUES " +
+                                "     (CHAR 'Pi', CAST('PI' AS VARCHAR), TIMESTAMP '2012-03-14 1:59:26.535', TIMESTAMP '2012-03-14 1:59:26.535897', DECIMAL '3.14')" +
+                                ")  AS t (t_char, t_varchar, t_timestamp, t_timestamp_2, t_decimal)" +
+                                "WHERE t_char = ? AND t_varchar = ? AND t_timestamp = ? AND t_timestamp_2 = ? AND t_decimal = ?")
+                .build();
+        actual = computeActual(session, "DESCRIBE INPUT my_query");
+        expected = resultBuilder(session, BIGINT, VARCHAR)
+                .row(0, "char(2)")
+                .row(1, "varchar")
+                .row(2, "timestamp(3)")
+                .row(3, "timestamp(6)")
+                .row(4, "decimal(3,2)")
                 .build();
         assertEqualsIgnoreOrder(actual, expected);
     }
@@ -780,7 +823,6 @@ public abstract class AbstractTestEngineOnlyQueries
     public void testDescribeOutputNonSelect()
     {
         assertDescribeOutputRowCount("CREATE TABLE foo AS SELECT * FROM nation");
-        assertDescribeOutputRowCount("DELETE FROM orders");
 
         assertDescribeOutputEmpty("CALL foo()");
         assertDescribeOutputEmpty("SET SESSION optimize_hash_generation=false");
@@ -2904,7 +2946,7 @@ public abstract class AbstractTestEngineOnlyQueries
                 getSession().getClientTags(),
                 getSession().getClientCapabilities(),
                 getSession().getResourceEstimates(),
-                getSession().getStartTime(),
+                getSession().getStart(),
                 ImmutableMap.<String, String>builder()
                         .put("test_string", "foo string")
                         .put("test_long", "424242")
@@ -2915,7 +2957,8 @@ public abstract class AbstractTestEngineOnlyQueries
                         .put("connector_long", "11")
                         .build()),
                 getQueryRunner().getMetadata().getSessionPropertyManager(),
-                getSession().getPreparedStatements());
+                getSession().getPreparedStatements(),
+                getSession().getQueryRequestMetadata());
         MaterializedResult result = computeActual(session, "SHOW SESSION");
 
         ImmutableMap<String, MaterializedRow> properties = Maps.uniqueIndex(result.getMaterializedRows(), input -> {
@@ -3353,7 +3396,7 @@ public abstract class AbstractTestEngineOnlyQueries
     {
         String query = "SELECT * FROM orders";
         MaterializedResult result = computeActual("EXPLAIN " + query);
-        assertEquals(getOnlyElement(result.getOnlyColumnAsSet()), getExplainPlan(query, LOGICAL));
+        assertEquals(getOnlyElement(result.getOnlyColumnAsSet()), getExplainPlan(query, DISTRIBUTED));
     }
 
     @Test
@@ -3361,7 +3404,7 @@ public abstract class AbstractTestEngineOnlyQueries
     {
         String query = "SELECT * FROM orders";
         MaterializedResult result = computeActual("EXPLAIN (FORMAT GRAPHVIZ) " + query);
-        assertEquals(getOnlyElement(result.getOnlyColumnAsSet()), getGraphvizExplainPlan(query, LOGICAL));
+        assertEquals(getOnlyElement(result.getOnlyColumnAsSet()), getGraphvizExplainPlan(query, DISTRIBUTED));
     }
 
     @Test
@@ -3370,6 +3413,17 @@ public abstract class AbstractTestEngineOnlyQueries
         String query = "SELECT * FROM orders";
         MaterializedResult result = computeActual("EXPLAIN (TYPE LOGICAL) " + query);
         assertEquals(getOnlyElement(result.getOnlyColumnAsSet()), getExplainPlan(query, LOGICAL));
+    }
+
+    @Test
+    public void testExplainJoinDistribution()
+    {
+        //  This test makes sure that the query plan includes the distribution info for joins.
+        //  The webui live plan displays the distribution type for joins, and the plan details
+        //  need to be structured like 'Distribution: <type>' for this feature to work.
+
+        MaterializedResult result = computeActual("EXPLAIN (FORMAT TEXT) SELECT c.custkey FROM customer c JOIN nation n ON n.nationkey = c.nationkey");
+        assertThat((String) result.getOnlyValue()).matches("(?s).*Distribution:.*");
     }
 
     @Test
@@ -3425,7 +3479,7 @@ public abstract class AbstractTestEngineOnlyQueries
     {
         String query = "EXPLAIN SELECT * FROM orders";
         MaterializedResult result = computeActual("EXPLAIN " + query);
-        assertEquals(getOnlyElement(result.getOnlyColumnAsSet()), getExplainPlan(query, LOGICAL));
+        assertEquals(getOnlyElement(result.getOnlyColumnAsSet()), getExplainPlan(query, DISTRIBUTED));
     }
 
     @Test
@@ -3433,7 +3487,7 @@ public abstract class AbstractTestEngineOnlyQueries
     {
         String query = "EXPLAIN ANALYZE SELECT * FROM orders";
         MaterializedResult result = computeActual("EXPLAIN " + query);
-        assertEquals(getOnlyElement(result.getOnlyColumnAsSet()), getExplainPlan(query, LOGICAL));
+        assertEquals(getOnlyElement(result.getOnlyColumnAsSet()), getExplainPlan(query, DISTRIBUTED));
     }
 
     @Test
@@ -3452,6 +3506,12 @@ public abstract class AbstractTestEngineOnlyQueries
         assertExplainDdl("START TRANSACTION");
         assertExplainDdl("COMMIT");
         assertExplainDdl("ROLLBACK");
+    }
+
+    @Test
+    public void testExplainAnalyzeDDL()
+    {
+        assertQueryFails("EXPLAIN ANALYZE DROP TABLE orders", "EXPLAIN ANALYZE doesn't support statement type: DropTable");
     }
 
     private void assertExplainDdl(String query)

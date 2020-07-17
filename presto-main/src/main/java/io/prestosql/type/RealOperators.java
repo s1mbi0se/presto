@@ -35,7 +35,6 @@ import static io.airlift.slice.Slices.utf8Slice;
 import static io.prestosql.spi.StandardErrorCode.INVALID_CAST_ARGUMENT;
 import static io.prestosql.spi.StandardErrorCode.NUMERIC_VALUE_OUT_OF_RANGE;
 import static io.prestosql.spi.function.OperatorType.ADD;
-import static io.prestosql.spi.function.OperatorType.BETWEEN;
 import static io.prestosql.spi.function.OperatorType.CAST;
 import static io.prestosql.spi.function.OperatorType.DIVIDE;
 import static io.prestosql.spi.function.OperatorType.EQUAL;
@@ -162,26 +161,26 @@ public final class RealOperators
         return intBitsToFloat((int) left) >= intBitsToFloat((int) right);
     }
 
-    @ScalarOperator(BETWEEN)
-    @SqlType(StandardTypes.BOOLEAN)
-    public static boolean between(@SqlType(StandardTypes.REAL) long value, @SqlType(StandardTypes.REAL) long min, @SqlType(StandardTypes.REAL) long max)
-    {
-        return intBitsToFloat((int) min) <= intBitsToFloat((int) value) &&
-                intBitsToFloat((int) value) <= intBitsToFloat((int) max);
-    }
-
     @ScalarOperator(HASH_CODE)
     @SqlType(StandardTypes.BIGINT)
     public static long hashCode(@SqlType(StandardTypes.REAL) long value)
     {
-        return AbstractIntType.hash(floatToIntBits(intBitsToFloat((int) value)));
+        float realValue = intBitsToFloat((int) value);
+        if (realValue == 0) {
+            realValue = 0;
+        }
+        return AbstractIntType.hash(floatToIntBits(realValue));
     }
 
     @ScalarOperator(XX_HASH_64)
     @SqlType(StandardTypes.BIGINT)
     public static long xxHash64(@SqlType(StandardTypes.REAL) long value)
     {
-        return XxHash64.hash(floatToIntBits(intBitsToFloat((int) value)));
+        float realValue = intBitsToFloat((int) value);
+        if (realValue == 0) {
+            realValue = 0;
+        }
+        return XxHash64.hash(floatToIntBits(realValue));
     }
 
     @ScalarOperator(CAST)

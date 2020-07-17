@@ -45,6 +45,11 @@ String Functions
     This function provides the same functionality as the
     SQL-standard concatenation operator (``||``).
 
+.. function:: format(format, args...) -> varchar
+    :noindex:
+
+    See :func:`format`.
+
 .. function:: hamming_distance(string1, string2) -> bigint
 
     Returns the Hamming distance of ``string1`` and ``string2``,
@@ -75,6 +80,16 @@ String Functions
 .. function:: ltrim(string) -> varchar
 
     Removes leading whitespace from ``string``.
+
+.. function:: position(substring IN string) -> bigint
+
+    Returns the starting position of the first instance of ``substring`` in
+    ``string``. Positions start with ``1``. If not found, ``0`` is returned.
+
+    .. note::
+
+        This SQL-standard function has special syntax and uses the
+        ``IN`` keyword for the arguments. See also :func:`strpos`.
 
 .. function:: replace(string, search) -> varchar
 
@@ -139,16 +154,15 @@ String Functions
     When ``instance`` is a negative number the search will start from the end of ``string``.
     Positions start with ``1``. If not found, ``0`` is returned.
 
-.. function:: position(substring IN string) -> bigint
-
-    Returns the starting position of the first instance of ``substring`` in
-    ``string``. Positions start with ``1``. If not found, ``0`` is returned.
-
 .. function:: starts_with(string, substring) -> boolean
 
     Tests whether ``substring`` is a prefix of ``string``.
 
 .. function:: substr(string, start) -> varchar
+
+    This is an alias for :func:`substring`.
+
+.. function:: substring(string, start) -> varchar
 
     Returns the rest of ``string`` from the starting position ``start``.
     Positions start with ``1``. A negative starting position is interpreted
@@ -156,9 +170,35 @@ String Functions
 
 .. function:: substr(string, start, length) -> varchar
 
+    This is an alias for :func:`substring`.
+
+.. function:: substring(string, start, length) -> varchar
+
     Returns a substring from ``string`` of length ``length`` from the starting
     position ``start``. Positions start with ``1``. A negative starting
     position is interpreted as being relative to the end of the string.
+
+.. function:: translate(source, from, to) -> varchar
+
+   Returns the ``source`` string translated by replacing characters found in the
+   ``from`` string with the corresponding characters in the ``to`` string.  If the ``from``
+   string contains duplicates, only the first is used.  If the ``source`` character
+   does not exist in the ``from`` string, the ``source`` character will be copied
+   without translation.  If the index of the matching character in the ``from``
+   string is beyond the length of the ``to`` string, the ``source`` character will
+   be omitted from the resulting string.
+
+   Here are some examples illustrating the translate function::
+
+       SELECT translate('abcd', '', ''); -- 'abcd'
+       SELECT translate('abcd', 'a', 'z'); -- 'zbcd'
+       SELECT translate('abcda', 'a', 'z'); -- 'zbcdz'
+       SELECT translate('Palhoça', 'ç','c'); -- 'Palhoca'
+       SELECT translate('abcd', 'b', U&'\+01F600'); -- a😀cd
+       SELECT translate('abcd', 'a', ''); -- 'bcd'
+       SELECT translate('abcd', 'a', 'zy'); -- 'zbcd'
+       SELECT translate('abcd', 'ac', 'z'); -- 'zbd'
+       SELECT translate('abcd', 'aac', 'zq'); -- 'zbd'
 
 .. function:: trim(string) -> varchar
 

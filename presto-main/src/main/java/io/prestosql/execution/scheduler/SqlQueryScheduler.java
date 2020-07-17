@@ -26,7 +26,6 @@ import io.airlift.units.Duration;
 import io.prestosql.Session;
 import io.prestosql.connector.CatalogName;
 import io.prestosql.execution.BasicStageStats;
-import io.prestosql.execution.LocationFactory;
 import io.prestosql.execution.NodeTaskMap;
 import io.prestosql.execution.QueryState;
 import io.prestosql.execution.QueryStateMachine;
@@ -41,6 +40,7 @@ import io.prestosql.execution.buffer.OutputBuffers;
 import io.prestosql.execution.buffer.OutputBuffers.OutputBufferId;
 import io.prestosql.failuredetector.FailureDetector;
 import io.prestosql.metadata.InternalNode;
+import io.prestosql.server.DynamicFilterService.StageDynamicFilters;
 import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.connector.ConnectorPartitionHandle;
 import io.prestosql.split.SplitSource;
@@ -124,7 +124,6 @@ public class SqlQueryScheduler
 
     public static SqlQueryScheduler createSqlQueryScheduler(
             QueryStateMachine queryStateMachine,
-            LocationFactory locationFactory,
             StageExecutionPlan plan,
             NodePartitioningManager nodePartitioningManager,
             NodeScheduler nodeScheduler,
@@ -142,7 +141,6 @@ public class SqlQueryScheduler
     {
         SqlQueryScheduler sqlQueryScheduler = new SqlQueryScheduler(
                 queryStateMachine,
-                locationFactory,
                 plan,
                 nodePartitioningManager,
                 nodeScheduler,
@@ -163,7 +161,6 @@ public class SqlQueryScheduler
 
     private SqlQueryScheduler(
             QueryStateMachine queryStateMachine,
-            LocationFactory locationFactory,
             StageExecutionPlan plan,
             NodePartitioningManager nodePartitioningManager,
             NodeScheduler nodeScheduler,
@@ -474,6 +471,13 @@ public class SqlQueryScheduler
         return buildStageInfo(rootStageId, stageInfos);
     }
 
+    public List<StageDynamicFilters> getStageDynamicFilters()
+    {
+        return stages.values().stream()
+                .map(SqlStageExecution::getStageDynamicFilters)
+                .collect(toImmutableList());
+    }
+
     private StageInfo buildStageInfo(StageId stageId, Map<StageId, StageInfo> stageInfos)
     {
         StageInfo parent = stageInfos.get(stageId);
@@ -699,27 +703,7 @@ public class SqlQueryScheduler
 
         public void processScheduleResults(StageState newState, Set<RemoteTask> newTasks)
         {
-            boolean noMoreTasks = false;
-            switch (newState) {
-                case PLANNED:
-                case SCHEDULING:
-                    // workers are still being added to the query
-                    break;
-                case SCHEDULING_SPLITS:
-                case SCHEDULED:
-                case RUNNING:
-                case FINISHED:
-                case CANCELED:
-                    // no more workers will be added to the query
-                    noMoreTasks = true;
-                case ABORTED:
-                case FAILED:
-                    // DO NOT complete a FAILED or ABORTED stage.  This will cause the
-                    // stage above to finish normally, which will result in a query
-                    // completing successfully when it should fail..
-                    break;
-            }
-
+            boolean noMoreTasks = !newState.canScheduleMoreTasks();
             // Add an exchange location to the parent stage for each new task
             parent.addExchangeLocations(currentStageFragmentId, newTasks, noMoreTasks);
 

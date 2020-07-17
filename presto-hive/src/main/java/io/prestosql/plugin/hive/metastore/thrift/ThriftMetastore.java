@@ -98,6 +98,8 @@ public interface ThriftMetastore
 
     void revokeRoles(Set<String> roles, Set<HivePrincipal> grantees, boolean adminOption, HivePrincipal grantor);
 
+    Set<RoleGrant> listGrantedPrincipals(String role);
+
     Set<RoleGrant> listRoleGrants(HivePrincipal principal);
 
     void grantTablePrivileges(String databaseName, String tableName, String tableOwner, HivePrincipal grantee, Set<HivePrivilegeInfo> privileges);
@@ -114,7 +116,7 @@ public interface ThriftMetastore
     default Optional<List<FieldSchema>> getFields(HiveIdentity identity, String databaseName, String tableName)
     {
         Optional<Table> table = getTable(identity, databaseName, tableName);
-        if (!table.isPresent()) {
+        if (table.isEmpty()) {
             throw new TableNotFoundException(new SchemaTableName(databaseName, tableName));
         }
 

@@ -5,12 +5,12 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airbase</artifactId>
-        <version>99</version>
+        <version>101</version>
     </parent>
 
     <groupId>io.prestosql</groupId>
     <artifactId>presto-root</artifactId>
-    <version>333-SNAPSHOT</version>
+    <version>337</version>
     <packaging>pom</packaging>
 
     <name>presto-root</name>
@@ -30,7 +30,7 @@
     <scm>
         <connection>scm:git:git://github.com/prestosql/presto.git</connection>
         <url>https://github.com/prestosql/presto</url>
-        <tag>HEAD</tag>
+        <tag>337</tag>
     </scm>
 
     <properties>
@@ -40,20 +40,22 @@
         <air.check.skip-pmd>true</air.check.skip-pmd>
         <air.check.skip-jacoco>true</air.check.skip-jacoco>
 
-        <air.java.version>1.8.0-161</air.java.version>
-        <air.maven.version>3.3.9</air.maven.version>
+        <project.build.targetJdk>11</project.build.targetJdk>
+        <air.modernizer.java-version>8</air.modernizer.java-version>
 
+        <dep.accumulo.version>1.7.4</dep.accumulo.version>
+        <dep.accumulo-hadoop.version>2.7.7-1</dep.accumulo-hadoop.version>
         <dep.antlr.version>4.7.1</dep.antlr.version>
-        <dep.airlift.version>0.195</dep.airlift.version>
+        <dep.airlift.version>0.198</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
         <dep.aws-sdk.version>1.11.749</dep.aws-sdk.version>
         <dep.okhttp.version>3.9.0</dep.okhttp.version>
         <dep.jdbi3.version>3.4.0</dep.jdbi3.version>
         <dep.drift.version>1.14</dep.drift.version>
-        <dep.tempto.version>174</dep.tempto.version>
+        <dep.tempto.version>179</dep.tempto.version>
         <dep.gcs.version>2.0.0</dep.gcs.version>
-        <dep.errorprone.version>2.3.3</dep.errorprone.version>
-        <rubix.version>0.3.6</rubix.version>
+        <dep.errorprone.version>2.3.4</dep.errorprone.version>
+        <rubix.version>0.3.12</rubix.version>
 
         <!--
           America/Bahia_Banderas has:
@@ -80,11 +82,11 @@
         <module>presto-kafka</module>
         <module>presto-kinesis</module>
         <module>presto-redis</module>
+        <module>presto-accumulo-iterators</module>
         <module>presto-accumulo</module>
         <module>presto-cassandra</module>
         <module>presto-blackhole</module>
         <module>presto-memory</module>
-        <module>presto-noop</module>
         <module>presto-orc</module>
         <module>presto-parquet</module>
         <module>presto-rcfile</module>
@@ -107,6 +109,7 @@
         <module>presto-client</module>
         <module>presto-parser</module>
         <module>presto-main</module>
+        <module>presto-server-main</module>
         <module>presto-ml</module>
         <module>presto-geospatial</module>
         <module>presto-geospatial-toolkit</module>
@@ -133,12 +136,17 @@
         <module>presto-thrift</module>
         <module>presto-matching</module>
         <module>presto-memory-context</module>
+        <module>presto-prometheus</module>
         <module>presto-proxy</module>
         <module>presto-kudu</module>
         <module>presto-elasticsearch</module>
         <module>presto-iceberg</module>
         <module>presto-google-sheets</module>
+        <module>presto-connectors/presto-shannondb</module>
         <module>presto-bigquery</module>
+        <module>presto-pinot</module>
+        <module>presto-oracle</module>
+        <module>presto-druid</module>
     </modules>
 
     <dependencyManagement>
@@ -209,6 +217,12 @@
             <dependency>
                 <groupId>io.prestosql</groupId>
                 <artifactId>presto-orc</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.prestosql.simbiose.presto-shannondb</groupId>
+                <artifactId>ppresto-shannondb</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -289,12 +303,6 @@
             <dependency>
                 <groupId>io.prestosql</groupId>
                 <artifactId>presto-memory</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.prestosql</groupId>
-                <artifactId>presto-noop</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -441,7 +449,7 @@
             <dependency>
                 <groupId>io.prestosql.hadoop</groupId>
                 <artifactId>hadoop-apache</artifactId>
-                <version>3.2.0-8</version>
+                <version>3.2.0-9</version>
             </dependency>
 
             <dependency>
@@ -480,6 +488,12 @@
                 <artifactId>presto-thrift</artifactId>
                 <version>${project.version}</version>
                 <type>zip</type>
+            </dependency>
+
+            <dependency>
+                <groupId>io.prestosql</groupId>
+                <artifactId>presto-pinot</artifactId>
+                <version>${project.version}</version>
             </dependency>
 
             <dependency>
@@ -1178,6 +1192,13 @@
                 <version>2.0.1</version>
             </dependency>
 
+            <!-- TODO: move this to Airbase -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-cbor</artifactId>
+                <version>${dep.jackson.version}</version>
+            </dependency>
+
             <!-- force newer version to be used for dependencies -->
             <dependency>
                 <groupId>org.javassist</groupId>
@@ -1189,12 +1210,6 @@
                 <groupId>com.google.errorprone</groupId>
                 <artifactId>error_prone_annotations</artifactId>
                 <version>${dep.errorprone.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.checkerframework</groupId>
-                <artifactId>checker-qual</artifactId>
-                <version>2.8.2</version>
             </dependency>
 
             <dependency>
@@ -1235,7 +1250,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-shade-plugin</artifactId>
-                    <version>3.1.1</version>
+                    <version>3.2.1</version>
                 </plugin>
 
                 <plugin>
@@ -1342,7 +1357,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <includes>
+                        <!-- Tests classes should start with "Test", but we do also want to include tests incorrectly named, with "Test" at the end -->
                         <include>**/Test*.java</include>
+                        <include>**/*Test.java</include>
                         <include>**/Benchmark*.java</include>
                     </includes>
                     <excludes>
@@ -1411,7 +1428,7 @@
                             <compilerArgs>
                                 <arg>-XDcompilePolicy=simple</arg>
                                 <!-- TODO enable more checks, i.e. remove "-XepDisableAllChecks" -->
-                                <arg>-Xplugin:ErrorProne -XepExcludedPaths:.*/target/generated-(|test-)sources/.* -XepDisableAllChecks -Xep:MissingOverride:ERROR -Xep:ClassCanBeStatic:ERROR -Xep:ArrayToString:ERROR -Xep:GetClassOnClass:ERROR</arg>
+                                <arg>-Xplugin:ErrorProne -XepExcludedPaths:.*/target/generated-(|test-)sources/.* -XepDisableAllChecks -Xep:MissingOverride:ERROR -Xep:ClassCanBeStatic:ERROR -Xep:ArrayToString:ERROR -Xep:GetClassOnClass:ERROR -Xep:EqualsIncompatibleType:ERROR</arg>
                             </compilerArgs>
                             <annotationProcessorPaths>
                                 <path>

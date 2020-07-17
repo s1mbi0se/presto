@@ -1,4 +1,3 @@
-package io.prestosql.operator.scalar;
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,6 +11,7 @@ package io.prestosql.operator.scalar;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.prestosql.operator.scalar;
 
 import com.google.common.collect.ImmutableList;
 import io.prestosql.metadata.BoundVariables;
@@ -65,13 +65,14 @@ public class RowDistinctFromOperator
         Type type = boundVariables.getTypeVariable("T");
         for (Type parameterType : type.getTypeParameters()) {
             ResolvedFunction resolvedFunction = metadata.resolveOperator(IS_DISTINCT_FROM, ImmutableList.of(parameterType, parameterType));
-            FunctionInvoker functionInvoker = metadata.getFunctionInvokerProvider().createFunctionInvoker(
+            FunctionInvoker functionInvoker = metadata.getScalarFunctionInvoker(
                     resolvedFunction,
                     Optional.of(new InvocationConvention(
                             ImmutableList.of(NULL_FLAG, NULL_FLAG),
                             InvocationConvention.InvocationReturnConvention.FAIL_ON_NULL,
+                            false,
                             false)));
-            argumentMethods.add(functionInvoker.methodHandle());
+            argumentMethods.add(functionInvoker.getMethodHandle());
         }
         return new ScalarFunctionImplementation(
                 ImmutableList.of(

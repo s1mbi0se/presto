@@ -25,6 +25,7 @@ import io.prestosql.spi.connector.SchemaTableName;
 import io.prestosql.spi.type.ArrayType;
 import io.prestosql.spi.type.CharType;
 import io.prestosql.spi.type.DecimalType;
+import io.prestosql.spi.type.TimestampType;
 import io.prestosql.spi.type.Type;
 import io.prestosql.spi.type.VarcharType;
 import io.prestosql.tpch.TpchTable;
@@ -73,11 +74,11 @@ import static io.prestosql.spi.type.RealType.REAL;
 import static io.prestosql.spi.type.SmallintType.SMALLINT;
 import static io.prestosql.spi.type.TimeType.TIME;
 import static io.prestosql.spi.type.TimeWithTimeZoneType.TIME_WITH_TIME_ZONE;
-import static io.prestosql.spi.type.TimestampType.TIMESTAMP;
 import static io.prestosql.spi.type.TimestampWithTimeZoneType.TIMESTAMP_WITH_TIME_ZONE;
 import static io.prestosql.spi.type.TinyintType.TINYINT;
 import static io.prestosql.spi.type.VarbinaryType.VARBINARY;
 import static io.prestosql.spi.type.Varchars.isVarcharType;
+import static io.prestosql.tpch.TpchTable.CUSTOMER;
 import static io.prestosql.tpch.TpchTable.LINE_ITEM;
 import static io.prestosql.tpch.TpchTable.NATION;
 import static io.prestosql.tpch.TpchTable.ORDERS;
@@ -161,6 +162,19 @@ public class H2QueryRunner
                 "  comment VARCHAR(23) NOT NULL\n" +
                 ")");
         insertRows(tpchMetadata, PART);
+
+        handle.execute("CREATE TABLE customer (\n" +
+                "  custkey BIGINT NOT NULL,\n" +
+                "  name VARCHAR(25) NOT NULL,\n" +
+                "  address VARCHAR(40) NOT NULL,\n" +
+                "  nationkey BIGINT NOT NULL,\n" +
+                "  phone VARCHAR(15) NOT NULL,\n" +
+                "  acctbal DOUBLE NOT NULL,\n" +
+                "  mktsegment VARCHAR(10) NOT NULL,\n" +
+                "  comment VARCHAR(117) NOT NULL,\n" +
+                "  PRIMARY KEY (custkey)" +
+                ")");
+        insertRows(tpchMetadata, CUSTOMER);
     }
 
     private void insertRows(TpchMetadata tpchMetadata, TpchTable<?> tpchTable)
@@ -323,7 +337,7 @@ public class H2QueryRunner
                     else if (TIME_WITH_TIME_ZONE.equals(type)) {
                         throw new UnsupportedOperationException("H2 does not support TIME WITH TIME ZONE");
                     }
-                    else if (TIMESTAMP.equals(type)) {
+                    else if (type instanceof TimestampType) {
                         // resultSet.getTimestamp(i) doesn't work if JVM's zone had forward offset at the date/time being retrieved
                         LocalDateTime timestampValue;
                         try {

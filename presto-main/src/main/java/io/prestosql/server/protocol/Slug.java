@@ -22,13 +22,21 @@ import static java.util.Objects.requireNonNull;
 
 public final class Slug
 {
-    public enum Context {
+    public enum Context
+    {
         QUEUED_QUERY,
         EXECUTING_QUERY,
     }
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
+    /**
+     * Instantiates a new Slug object.
+     * <p>
+     * A slug object is a one-time security token protecting query results from other users.
+     *
+     * @return a {@link Slug} object
+     */
     public static Slug createNew()
     {
         byte[] randomBytes = new byte[16];
@@ -43,6 +51,15 @@ public final class Slug
         this.hmac = Hashing.hmacSha1(requireNonNull(slugKey, "slugKey is null"));
     }
 
+    /**
+     * Computes a hash code based on the data that have been provided
+     * and turns it into a string slug.
+     *
+     * @param context fixed set of constants
+     * @param token generated token
+     *
+     * @return a slug as a string.
+     */
     public String makeSlug(Context context, long token)
     {
         // "y" is an arbitrary prefix distinguishing this slug version. Added for troubleshooting purposes.

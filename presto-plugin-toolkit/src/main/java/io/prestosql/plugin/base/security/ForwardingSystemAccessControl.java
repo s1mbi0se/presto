@@ -18,6 +18,7 @@ import io.prestosql.spi.connector.CatalogSchemaRoutineName;
 import io.prestosql.spi.connector.CatalogSchemaTableName;
 import io.prestosql.spi.connector.ColumnMetadata;
 import io.prestosql.spi.connector.SchemaTableName;
+import io.prestosql.spi.eventlistener.EventListener;
 import io.prestosql.spi.security.PrestoPrincipal;
 import io.prestosql.spi.security.Privilege;
 import io.prestosql.spi.security.SystemAccessControl;
@@ -61,6 +62,18 @@ public abstract class ForwardingSystemAccessControl
     public void checkCanSetUser(Optional<Principal> principal, String userName)
     {
         delegate().checkCanSetUser(principal, userName);
+    }
+
+    @Override
+    public void checkCanReadSystemInformation(SystemSecurityContext context)
+    {
+        delegate().checkCanReadSystemInformation(context);
+    }
+
+    @Override
+    public void checkCanWriteSystemInformation(SystemSecurityContext context)
+    {
+        delegate().checkCanWriteSystemInformation(context);
     }
 
     @Override
@@ -139,6 +152,12 @@ public abstract class ForwardingSystemAccessControl
     public Set<String> filterSchemas(SystemSecurityContext context, String catalogName, Set<String> schemaNames)
     {
         return delegate().filterSchemas(context, catalogName, schemaNames);
+    }
+
+    @Override
+    public void checkCanShowCreateSchema(SystemSecurityContext context, CatalogSchemaName schemaName)
+    {
+        delegate().checkCanShowCreateSchema(context, schemaName);
     }
 
     @Override
@@ -295,6 +314,12 @@ public abstract class ForwardingSystemAccessControl
     public void checkCanExecuteFunction(SystemSecurityContext systemSecurityContext, String functionName)
     {
         delegate().checkCanExecuteFunction(systemSecurityContext, functionName);
+    }
+
+    @Override
+    public Iterable<EventListener> getEventListeners()
+    {
+        return delegate().getEventListeners();
     }
 
     @Override

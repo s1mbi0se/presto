@@ -51,6 +51,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -119,6 +120,7 @@ public class OrcRecordReader
     public OrcRecordReader(
             List<OrcColumn> readColumns,
             List<Type> readTypes,
+            List<OrcReader.ProjectedLayout> readLayouts,
             OrcPredicate predicate,
             long numberOfRows,
             List<StripeInformation> fileStripes,
@@ -129,7 +131,7 @@ public class OrcRecordReader
             long splitLength,
             ColumnMetadata<OrcType> orcTypes,
             Optional<OrcDecompressor> decompressor,
-            int rowsInRowGroup,
+            OptionalInt rowsInRowGroup,
             DateTimeZone hiveStorageTimeZone,
             HiveWriterVersion hiveWriterVersion,
             MetadataReader metadataReader,
@@ -145,6 +147,8 @@ public class OrcRecordReader
         checkArgument(readColumns.stream().distinct().count() == readColumns.size(), "readColumns contains duplicate entries");
         requireNonNull(readTypes, "readTypes is null");
         checkArgument(readColumns.size() == readTypes.size(), "readColumns and readTypes must have the same size");
+        requireNonNull(readLayouts, "readLayouts is null");
+        checkArgument(readColumns.size() == readLayouts.size(), "readColumns and readLayouts must have the same size");
         requireNonNull(predicate, "predicate is null");
         requireNonNull(fileStripes, "fileStripes is null");
         requireNonNull(stripeStats, "stripeStats is null");
@@ -167,9 +171,6 @@ public class OrcRecordReader
         requireNonNull(options, "options is null");
         this.maxBlockBytes = options.getMaxBlockSize().toBytes();
 
-        // it is possible that old versions of orc use 0 to mean there are no row groups
-        checkArgument(rowsInRowGroup > 0, "rowsInRowGroup must be greater than zero");
-
         // sort stripes by file position
         List<StripeInfo> stripeInfos = new ArrayList<>();
         for (int i = 0; i < fileStripes.size(); i++) {
@@ -186,7 +187,7 @@ public class OrcRecordReader
         long fileRowCount = 0;
         ImmutableList.Builder<StripeInformation> stripes = ImmutableList.builder();
         ImmutableList.Builder<Long> stripeFilePositions = ImmutableList.builder();
-        if (!fileStats.isPresent() || predicate.matches(numberOfRows, fileStats.get())) {
+        if (fileStats.isEmpty() || predicate.matches(numberOfRows, fileStats.get())) {
             // select stripes that start within the specified split
             for (StripeInfo info : stripeInfos) {
                 StripeInformation stripe = info.getStripe();
@@ -233,7 +234,7 @@ public class OrcRecordReader
                 metadataReader,
                 writeValidation);
 
-        columnReaders = createColumnReaders(readColumns, readTypes, streamReadersSystemMemoryContext, blockFactory);
+        columnReaders = createColumnReaders(readColumns, readTypes, readLayouts, streamReadersSystemMemoryContext, blockFactory);
         currentBytesPerCell = new long[columnReaders.length];
         maxBytesPerCell = new long[columnReaders.length];
         nextBatchSize = initialBatchSize;
@@ -545,16 +546,17 @@ public class OrcRecordReader
     private ColumnReader[] createColumnReaders(
             List<OrcColumn> columns,
             List<Type> readTypes,
+            List<OrcReader.ProjectedLayout> readLayouts,
             AggregatedMemoryContext systemMemoryContext,
             OrcBlockFactory blockFactory)
             throws OrcCorruptionException
     {
         ColumnReader[] columnReaders = new ColumnReader[columns.size()];
-        for (int i = 0; i < columns.size(); i++) {
-            int columnIndex = i;
+        for (int columnIndex = 0; columnIndex < columns.size(); columnIndex++) {
             Type readType = readTypes.get(columnIndex);
             OrcColumn column = columns.get(columnIndex);
-            columnReaders[columnIndex] = createColumnReader(readType, column, systemMemoryContext, blockFactory);
+            OrcReader.ProjectedLayout projectedLayout = readLayouts.get(columnIndex);
+            columnReaders[columnIndex] = createColumnReader(readType, column, projectedLayout, systemMemoryContext, blockFactory);
         }
         return columnReaders;
     }

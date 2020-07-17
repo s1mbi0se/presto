@@ -59,7 +59,7 @@ public class TestHiveConfig
                 .setHiveCompressionCodec(HiveCompressionCodec.GZIP)
                 .setRespectTableFormat(true)
                 .setImmutablePartitions(false)
-                .setCreateEmptyBucketFiles(true)
+                .setCreateEmptyBucketFiles(false)
                 .setSortedWritingEnabled(true)
                 .setMaxPartitionsPerWriter(100)
                 .setMaxOpenSortFiles(50)
@@ -93,7 +93,8 @@ public class TestHiveConfig
                 .setHiveTransactionHeartbeatThreads(5)
                 .setAllowRegisterPartition(false)
                 .setQueryPartitionFilterRequired(false)
-                .setPartitionUseColumnNames(false));
+                .setPartitionUseColumnNames(false)
+                .setProjectionPushdownEnabled(true));
     }
 
     @Test
@@ -122,7 +123,7 @@ public class TestHiveConfig
                 .put("hive.compression-codec", "NONE")
                 .put("hive.respect-table-format", "false")
                 .put("hive.immutable-partitions", "true")
-                .put("hive.create-empty-bucket-files", "false")
+                .put("hive.create-empty-bucket-files", "true")
                 .put("hive.max-partitions-per-writers", "222")
                 .put("hive.max-open-sort-files", "333")
                 .put("hive.write-validation-threads", "11")
@@ -160,6 +161,7 @@ public class TestHiveConfig
                 .put("hive.allow-register-partition-procedure", "true")
                 .put("hive.query-partition-filter-required", "true")
                 .put("hive.partition-use-column-names", "true")
+                .put("hive.projection-pushdown-enabled", "false")
                 .build();
 
         HiveConfig expected = new HiveConfig()
@@ -188,7 +190,7 @@ public class TestHiveConfig
                 .setHiveCompressionCodec(HiveCompressionCodec.NONE)
                 .setRespectTableFormat(false)
                 .setImmutablePartitions(true)
-                .setCreateEmptyBucketFiles(false)
+                .setCreateEmptyBucketFiles(true)
                 .setMaxPartitionsPerWriter(222)
                 .setMaxOpenSortFiles(333)
                 .setWriteValidationThreads(11)
@@ -222,7 +224,8 @@ public class TestHiveConfig
                 .setHiveTransactionHeartbeatThreads(10)
                 .setAllowRegisterPartition(true)
                 .setQueryPartitionFilterRequired(true)
-                .setPartitionUseColumnNames(true);
+                .setPartitionUseColumnNames(true)
+                .setProjectionPushdownEnabled(false);
 
         assertFullMapping(properties, expected);
     }

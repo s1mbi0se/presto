@@ -20,6 +20,7 @@ import io.prestosql.matching.Captures;
 import io.prestosql.matching.Pattern;
 import io.prestosql.metadata.Metadata;
 import io.prestosql.metadata.TableHandle;
+import io.prestosql.spi.connector.Assignment;
 import io.prestosql.spi.connector.ColumnHandle;
 import io.prestosql.spi.connector.ProjectionApplicationResult;
 import io.prestosql.spi.expression.ConnectorExpression;
@@ -106,7 +107,7 @@ public class PushProjectionIntoTableScan
 
         Optional<ProjectionApplicationResult<TableHandle>> result = metadata.applyProjection(context.getSession(), tableScan.getTable(), connectorPartialProjections, assignments);
 
-        if (!result.isPresent()) {
+        if (result.isEmpty()) {
             return Result.empty();
         }
 
@@ -119,7 +120,7 @@ public class PushProjectionIntoTableScan
         List<Symbol> newScanOutputs = new ArrayList<>();
         Map<Symbol, ColumnHandle> newScanAssignments = new HashMap<>();
         Map<String, Symbol> variableMappings = new HashMap<>();
-        for (ProjectionApplicationResult.Assignment assignment : result.get().getAssignments()) {
+        for (Assignment assignment : result.get().getAssignments()) {
             Symbol symbol = context.getSymbolAllocator().newSymbol(assignment.getVariable(), assignment.getType());
 
             newScanOutputs.add(symbol);

@@ -26,6 +26,10 @@ public final class DateTimeEncoding
 
     private static long pack(long millisUtc, short timeZoneKey)
     {
+        if (millisUtc << MILLIS_SHIFT >> MILLIS_SHIFT != millisUtc) {
+            throw new IllegalArgumentException("Millis overflow: " + millisUtc);
+        }
+
         return (millisUtc << MILLIS_SHIFT) | (timeZoneKey & TIME_ZONE_MASK);
     }
 
@@ -43,6 +47,11 @@ public final class DateTimeEncoding
     {
         requireNonNull(timeZoneKey, "timeZoneKey is null");
         return pack(millisUtc, timeZoneKey.getKey());
+    }
+
+    public static long packDateTimeWithZone(long millisUtc, short timeZoneKey)
+    {
+        return pack(millisUtc, timeZoneKey);
     }
 
     public static long unpackMillisUtc(long dateTimeWithTimeZone)

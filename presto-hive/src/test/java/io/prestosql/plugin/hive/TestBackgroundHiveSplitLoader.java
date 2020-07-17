@@ -76,6 +76,7 @@ import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static io.prestosql.plugin.hive.BackgroundHiveSplitLoader.BucketSplitInfo.createBucketSplitInfo;
 import static io.prestosql.plugin.hive.BackgroundHiveSplitLoader.getBucketNumber;
+import static io.prestosql.plugin.hive.BackgroundHiveSplitLoader.hasAttemptId;
 import static io.prestosql.plugin.hive.HiveColumnHandle.createBaseColumn;
 import static io.prestosql.plugin.hive.HiveColumnHandle.pathColumnHandle;
 import static io.prestosql.plugin.hive.HiveStorageFormat.CSV;
@@ -307,18 +308,41 @@ public class TestBackgroundHiveSplitLoader
     @Test
     public void testGetBucketNumber()
     {
+        // legacy Presto naming pattern
+        assertEquals(getBucketNumber("20190526_072952_00009_fn7s5_bucket-00234"), OptionalInt.of(234));
+        assertEquals(getBucketNumber("20190526_072952_00009_fn7s5_bucket-00234.txt"), OptionalInt.of(234));
+        assertEquals(getBucketNumber("20190526_235847_87654_fn7s5_bucket-56789"), OptionalInt.of(56789));
+
+        // Hive
         assertEquals(getBucketNumber("0234_0"), OptionalInt.of(234));
         assertEquals(getBucketNumber("000234_0"), OptionalInt.of(234));
         assertEquals(getBucketNumber("0234_99"), OptionalInt.of(234));
         assertEquals(getBucketNumber("0234_0.txt"), OptionalInt.of(234));
         assertEquals(getBucketNumber("0234_0_copy_1"), OptionalInt.of(234));
-        assertEquals(getBucketNumber("20190526_072952_00009_fn7s5_bucket-00234"), OptionalInt.of(234));
-        assertEquals(getBucketNumber("20190526_072952_00009_fn7s5_bucket-00234.txt"), OptionalInt.of(234));
-        assertEquals(getBucketNumber("20190526_235847_87654_fn7s5_bucket-56789"), OptionalInt.of(56789));
+        // starts with non-zero
+        assertEquals(getBucketNumber("234_99"), OptionalInt.of(234));
+        assertEquals(getBucketNumber("1234_0_copy_1"), OptionalInt.of(1234));
 
-        assertEquals(getBucketNumber("234_99"), OptionalInt.empty());
+        // Hive ACID
+        assertEquals(getBucketNumber("bucket_1234"), OptionalInt.of(1234));
+        assertEquals(getBucketNumber("bucket_01234"), OptionalInt.of(1234));
+
+        // not matching
         assertEquals(getBucketNumber("0234.txt"), OptionalInt.empty());
         assertEquals(getBucketNumber("0234.txt"), OptionalInt.empty());
+    }
+
+    @Test
+    public void testGetAttemptId()
+    {
+        assertFalse(hasAttemptId("bucket_00000"));
+        assertTrue(hasAttemptId("bucket_00000_0"));
+        assertTrue(hasAttemptId("bucket_00000_10"));
+        assertTrue(hasAttemptId("bucket_00000_1000"));
+        assertFalse(hasAttemptId("bucket_00000__1000"));
+        assertFalse(hasAttemptId("bucket_00000_a"));
+        assertFalse(hasAttemptId("bucket_00000_ad"));
+        assertFalse(hasAttemptId("base_00000_00"));
     }
 
     @Test(dataProvider = "testPropagateExceptionDataProvider", timeOut = 60_000)
@@ -351,6 +375,8 @@ public class TestBackgroundHiveSplitLoader
                     }
                 },
                 TupleDomain.all(),
+                TupleDomain::all,
+                TYPE_MANAGER,
                 createBucketSplitInfo(Optional.empty(), Optional.empty()),
                 SESSION,
                 new TestingHdfsEnvironment(TEST_FILES),
@@ -387,6 +413,23 @@ public class TestBackgroundHiveSplitLoader
                 {false, 4},
                 {true, 4},
         };
+    }
+
+    @Test
+    public void testMultipleSplitsPerBucket()
+            throws Exception
+    {
+        BackgroundHiveSplitLoader backgroundHiveSplitLoader = backgroundHiveSplitLoader(
+                ImmutableList.of(locatedFileStatus(new Path(SAMPLE_PATH), DataSize.of(1, GIGABYTE).toBytes())),
+                TupleDomain.all(),
+                Optional.empty(),
+                SIMPLE_TABLE,
+                Optional.of(new HiveBucketHandle(BUCKET_COLUMN_HANDLES, BUCKETING_V1, BUCKET_COUNT, BUCKET_COUNT)));
+
+        HiveSplitSource hiveSplitSource = hiveSplitSource(backgroundHiveSplitLoader);
+        backgroundHiveSplitLoader.start(hiveSplitSource);
+
+        assertEquals(drainSplits(hiveSplitSource).size(), 17);
     }
 
     @Test
@@ -618,6 +661,8 @@ public class TestBackgroundHiveSplitLoader
                 table,
                 hivePartitionMetadatas,
                 compactEffectivePredicate,
+                TupleDomain::all,
+                TYPE_MANAGER,
                 createBucketSplitInfo(bucketHandle, hiveBucketFilter),
                 SESSION,
                 hdfsEnvironment,
@@ -645,6 +690,8 @@ public class TestBackgroundHiveSplitLoader
                 SIMPLE_TABLE,
                 hivePartitionMetadatas,
                 TupleDomain.none(),
+                TupleDomain::all,
+                TYPE_MANAGER,
                 Optional.empty(),
                 connectorSession,
                 new TestingHdfsEnvironment(files),
@@ -666,6 +713,8 @@ public class TestBackgroundHiveSplitLoader
                 SIMPLE_TABLE,
                 createPartitionMetadataWithOfflinePartitions(),
                 TupleDomain.all(),
+                TupleDomain::all,
+                TYPE_MANAGER,
                 createBucketSplitInfo(Optional.empty(), Optional.empty()),
                 connectorSession,
                 new TestingHdfsEnvironment(TEST_FILES),

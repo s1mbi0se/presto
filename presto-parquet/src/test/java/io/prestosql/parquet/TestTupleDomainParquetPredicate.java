@@ -21,6 +21,8 @@ import io.prestosql.parquet.predicate.TupleDomainParquetPredicate;
 import io.prestosql.spi.predicate.Domain;
 import io.prestosql.spi.predicate.TupleDomain;
 import io.prestosql.spi.predicate.ValueSet;
+import io.prestosql.spi.type.DecimalType;
+import io.prestosql.spi.type.TimestampType;
 import io.prestosql.spi.type.Type;
 import io.prestosql.spi.type.VarcharType;
 import org.apache.parquet.column.ColumnDescriptor;
@@ -36,12 +38,17 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Optional;
 
 import static io.airlift.slice.Slices.EMPTY_SLICE;
 import static io.airlift.slice.Slices.utf8Slice;
 import static io.prestosql.parquet.ParquetEncoding.PLAIN_DICTIONARY;
+import static io.prestosql.parquet.ParquetTimestampUtils.JULIAN_EPOCH_OFFSET_DAYS;
 import static io.prestosql.parquet.predicate.TupleDomainParquetPredicate.getDomain;
 import static io.prestosql.spi.predicate.Domain.all;
 import static io.prestosql.spi.predicate.Domain.create;
@@ -52,17 +59,22 @@ import static io.prestosql.spi.predicate.TupleDomain.withColumnDomains;
 import static io.prestosql.spi.type.BigintType.BIGINT;
 import static io.prestosql.spi.type.BooleanType.BOOLEAN;
 import static io.prestosql.spi.type.DateType.DATE;
+import static io.prestosql.spi.type.DecimalType.createDecimalType;
+import static io.prestosql.spi.type.Decimals.encodeScaledValue;
 import static io.prestosql.spi.type.DoubleType.DOUBLE;
 import static io.prestosql.spi.type.IntegerType.INTEGER;
 import static io.prestosql.spi.type.RealType.REAL;
 import static io.prestosql.spi.type.SmallintType.SMALLINT;
+import static io.prestosql.spi.type.TimestampType.createTimestampType;
 import static io.prestosql.spi.type.TinyintType.TINYINT;
 import static io.prestosql.spi.type.VarcharType.createUnboundedVarcharType;
 import static io.prestosql.spi.type.VarcharType.createVarcharType;
 import static java.lang.Float.floatToRawIntBits;
+import static java.lang.Math.toIntExact;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.parquet.column.statistics.Statistics.getStatsBasedOnType;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
@@ -177,6 +189,46 @@ public class TestTupleDomainParquetPredicate
     }
 
     @Test
+    public void testShortDecimal()
+            throws Exception
+    {
+        String column = "ShortDecimalColumn";
+        Type type = createDecimalType(5, 0);
+        assertEquals(getDomain(type, 0, null, ID, column, true), all(type));
+
+        assertEquals(getDomain(type, 10, longColumnStats(100L, 100L), ID, column, true), singleValue(type, 100L));
+
+        assertEquals(getDomain(type, 10, longColumnStats(0L, 100L), ID, column, true), create(ValueSet.ofRanges(range(type, 0L, true, 100L, true)), false));
+        // ignore corrupted statistics
+        assertEquals(getDomain(type, 10, longColumnStats(100L, 0L), ID, column, false), create(ValueSet.all(type), false));
+        // fail on corrupted statistics
+        assertThatExceptionOfType(ParquetCorruptionException.class)
+                .isThrownBy(() -> getDomain(type, 10, longColumnStats(100L, 10L), ID, column, true))
+                .withMessage("Corrupted statistics for column \"ShortDecimalColumn\" in Parquet file \"testFile\": [min: 100, max: 10, num_nulls: 0]");
+    }
+
+    @Test
+    public void testLongDecimal()
+            throws Exception
+    {
+        String column = "LongDecimalColumn";
+        DecimalType type = createDecimalType(20, 0);
+        Slice zero = encodeScaledValue(new BigDecimal("0"), type.getScale());
+        Slice hundred = encodeScaledValue(new BigDecimal("100"), type.getScale());
+        assertEquals(getDomain(type, 0, null, ID, column, true), all(type));
+
+        assertEquals(getDomain(type, 10, longColumnStats(100L, 100L), ID, column, true), singleValue(type, hundred));
+
+        assertEquals(getDomain(type, 10, longColumnStats(0L, 100L), ID, column, true), create(ValueSet.ofRanges(range(type, zero, true, hundred, true)), false));
+        // ignore corrupted statistics
+        assertEquals(getDomain(type, 10, longColumnStats(100L, 0L), ID, column, false), create(ValueSet.all(type), false));
+        // fail on corrupted statistics
+        assertThatExceptionOfType(ParquetCorruptionException.class)
+                .isThrownBy(() -> getDomain(type, 10, longColumnStats(100L, 10L), ID, column, true))
+                .withMessage("Corrupted statistics for column \"LongDecimalColumn\" in Parquet file \"testFile\": [min: 100, max: 10, num_nulls: 0]");
+    }
+
+    @Test
     public void testDouble()
             throws ParquetCorruptionException
     {
@@ -269,6 +321,50 @@ public class TestTupleDomainParquetPredicate
         assertThatExceptionOfType(ParquetCorruptionException.class)
                 .isThrownBy(() -> getDomain(DATE, 10, intColumnStats(200, 100), ID, column, true))
                 .withMessage("Corrupted statistics for column \"DateColumn\" in Parquet file \"testFile\": [min: 200, max: 100, num_nulls: 0]");
+    }
+
+    @Test
+    public void testTimestampMillis()
+            throws ParquetCorruptionException
+    {
+        Instant baseTime = Instant.ofEpochMilli(1592935098L);
+        String column = "timestampColumn";
+        TimestampType timestampType = createTimestampType(3);
+        assertEquals(getDomain(timestampType, 0, null, ID, column, true), all(timestampType));
+        assertEquals(getDomain(timestampType, 10, timestampColumnStats(baseTime, baseTime), ID, column, true), singleValue(timestampType, baseTime.toEpochMilli()));
+        assertEquals(
+                getDomain(timestampType, 10, timestampColumnStats(baseTime.minusSeconds(10), baseTime), ID, column, true),
+                create(ValueSet.ofRanges(range(timestampType, baseTime.minusSeconds(10).toEpochMilli(), true, baseTime.toEpochMilli(), true)), false));
+
+        // ignore corrupted statistics
+        assertEquals(getDomain(timestampType, 10, timestampColumnStats(baseTime.plusSeconds(10), baseTime), ID, column, false), create(ValueSet.all(timestampType), false));
+        // fail on corrupted statistics
+        assertThatExceptionOfType(ParquetCorruptionException.class)
+                .isThrownBy(() -> getDomain(timestampType, 10, timestampColumnStats(baseTime.plusSeconds(10), baseTime), ID, column, true))
+                .withMessageMatching("Corrupted statistics for column \"timestampColumn\" in Parquet file \"testFile\":.*");
+    }
+
+    private static BinaryStatistics timestampColumnStats(Instant minimum, Instant maximum)
+    {
+        BinaryStatistics statistics = new BinaryStatistics();
+        statistics.setMinMax(Binary.fromConstantByteArray(toParquetEncoding(minimum)), Binary.fromConstantByteArray(toParquetEncoding(maximum)));
+        return statistics;
+    }
+
+    private static byte[] toParquetEncoding(Instant timestamp)
+    {
+        long startOfDay = LocalDate.ofInstant(timestamp, ZoneOffset.UTC).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli();
+        long timeOfDayNanos = (long) ((timestamp.toEpochMilli() - startOfDay) * Math.pow(10, 6));
+
+        Slice slice = Slices.allocate(12);
+        slice.setLong(0, timeOfDayNanos);
+        slice.setInt(8, millisToJulianDay(timestamp.toEpochMilli()));
+        return slice.byteArray();
+    }
+
+    private static int millisToJulianDay(long timestamp)
+    {
+        return toIntExact(MILLISECONDS.toDays(timestamp) + JULIAN_EPOCH_OFFSET_DAYS);
     }
 
     @Test

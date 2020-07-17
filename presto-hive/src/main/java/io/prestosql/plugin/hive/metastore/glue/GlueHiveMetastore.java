@@ -458,7 +458,7 @@ public class GlueHiveMetastore
     @Override
     public void createDatabase(HiveIdentity identity, Database database)
     {
-        if (!database.getLocation().isPresent() && defaultDir.isPresent()) {
+        if (database.getLocation().isEmpty() && defaultDir.isPresent()) {
             String databaseLocation = new Path(defaultDir.get(), database.getDatabaseName()).toString();
             database = Database.builder(database)
                     .setLocation(Optional.of(databaseLocation))
@@ -651,7 +651,7 @@ public class GlueHiveMetastore
         verifyCanDropColumn(this, identity, databaseName, tableName, columnName);
         Table oldTable = getExistingTable(identity, databaseName, tableName);
 
-        if (!oldTable.getColumn(columnName).isPresent()) {
+        if (oldTable.getColumn(columnName).isEmpty()) {
             SchemaTableName name = new SchemaTableName(databaseName, tableName);
             throw new ColumnNotFoundException(name, columnName);
         }
@@ -982,6 +982,12 @@ public class GlueHiveMetastore
     public void revokeRoles(Set<String> roles, Set<HivePrincipal> grantees, boolean adminOption, HivePrincipal grantor)
     {
         throw new PrestoException(NOT_SUPPORTED, "revokeRoles is not supported by Glue");
+    }
+
+    @Override
+    public Set<RoleGrant> listGrantedPrincipals(String role)
+    {
+        throw new PrestoException(NOT_SUPPORTED, "listPrincipals is not supported by Glue");
     }
 
     @Override

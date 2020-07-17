@@ -127,7 +127,7 @@ Query Management Properties
     * **Default value:** ``100 days``
     * **Session property:** ``query_max_execution_time``
 
-    The maxiumum allowed time for a query to be actively executing on the
+    The maximum allowed time for a query to be actively executing on the
     cluster, before it is terminated. Compared to the run time below, execution
     time does not include analysis, query planning or wait times in a queue.
 
@@ -138,7 +138,7 @@ Query Management Properties
     * **Default value:** ``100 days``
     * **Session property:** ``query_max_run_time``
 
-    The maxiumum allowed time for a query to be processed on the cluster, before
+    The maximum allowed time for a query to be processed on the cluster, before
     it is terminated. The time includes time for analysis and planning, but also
     time spend in a queue waiting, so essentially this is the time allowed for a
     query to exist since creation.
@@ -825,7 +825,7 @@ Logging Properties
     * **Type:** ``integer``
     * **Default value:** ``15``
 
-    The maxiumum number of log files for the HTTP server to use, before
+    The maximum number of log files for the HTTP server to use, before
     log rotation replaces old content.
 
 ``http-server.log.max-size``
@@ -842,6 +842,16 @@ Web UI Properties
 -----------------
 
 The following properties can be used to configure the :doc:`./web-interface`.
+
+``web-ui.authentication.type``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    * **Type:** ``string``
+    * **Allowed values:** ``form``, ``fixed``, ``certificate``, ``kerberos``, ``jwt``
+    * **Default value:** ``form``
+
+    The authentication mechanism to allow user access to the Web UI. See
+    :ref:`Web UI Authentication <web-ui-authentication>`.
 
 ``web-ui.enabled``
 ^^^^^^^^^^^^^^^^^^
@@ -862,11 +872,21 @@ The following properties can be used to configure the :doc:`./web-interface`.
     a new random value, which in turn invalidates the session of any currently
     logged in Web UI user.
 
-web-ui.session-timeout
-^^^^^^^^^^^^^^^^^^^^^^
+``web-ui.session-timeout``
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     * **Type:** ``duration``
     * **Default value:** ``1 day``
 
     The duration how long a user can be logged into the Web UI, before the
     session times out, which forces an automatic log-out.
+
+``web-ui.user``
+^^^^^^^^^^^^^^^
+
+    * **Type:** ``string``
+    * **Default value:**
+
+    The username automatically used for authentication to the Web UI with the
+    ``fixed`` authentication type. See
+    :ref:`Web UI Authentication <web-ui-authentication>`.

@@ -27,7 +27,7 @@ import java.time.Duration;
 
 import static io.prestosql.tests.product.launcher.env.common.Standard.CONTAINER_PRESTO_ETC;
 import static java.util.Objects.requireNonNull;
-import static org.testcontainers.containers.BindMode.READ_ONLY;
+import static org.testcontainers.utility.MountableFile.forHostPath;
 
 public final class Hadoop
         implements EnvironmentExtender
@@ -39,7 +39,7 @@ public final class Hadoop
     private final PortBinder portBinder;
 
     private final String hadoopBaseImage;
-    private final String imagesVersion;
+    private final String hadoopImagesVersion;
 
     @Inject
     public Hadoop(
@@ -51,7 +51,7 @@ public final class Hadoop
         this.portBinder = requireNonNull(portBinder, "portBinder is null");
         requireNonNull(environmentOptions, "environmentOptions is null");
         hadoopBaseImage = requireNonNull(environmentOptions.hadoopBaseImage, "environmentOptions.hadoopBaseImage is null");
-        imagesVersion = requireNonNull(environmentOptions.imagesVersion, "environmentOptions.imagesVersion is null");
+        hadoopImagesVersion = requireNonNull(environmentOptions.hadoopImagesVersion, "environmentOptions.hadoopImagesVersion is null");
     }
 
     @Override
@@ -59,17 +59,26 @@ public final class Hadoop
     {
         builder.addContainer("hadoop-master", createHadoopMaster());
 
-        builder.configureContainer("presto-master", container -> container
-                .withFileSystemBind(dockerFiles.getDockerFilesHostPath("common/hadoop/hive.properties"), CONTAINER_PRESTO_HIVE_PROPERTIES, READ_ONLY)
-                .withFileSystemBind(dockerFiles.getDockerFilesHostPath("common/hadoop/iceberg.properties"), CONTAINER_PRESTO_ICEBERG_PROPERTIES, READ_ONLY));
+        builder.configureContainer("presto-master", container -> {
+            container
+                    .withCopyFileToContainer(forHostPath(dockerFiles.getDockerFilesHostPath("common/hadoop/hive.properties")), CONTAINER_PRESTO_HIVE_PROPERTIES)
+                    .withCopyFileToContainer(forHostPath(dockerFiles.getDockerFilesHostPath("common/hadoop/iceberg.properties")), CONTAINER_PRESTO_ICEBERG_PROPERTIES);
+
+            if (System.getenv("HADOOP_PRESTO_INIT_SCRIPT") != null) {
+                container
+                        .withCopyFileToContainer(
+                                forHostPath(dockerFiles.getDockerFilesHostPath(System.getenv("HADOOP_PRESTO_INIT_SCRIPT"))),
+                                "/docker/presto-init.d/hadoop-presto-init.sh");
+            }
+        });
     }
 
     @SuppressWarnings("resource")
     private DockerContainer createHadoopMaster()
     {
-        DockerContainer container = new DockerContainer(hadoopBaseImage + ":" + imagesVersion)
+        DockerContainer container = new DockerContainer(hadoopBaseImage + ":" + hadoopImagesVersion)
                 // TODO HIVE_PROXY_PORT:1180
-                .withFileSystemBind(dockerFiles.getDockerFilesHostPath(), "/docker/presto-product-tests", READ_ONLY)
+                .withCopyFileToContainer(forHostPath(dockerFiles.getDockerFilesHostPath()), "/docker/presto-product-tests")
                 .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
                 .waitingFor(new SelectedPortWaitStrategy(10000)) // HiveServer2
                 .withStartupTimeout(Duration.ofMinutes(5));

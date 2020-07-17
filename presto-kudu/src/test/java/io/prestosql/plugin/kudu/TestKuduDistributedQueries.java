@@ -72,28 +72,6 @@ public class TestKuduDistributedQueries
     }
 
     @Override
-    public void testDataMappingSmokeTest(DataMappingTestSetup dataMappingTestSetup)
-    {
-        // TODO Support these test once kudu connector can create tables with default partitions
-    }
-
-    @Override
-    public void testPredicatePushdown()
-    {
-        assertUpdate("CREATE TABLE IF NOT EXISTS test_is_null (" +
-                "id INT WITH (primary_key=true), " +
-                "col_nullable bigint with (nullable=true)" +
-                ") WITH (" +
-                " partition_by_hash_columns = ARRAY['id'], " +
-                " partition_by_hash_buckets = 2" +
-                ")");
-
-        assertUpdate("INSERT INTO test_is_null VALUES (1, 1)", 1);
-        assertUpdate("INSERT INTO test_is_null(id) VALUES (2)", 1);
-        assertQuery("SELECT id FROM test_is_null WHERE col_nullable = 1 OR col_nullable IS NULL", "VALUES (1), (2)");
-    }
-
-    @Override
     public void testAddColumn()
     {
         // TODO Support these test once kudu connector can create tables with default partitions
@@ -153,5 +131,31 @@ public class TestKuduDistributedQueries
     public void testWrittenStats()
     {
         // TODO Kudu connector supports CTAS and inserts, but the test would fail
+    }
+
+    @Override
+    public void testColumnName(String columnName)
+    {
+        // TODO (https://github.com/prestosql/presto/issues/3477) enable the test
+        throw new SkipException("TODO");
+    }
+
+    @Override
+    protected Optional<DataMappingTestSetup> filterDataMappingSmokeTestData(DataMappingTestSetup dataMappingTestSetup)
+    {
+        String typeName = dataMappingTestSetup.getPrestoTypeName();
+        if (typeName.equals("time")
+                || typeName.equals("timestamp(3) with time zone")) {
+            return Optional.of(dataMappingTestSetup.asUnsupported());
+        }
+
+        if (typeName.equals("date") // date gets stored as varchar
+                || typeName.equals("varbinary") // TODO (https://github.com/prestosql/presto/issues/3416)
+                || (typeName.startsWith("char") && dataMappingTestSetup.getSampleValueLiteral().contains(" "))) { // TODO: https://github.com/prestosql/presto/issues/3597
+            // TODO this should either work or fail cleanly
+            return Optional.empty();
+        }
+
+        return Optional.of(dataMappingTestSetup);
     }
 }

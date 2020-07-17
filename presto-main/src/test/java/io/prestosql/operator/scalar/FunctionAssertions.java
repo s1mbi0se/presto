@@ -259,7 +259,7 @@ public final class FunctionAssertions
         tryEvaluate(expression, expectedType, session);
     }
 
-    private void tryEvaluate(String expression, Type expectedType, Session session)
+    public void tryEvaluate(String expression, Type expectedType, Session session)
     {
         selectUniqueValue(expression, expectedType, session, compiler);
     }
@@ -679,7 +679,7 @@ public final class FunctionAssertions
     private static boolean needsBoundValue(Expression projectionExpression)
     {
         final AtomicBoolean hasSymbolReferences = new AtomicBoolean();
-        new DefaultTraversalVisitor<Void, Void>()
+        new DefaultTraversalVisitor<Void>()
         {
             @Override
             protected Void visitSymbolReference(SymbolReference node, Void context)

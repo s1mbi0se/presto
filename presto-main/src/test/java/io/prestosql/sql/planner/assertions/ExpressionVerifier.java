@@ -43,6 +43,7 @@ import io.prestosql.sql.tree.Row;
 import io.prestosql.sql.tree.SearchedCaseExpression;
 import io.prestosql.sql.tree.SimpleCaseExpression;
 import io.prestosql.sql.tree.StringLiteral;
+import io.prestosql.sql.tree.SubscriptExpression;
 import io.prestosql.sql.tree.SymbolReference;
 import io.prestosql.sql.tree.TryExpression;
 import io.prestosql.sql.tree.WhenClause;
@@ -102,7 +103,8 @@ public final class ExpressionVerifier
             return false;
         }
 
-        return getValueFromLiteral(actual).equals(getValueFromLiteral(expectedExpression));
+        return getValueFromLiteral(actual).equals(getValueFromLiteral(expectedExpression)) &&
+                actual.getType().equals(((GenericLiteral) expectedExpression).getType());
     }
 
     @Override
@@ -543,6 +545,17 @@ public final class ExpressionVerifier
         return process(actual.getValue(), expected.getValue())
                 && process(actual.getPattern(), expected.getPattern())
                 && process(actual.getEscape(), expected.getEscape());
+    }
+
+    @Override
+    protected Boolean visitSubscriptExpression(SubscriptExpression actual, Node expectedExpression)
+    {
+        if (!(expectedExpression instanceof SubscriptExpression)) {
+            return false;
+        }
+
+        SubscriptExpression expected = (SubscriptExpression) expectedExpression;
+        return process(actual.getBase(), expected.getBase()) && process(actual.getIndex(), expected.getIndex());
     }
 
     private <T extends Node> boolean process(List<T> actuals, List<T> expecteds)

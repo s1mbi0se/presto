@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.prestosql</groupId>
         <artifactId>presto-root</artifactId>
-        <version>333-SNAPSHOT</version>
+        <version>337</version>
     </parent>
 
     <artifactId>presto-main</artifactId>
@@ -16,6 +16,18 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>br.com.simbiose</groupId>
+            <artifactId>debug_log</artifactId>
+            <version>0.0.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty</artifactId>
+            <version>1.30.0</version>
+        </dependency>
+
         <dependency>
             <groupId>org.locationtech.jts</groupId>
             <artifactId>jts-core</artifactId>
@@ -308,6 +320,12 @@
             <artifactId>jjwt</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.macasaet.fernet</groupId>
+            <artifactId>fernet-java8</artifactId>
+            <version>1.4.2</version>
+        </dependency>
+
         <!-- used by tests but also needed transitively -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
@@ -389,24 +407,15 @@
             <artifactId>jaxrs-testing</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjrt</artifactId>
+            <version>1.9.5</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <configuration>
-                        <systemProperties>
-                            <!-- needed to run TestPrestoSystemRequirements on Java 8 -->
-                            <presto-temporarily-allow-java8>true</presto-temporarily-allow-java8>
-                        </systemProperties>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-
         <plugins>
             <plugin>
                 <groupId>org.gaul</groupId>
@@ -416,6 +425,53 @@
                         <ignorePackage>io.prestosql.testing.assertions</ignorePackage>
                     </ignorePackages>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>aspectj-maven-plugin</artifactId>
+                <version>1.11</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+<!--                            <goal>test-compile</goal> -->
+                        </goals>
+                        <configuration>
+                            <source>11</source>
+                            <target>11</target>
+                            <complianceLevel>11</complianceLevel>
+                            <encoding>UTF-8</encoding>
+                            <verbose>true</verbose>
+                            <weaveDependencies>
+                                <weaveDependency>
+                                    <groupId>io.grpc</groupId>
+                                    <artifactId>grpc-netty</artifactId>
+                                </weaveDependency>
+                            </weaveDependencies>
+                            <showWeaveInfo>true</showWeaveInfo>
+                            <XnoInline>true</XnoInline>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.aspectj</groupId>
+                        <artifactId>aspectjrt</artifactId>
+                        <version>1.9.5</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.aspectj</groupId>
+                        <artifactId>aspectjtools</artifactId>
+                        <version>1.9.5</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>com.sun</groupId>
+                        <artifactId>tools</artifactId>
+                        <version>${java.version}</version>
+                        <scope>system</scope>
+                        <systemPath>${project.basedir}/pom.xml</systemPath>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>

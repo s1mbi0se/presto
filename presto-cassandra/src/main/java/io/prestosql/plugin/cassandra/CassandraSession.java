@@ -323,7 +323,7 @@ public class CassandraSession
     private Optional<CassandraColumnHandle> buildColumnHandle(AbstractTableMetadata tableMetadata, ColumnMetadata columnMeta, boolean partitionKey, boolean clusteringKey, int ordinalPosition, boolean hidden)
     {
         Optional<CassandraType> cassandraType = toCassandraType(columnMeta.getType().getName());
-        if (!cassandraType.isPresent()) {
+        if (cassandraType.isEmpty()) {
             log.debug("Unsupported column type: %s", columnMeta.getType().getName());
             return Optional.empty();
         }
@@ -352,9 +352,9 @@ public class CassandraSession
     /**
      * Get the list of partitions matching the given filters on partition keys.
      *
-     * @param table          the table to get partitions from
+     * @param table the table to get partitions from
      * @param filterPrefixes the list of possible values for each partition key.
-     *                       Order of values should match {@link CassandraTable#getPartitionKeyColumns()}
+     * Order of values should match {@link CassandraTable#getPartitionKeyColumns()}
      * @return list of {@link CassandraPartition}
      */
     public List<CassandraPartition> getPartitions(CassandraTable table, List<Set<Object>> filterPrefixes)

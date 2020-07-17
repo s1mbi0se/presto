@@ -13,6 +13,7 @@
  */
 package io.prestosql.operator.aggregation;
 
+import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
 import io.prestosql.metadata.BoundVariables;
 import io.prestosql.metadata.FunctionArgumentDefinition;
@@ -49,7 +50,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static io.prestosql.operator.TypeSignatureParser.parseTypeSignature;
 import static io.prestosql.operator.aggregation.AggregationMetadata.ParameterMetadata.ParameterType.BLOCK_INDEX;
 import static io.prestosql.operator.aggregation.AggregationMetadata.ParameterMetadata.ParameterType.NULLABLE_BLOCK_INPUT_CHANNEL;
 import static io.prestosql.operator.aggregation.AggregationMetadata.ParameterMetadata.ParameterType.STATE;
@@ -61,6 +61,7 @@ import static io.prestosql.operator.annotations.ImplementationDependency.Factory
 import static io.prestosql.operator.annotations.ImplementationDependency.getImplementationDependencyAnnotation;
 import static io.prestosql.operator.annotations.ImplementationDependency.isImplementationDependencyAnnotation;
 import static io.prestosql.operator.annotations.ImplementationDependency.validateImplementationDependencyAnnotation;
+import static io.prestosql.sql.analyzer.TypeSignatureTranslator.parseTypeSignature;
 import static io.prestosql.util.Reflection.methodHandle;
 import static java.util.Objects.requireNonNull;
 
@@ -322,9 +323,9 @@ public class AggregationImplementation
                             removeInputDependencies.stream(),
                             outputDependencies.stream(),
                             combineDependencies.stream())
-                    .reduce(Stream::concat)
-                    .orElseGet(Stream::empty)
-                    .collect(toImmutableList());
+                            .reduce(Stream::concat)
+                            .orElseGet(Stream::empty)
+                            .collect(toImmutableList());
             typeVariableConstraints = createTypeVariableConstraints(typeParameters, allDependencies);
 
             // parse native types of arguments
@@ -423,7 +424,7 @@ public class AggregationImplementation
                     builder.add(BLOCK_INDEX);
                 }
                 else {
-                    throw new IllegalArgumentException("Unsupported annotation: " + annotations[i]);
+                    throw new VerifyException("Unhandled annotation: " + baseTypeAnnotation);
                 }
             }
             return builder.build();

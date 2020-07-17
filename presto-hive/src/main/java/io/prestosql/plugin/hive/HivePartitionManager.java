@@ -13,11 +13,9 @@
  */
 package io.prestosql.plugin.hive;
 
-import com.google.common.base.Predicates;
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.airlift.slice.Slice;
 import io.prestosql.plugin.hive.authentication.HiveIdentity;
@@ -65,7 +63,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.prestosql.plugin.hive.HiveErrorCode.HIVE_EXCEEDED_PARTITION_LIMIT;
 import static io.prestosql.plugin.hive.metastore.MetastoreUtil.toPartitionName;
@@ -166,8 +163,8 @@ public class HivePartitionManager
         }
 
         // All partition key domains will be fully evaluated, so we don't need to include those
-        TupleDomain<ColumnHandle> remainingTupleDomain = TupleDomain.withColumnDomains(Maps.filterKeys(effectivePredicate.getDomains().get(), not(Predicates.in(partitionColumns))));
-        TupleDomain<ColumnHandle> enforcedTupleDomain = TupleDomain.withColumnDomains(Maps.filterKeys(effectivePredicate.getDomains().get(), Predicates.in(partitionColumns)));
+        TupleDomain<ColumnHandle> remainingTupleDomain = effectivePredicate.filter((column, domain) -> !partitionColumns.contains(column));
+        TupleDomain<ColumnHandle> enforcedTupleDomain = effectivePredicate.filter((column, domain) -> partitionColumns.contains(column));
         return new HivePartitionResult(partitionColumns, partitionsIterable, compactEffectivePredicate, remainingTupleDomain, enforcedTupleDomain, hiveBucketHandle, bucketFilter);
     }
 
@@ -256,6 +253,14 @@ public class HivePartitionManager
 
     private boolean partitionMatches(List<HiveColumnHandle> partitionColumns, TupleDomain<ColumnHandle> constraintSummary, Predicate<Map<ColumnHandle, NullableValue>> constraint, HivePartition partition)
     {
+        return partitionMatches(partitionColumns, constraintSummary, partition) && constraint.test(partition.getKeys());
+    }
+
+    public static boolean partitionMatches(List<HiveColumnHandle> partitionColumns, TupleDomain<ColumnHandle> constraintSummary, HivePartition partition)
+    {
+        if (constraintSummary.isNone()) {
+            return false;
+        }
         Map<ColumnHandle, Domain> domains = constraintSummary.getDomains().get();
         for (HiveColumnHandle column : partitionColumns) {
             NullableValue value = partition.getKeys().get(column);
@@ -264,8 +269,7 @@ public class HivePartitionManager
                 return false;
             }
         }
-
-        return constraint.test(partition.getKeys());
+        return true;
     }
 
     private List<String> getFilteredPartitionNames(SemiTransactionalHiveMetastore metastore, HiveIdentity identity, SchemaTableName tableName, List<HiveColumnHandle> partitionKeys, TupleDomain<ColumnHandle> effectivePredicate)

@@ -16,6 +16,7 @@ package io.prestosql.client;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.units.Duration;
+import io.prestosql.spi.session.metadata.QueryRequestMetadata;
 
 import java.net.URI;
 import java.nio.charset.CharsetEncoder;
@@ -51,6 +52,7 @@ public class ClientSession
     private final Map<String, String> extraCredentials;
     private final String transactionId;
     private final Duration clientRequestTimeout;
+    private final Optional<QueryRequestMetadata> queryRequestMetadata;
 
     public static Builder builder(ClientSession clientSession)
     {
@@ -82,7 +84,8 @@ public class ClientSession
             Map<String, ClientSelectedRole> roles,
             Map<String, String> extraCredentials,
             String transactionId,
-            Duration clientRequestTimeout)
+            Duration clientRequestTimeout,
+            Optional<QueryRequestMetadata> queryRequestMetadata)
     {
         this.server = requireNonNull(server, "server is null");
         this.user = user;
@@ -102,6 +105,7 @@ public class ClientSession
         this.roles = ImmutableMap.copyOf(requireNonNull(roles, "roles is null"));
         this.extraCredentials = ImmutableMap.copyOf(requireNonNull(extraCredentials, "extraCredentials is null"));
         this.clientRequestTimeout = clientRequestTimeout;
+        this.queryRequestMetadata = queryRequestMetadata;
 
         for (String clientTag : clientTags) {
             checkArgument(!clientTag.contains(","), "client tag cannot contain ','");
@@ -230,6 +234,11 @@ public class ClientSession
         return clientRequestTimeout;
     }
 
+    public Optional<QueryRequestMetadata> getQueryRequestMetadata()
+    {
+        return queryRequestMetadata;
+    }
+
     @Override
     public String toString()
     {
@@ -270,6 +279,7 @@ public class ClientSession
         private Map<String, String> credentials;
         private String transactionId;
         private Duration clientRequestTimeout;
+        private Optional<QueryRequestMetadata> queryRequestMetadata;
 
         private Builder(ClientSession clientSession)
         {
@@ -292,6 +302,7 @@ public class ClientSession
             credentials = clientSession.getExtraCredentials();
             transactionId = clientSession.getTransactionId();
             clientRequestTimeout = clientSession.getClientRequestTimeout();
+            queryRequestMetadata = clientSession.getQueryRequestMetadata();
         }
 
         public Builder withCatalog(String catalog)
@@ -348,6 +359,12 @@ public class ClientSession
             return this;
         }
 
+        public Builder withQueryRequestMetadata(Optional<QueryRequestMetadata> queryRequestMetadata)
+        {
+            this.queryRequestMetadata = queryRequestMetadata;
+            return this;
+        }
+
         public ClientSession build()
         {
             return new ClientSession(
@@ -368,7 +385,8 @@ public class ClientSession
                     roles,
                     credentials,
                     transactionId,
-                    clientRequestTimeout);
+                    clientRequestTimeout,
+                    queryRequestMetadata);
         }
     }
 }

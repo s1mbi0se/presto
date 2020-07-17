@@ -827,13 +827,6 @@ public abstract class AbstractTestJoinQueries
         QueryTemplate.Parameter left = type.of("left");
         QueryTemplate.Parameter right = type.of("right");
         QueryTemplate.Parameter full = type.of("full");
-        for (QueryTemplate.Parameter joinType : ImmutableList.of(left, right, full)) {
-            for (String joinCondition : ImmutableList.of("x IN (VALUES 1)", "y in (VALUES 1)")) {
-                assertQueryFails(
-                        queryTemplate.replace(joinType, condition.of(joinCondition)),
-                        ".*IN with subquery predicate in join condition is not supported");
-            }
-        }
 
         assertQuery(
                 queryTemplate.replace(left, twoDuplicatedInSubqueriesCondition),
@@ -868,14 +861,6 @@ public abstract class AbstractTestJoinQueries
         assertQuery(
                 queryTemplate.replace(condition.of("(x+y in (VALUES 4,5)) AND (x in (VALUES 4,5)) != (y in (VALUES 4,5))")),
                 "VALUES (4,1)");
-
-        for (QueryTemplate.Parameter joinType : type.of("left", "right", "full")) {
-            assertQueryFails(
-                    queryTemplate.replace(
-                            joinType,
-                            condition.of("(x+y in (VALUES 4,5)) AND (x in (VALUES 4,5)) != (y in (VALUES 4,5))")),
-                    ".*IN with subquery predicate in join condition is not supported");
-        }
     }
 
     @Test
@@ -889,7 +874,7 @@ public abstract class AbstractTestJoinQueries
                 condition);
 
         queryTemplate.replaceAll(
-                (query) -> assertQueryFails(query, "line .*: .* is not supported"),
+                (query) -> assertQueryFails(query, "line .*: Reference to column 'x' from outer scope not allowed in this context"),
                 ImmutableList.of(type.of("left"), type.of("right"), type.of("full")),
                 ImmutableList.of(
                         condition.of("EXISTS(SELECT 1 WHERE x = y)"),

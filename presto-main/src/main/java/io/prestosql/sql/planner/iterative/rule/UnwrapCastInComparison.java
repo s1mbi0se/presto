@@ -21,6 +21,8 @@ import io.prestosql.metadata.ResolvedFunction;
 import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.predicate.Utils;
 import io.prestosql.spi.type.DecimalType;
+import io.prestosql.spi.type.DoubleType;
+import io.prestosql.spi.type.RealType;
 import io.prestosql.spi.type.Type;
 import io.prestosql.sql.InterpretedFunctionInvoker;
 import io.prestosql.sql.planner.ExpressionInterpreter;
@@ -54,6 +56,8 @@ import static io.prestosql.sql.tree.ComparisonExpression.Operator.GREATER_THAN_O
 import static io.prestosql.sql.tree.ComparisonExpression.Operator.LESS_THAN;
 import static io.prestosql.sql.tree.ComparisonExpression.Operator.LESS_THAN_OR_EQUAL;
 import static io.prestosql.sql.tree.ComparisonExpression.Operator.NOT_EQUAL;
+import static java.lang.Float.intBitsToFloat;
+import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -63,32 +67,32 @@ import static java.util.Objects.requireNonNull;
  * <pre>
  * CAST(s as T) = t
  * </pre>
- *
+ * <p>
  * into
  *
  * <pre>
  * s = CAST(t as S)
  * </pre>
- *
+ * <p>
  * For example:
  *
  * <pre>
  * CAST(x AS bigint) = bigint '1'
- *</pre>
- *
+ * </pre>
+ * <p>
  * turns into
  *
  * <pre>
  * x = smallint '1'
  * </pre>
- *
+ * <p>
  * It can simplify expressions that are known to be true or false, and
  * remove the comparisons altogether. For example, give x::smallint,
  * for an expression like:
  *
  * <pre>
  * CAST(x AS bigint) > bigint '10000000'
- *</pre>
+ * </pre>
  */
 public class UnwrapCastInComparison
         extends ExpressionRewriteRuleSet
@@ -178,8 +182,33 @@ public class UnwrapCastInComparison
             Type sourceType = typeAnalyzer.getType(session, types, cast.getExpression());
             Type targetType = typeAnalyzer.getType(session, types, expression.getRight());
 
-            if (!hasInjectiveImplicitCoercion(sourceType, targetType)) {
+            if (!hasInjectiveImplicitCoercion(sourceType, targetType, right)) {
                 return expression;
+            }
+
+            // Handle comparison against NaN.
+            // It must be done before source type range bounds are compared to target value.
+            if ((targetType instanceof DoubleType && Double.isNaN((double) right)) || (targetType instanceof RealType && Float.isNaN(intBitsToFloat(toIntExact((long) right))))) {
+                switch (operator) {
+                    case EQUAL:
+                    case GREATER_THAN:
+                    case GREATER_THAN_OR_EQUAL:
+                    case LESS_THAN:
+                    case LESS_THAN_OR_EQUAL:
+                        return falseIfNotNull(cast.getExpression());
+                    case NOT_EQUAL:
+                        return trueIfNotNull(cast.getExpression());
+                    case IS_DISTINCT_FROM:
+                        if (!typeHasNaN(sourceType)) {
+                            return TRUE_LITERAL;
+                        }
+                        else {
+                            // NaN on the right of comparison will be cast to source type later
+                            break;
+                        }
+                    default:
+                        throw new UnsupportedOperationException("Not yet implemented: " + operator);
+                }
             }
 
             ResolvedFunction sourceToTarget = metadata.getCoercion(sourceType, targetType);
@@ -189,6 +218,8 @@ public class UnwrapCastInComparison
                 Object max = sourceRange.get().getMax();
                 Object maxInTargetType = coerce(max, sourceToTarget);
 
+                // NaN values of `right` are excluded at this point. Otherwise, NaN would be recognized as
+                // greater than source type upper bound, and incorrect expression might be derived.
                 int upperBoundComparison = compare(targetType, right, maxInTargetType);
                 if (upperBoundComparison > 0) {
                     // larger than maximum representable value
@@ -351,14 +382,27 @@ public class UnwrapCastInComparison
             return new ComparisonExpression(operator, cast.getExpression(), literalEncoder.toExpression(literalInSourceType, sourceType));
         }
 
-        private boolean hasInjectiveImplicitCoercion(Type source, Type target)
+        private boolean hasInjectiveImplicitCoercion(Type source, Type target, Object value)
         {
             if ((source.equals(BIGINT) && target.equals(DOUBLE)) ||
                     (source.equals(BIGINT) && target.equals(REAL)) ||
                     (source.equals(INTEGER) && target.equals(REAL))) {
                 // Not every BIGINT fits in DOUBLE/REAL due to 64 bit vs 53-bit/23-bit mantissa. Similarly,
                 // not every INTEGER fits in a REAL (32-bit vs 23-bit mantissa)
-                return false;
+                if (target.equals(DOUBLE)) {
+                    double doubleValue = (double) value;
+                    return doubleValue > Long.MAX_VALUE ||
+                            doubleValue < Long.MIN_VALUE ||
+                            Double.isNaN(doubleValue) ||
+                            (doubleValue > -1L << 53 && doubleValue < 1L << 53); // in (-2^53, 2^53), bigint follows an injective implicit coercion w.r.t double
+                }
+                else {
+                    float realValue = intBitsToFloat(toIntExact((long) value));
+                    return (source.equals(BIGINT) && (realValue > Long.MAX_VALUE || realValue < Long.MIN_VALUE)) ||
+                            (source.equals(INTEGER) && (realValue > Integer.MAX_VALUE || realValue < Integer.MIN_VALUE)) ||
+                            Float.isNaN(realValue) ||
+                            (realValue > -1L << 23 && realValue < 1L << 23); // in (-2^23, 2^23), bigint (and integer) follows an injective implicit coercion w.r.t real
+                }
             }
 
             if (source instanceof DecimalType) {
@@ -382,6 +426,11 @@ public class UnwrapCastInComparison
         private Object coerce(Object value, ResolvedFunction coercion)
         {
             return functionInvoker.invoke(coercion, session.toConnectorSession(), value);
+        }
+
+        private boolean typeHasNaN(Type type)
+        {
+            return type instanceof DoubleType || type instanceof RealType;
         }
     }
 

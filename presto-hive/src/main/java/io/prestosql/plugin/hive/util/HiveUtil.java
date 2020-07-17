@@ -736,7 +736,7 @@ public final class HiveUtil
 
     public static boolean isStructuralType(HiveType hiveType)
     {
-        return hiveType.getCategory() == Category.LIST || hiveType.getCategory() == Category.MAP || hiveType.getCategory() == Category.STRUCT;
+        return hiveType.getCategory() == Category.LIST || hiveType.getCategory() == Category.MAP || hiveType.getCategory() == Category.STRUCT || hiveType.getCategory() == Category.UNION;
     }
 
     public static boolean booleanPartitionKey(String value, String name)
@@ -912,7 +912,7 @@ public final class HiveUtil
         for (Column field : table.getDataColumns()) {
             // ignore unsupported types rather than failing
             HiveType hiveType = field.getType();
-            if (hiveType.isSupportedType()) {
+            if (hiveType.isSupportedType(table.getStorage().getStorageFormat())) {
                 columns.add(createBaseColumn(field.getName(), hiveColumnIndex, hiveType, hiveType.getType(typeManager), REGULAR, field.getComment()));
             }
             hiveColumnIndex++;
@@ -928,7 +928,7 @@ public final class HiveUtil
         List<Column> partitionKeys = table.getPartitionColumns();
         for (Column field : partitionKeys) {
             HiveType hiveType = field.getType();
-            if (!hiveType.isSupportedType()) {
+            if (!hiveType.isSupportedType(table.getStorage().getStorageFormat())) {
                 throw new PrestoException(NOT_SUPPORTED, format("Unsupported Hive type %s found in partition keys of table %s.%s", hiveType, table.getDatabaseName(), table.getTableName()));
             }
             columns.add(createBaseColumn(field.getName(), -1, hiveType, hiveType.getType(typeManager), PARTITION_KEY, field.getComment()));
@@ -973,7 +973,14 @@ public final class HiveUtil
         return resultBuilder.build();
     }
 
-    public static String getPrefilledColumnValue(HiveColumnHandle columnHandle, HivePartitionKey partitionKey, Path path, OptionalInt bucketNumber, long fileSize, long fileModifiedTime)
+    public static String getPrefilledColumnValue(
+            HiveColumnHandle columnHandle,
+            HivePartitionKey partitionKey,
+            Path path,
+            OptionalInt bucketNumber,
+            long fileSize,
+            long fileModifiedTime,
+            DateTimeZone hiveStorageTimeZone)
     {
         if (partitionKey != null) {
             return partitionKey.getValue();
@@ -988,7 +995,7 @@ public final class HiveUtil
             return String.valueOf(fileSize);
         }
         if (isFileModifiedTimeColumnHandle(columnHandle)) {
-            return String.valueOf(fileModifiedTime);
+            return HIVE_TIMESTAMP_PARSER.withZone(hiveStorageTimeZone).print(fileModifiedTime);
         }
         throw new PrestoException(NOT_SUPPORTED, "unsupported hidden column: " + columnHandle);
     }

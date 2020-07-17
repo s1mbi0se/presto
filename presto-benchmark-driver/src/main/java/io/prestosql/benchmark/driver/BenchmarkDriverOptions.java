@@ -105,7 +105,8 @@ public class BenchmarkDriverOptions
                 ImmutableMap.of(),
                 ImmutableMap.of(),
                 null,
-                clientRequestTimeout);
+                clientRequestTimeout,
+                Optional.empty());
     }
 
     private static URI parseServer(String server)
@@ -176,7 +177,7 @@ public class BenchmarkDriverOptions
 
         private static void verifyProperty(Optional<String> catalog, String name, String value)
         {
-            checkArgument(!catalog.isPresent() || !catalog.get().isEmpty(), "Invalid session property: %s.%s:%s", catalog, name, value);
+            checkArgument(catalog.isEmpty() || !catalog.get().isEmpty(), "Invalid session property: %s.%s:%s", catalog, name, value);
             checkArgument(!name.isEmpty(), "Session property name is empty");
 
             CharsetEncoder charsetEncoder = US_ASCII.newEncoder();

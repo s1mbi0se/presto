@@ -16,6 +16,7 @@ package io.prestosql.plugin.mongodb;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
 import io.prestosql.testing.AbstractTestIntegrationSmokeTest;
 import io.prestosql.testing.MaterializedResult;
 import io.prestosql.testing.MaterializedRow;
@@ -30,7 +31,10 @@ import java.util.Arrays;
 
 import static io.prestosql.plugin.mongodb.MongoQueryRunner.createMongoClient;
 import static io.prestosql.plugin.mongodb.MongoQueryRunner.createMongoQueryRunner;
+import static io.prestosql.tpch.TpchTable.CUSTOMER;
+import static io.prestosql.tpch.TpchTable.NATION;
 import static io.prestosql.tpch.TpchTable.ORDERS;
+import static io.prestosql.tpch.TpchTable.REGION;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.testng.Assert.assertEquals;
@@ -50,7 +54,7 @@ public class TestMongoIntegrationSmokeTest
     {
         this.server = new MongoServer();
         this.client = createMongoClient(server);
-        return createMongoQueryRunner(server, ORDERS);
+        return createMongoQueryRunner(server, CUSTOMER, NATION, ORDERS, REGION);
     }
 
     @AfterClass(alwaysRun = true)
@@ -94,7 +98,6 @@ public class TestMongoIntegrationSmokeTest
 
     @Test
     public void testInsertWithEveryType()
-            throws Exception
     {
         String createSql = "" +
                 "CREATE TABLE test_insert_types_table " +
@@ -297,6 +300,26 @@ public class TestMongoIntegrationSmokeTest
                 "VALUES (9, NULL, 1), (9, 'ffffffffffffffffffffffff', 1), (12, 'ffffffffffffffffffffffff', 2), (12, '000000000000000000000000', 1), (15, NULL, 1)");
 
         assertUpdate("DROP TABLE tmp_objectid");
+    }
+
+    @Test
+    public void testCaseInsensitive()
+            throws Exception
+    {
+        MongoCollection<Document> collection = client.getDatabase("testCase").getCollection("testInsensitive");
+        collection.insertOne(new Document(ImmutableMap.of("Name", "abc", "Value", 1)));
+
+        assertQuery("SHOW SCHEMAS IN mongodb LIKE 'testcase'", "SELECT 'testcase'");
+        assertQuery("SHOW TABLES IN testcase", "SELECT 'testinsensitive'");
+        assertQuery(
+                "SHOW COLUMNS FROM testcase.testInsensitive",
+                "VALUES ('name', 'varchar', '', ''), ('value', 'bigint', '', '')");
+
+        assertQuery("SELECT name, value FROM testcase.testinsensitive", "SELECT 'abc', 1");
+        assertUpdate("INSERT INTO testcase.testinsensitive VALUES('def', 2)", 1);
+
+        assertQuery("SELECT value FROM testcase.testinsensitive WHERE name = 'def'", "SELECT 2");
+        assertUpdate("DROP TABLE testcase.testinsensitive");
     }
 
     @Test

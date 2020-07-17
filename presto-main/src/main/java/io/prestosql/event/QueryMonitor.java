@@ -240,7 +240,7 @@ public class QueryMonitor
                 Optional.of(ofMillis(queryStats.getAnalysisTime().toMillis())),
                 Optional.of(ofMillis(queryStats.getExecutionTime().toMillis())),
                 queryStats.getPeakUserMemoryReservation().toBytes(),
-                queryStats.getPeakTotalMemoryReservation().toBytes(),
+                queryStats.getPeakNonRevocableMemoryReservation().toBytes(),
                 queryStats.getPeakTaskUserMemory().toBytes(),
                 queryStats.getPeakTaskTotalMemory().toBytes(),
                 queryStats.getPhysicalInputDataSize().toBytes(),
@@ -506,7 +506,7 @@ public class QueryMonitor
 
     private static List<StageCpuDistribution> getCpuDistributions(QueryInfo queryInfo)
     {
-        if (!queryInfo.getOutputStage().isPresent()) {
+        if (queryInfo.getOutputStage().isEmpty()) {
             return ImmutableList.of();
         }
 

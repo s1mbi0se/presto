@@ -25,6 +25,21 @@ data warehouse. Hive is a combination of three components:
 Presto only uses the first two components: the data and the metadata.
 It does not use HiveQL or any part of Hive's execution environment.
 
+Requirements
+------------
+
+The Hive connector requires a Hive metastore service (HMS), or a compatible
+implementation of the Hive metastore, such as `AWS Glue <https://aws.amazon.com/glue/>`_.
+
+Apache Hadoop 2.x and 3.x are supported, along with derivative distributions,
+including Cloudera CDH 5 and Hortonworks Data Platform (HDP).
+
+Many distributed storage systems including HDFS, Amazon S3, Google Cloud Storage,
+Azure Storage, and S3 compatible systems are supported.
+
+The coordinator and all workers must have network access to the Hive metastore
+and the storage system.
+
 Supported File Types
 --------------------
 
@@ -76,9 +91,6 @@ In Presto, these views are presented as regular, read-only tables.
 
 Configuration
 -------------
-
-The Hive connector supports Apache Hadoop 2.x and derivative distributions
-including Cloudera CDH 5 and Hortonworks Data Platform (HDP).
 
 Create ``etc/catalog/hive.properties`` with the following contents
 to mount the ``hive-hadoop2`` connector as the ``hive`` catalog,
@@ -165,10 +177,6 @@ Hive Configuration Properties
 ================================================== ============================================================ ============
 Property Name                                      Description                                                  Default
 ================================================== ============================================================ ============
-``hive.metastore``                                 The type of Hive metastore to use. Presto currently supports ``thrift``
-                                                   the default Hive Thrift metastore (``thrift``), and the AWS
-                                                   Glue Catalog (``glue``) as metadata sources.
-
 ``hive.config.resources``                          An optional comma-separated list of HDFS
                                                    configuration files. These files must exist on the
                                                    machines running Presto. Only specify this if
@@ -232,55 +240,94 @@ Property Name                                      Description                  
 ``hive.s3select-pushdown.max-connections``         Maximum number of simultaneously open connections to S3 for  500
                                                    :ref:`s3selectpushdown`.
 
-``hive.file-status-cache-tables``                  Cache directory listing for specified tables.
-                                                   Examples: ``schema.table1,schema.table2`` to cache directory
-                                                   listing only for ``table1`` and ``table2``.
-                                                   ``schema1.*,schema2.*`` to cache directory listing for all
-                                                   tables in the schemas ``schema1`` and ``schema2``.
-                                                   ``*`` to cache directory listing for all tables.
+``hive.file-status-cache-tables``                  Cache directory listing for specific tables. Examples:
 
-``hive.file-status-cache-size``                    Maximum no. of file status entries cached for a path.        1,000,000
+                                                   * ``fruit.apple,fruit.orange`` to cache listings only for
+                                                     tables ``apple`` and ``orange`` in schema ``fruit``
+                                                   * ``fruit.*,vegetable.*`` to cache listings for all tables
+                                                     in schemas ``fruit`` and ``vegetable``
+                                                   * ``*`` to cache listings for all tables in all schemas
 
-``hive.file-status-cache-expire-time``             Duration of time after a directory listing is cached that it ``1m``
-                                                   should be automatically removed from cache.
+``hive.file-status-cache-size``                    Maximum total number of cached file status entries.          1,000,000
+
+``hive.file-status-cache-expire-time``             How long a cached directory listing should be considered     ``1m``
+                                                   valid.
 ================================================== ============================================================ ============
+
+Hive Metastore Configuration Properties
+---------------------------------------
+
+The required Hive metastore can be configured with a number of properties.
+Specific properties can be used to further configure the :ref:`Thrift
+<thrift-metastore-properties>` or :ref:`Glue <glue-metastore-properties>`
+metastore.
+
+======================================= ============================================================ ============
+Property Name                                      Description                                       Default
+======================================= ============================================================ ============
+``hive.metastore``                      The type of Hive metastore to use. Presto currently supports ``thrift``
+                                        the default Hive Thrift metastore (``thrift``), and the AWS
+                                        Glue Catalog (``glue``) as metadata sources.
+
+``hive.metastore-cache-ttl``            Duration how long cached metastore data should be considered ``0s``
+                                        valid.
+
+``hive.metastore-cache-maximum-size``   Hive metastore cache maximum size.                            10000
+
+``hive.metastore-refresh-interval``     Asynchronously refresh cached metastore data after access
+                                        if it is older than this but is not yet expired, allowing
+                                        subsequent accesses to see fresh data.
+
+``hive.metastore-refresh-max-threads``  Maximum threads used to refresh cached metastore data.        100
+======================================= ============================================================ ============
+
+.. _thrift-metastore-properties:
 
 Hive Thrift Metastore Configuration Properties
 ----------------------------------------------
 
-================================================== ============================================================ ============
-Property Name                                      Description                                                  Default
-================================================== ============================================================ ============
-``hive.metastore.uri``                             The URI(s) of the Hive metastore to connect to using the
-                                                   Thrift protocol. If multiple URIs are provided, the first
-                                                   URI is used by default, and the rest of the URIs are
-                                                   fallback metastores. This property is required.
-                                                   Example: ``thrift://192.0.2.3:9083`` or
-                                                   ``thrift://192.0.2.3:9083,thrift://192.0.2.4:9083``
+============================================================= ============================================================ ============
+Property Name                                                 Description                                                  Default
+============================================================= ============================================================ ============
+``hive.metastore.uri``                                        The URI(s) of the Hive metastore to connect to using the
+                                                              Thrift protocol. If multiple URIs are provided, the first
+                                                              URI is used by default, and the rest of the URIs are
+                                                              fallback metastores. This property is required.
+                                                              Example: ``thrift://192.0.2.3:9083`` or
+                                                              ``thrift://192.0.2.3:9083,thrift://192.0.2.4:9083``
 
-``hive.metastore.username``                        The username Presto uses to access the Hive metastore.
+``hive.metastore.username``                                   The username Presto uses to access the Hive metastore.
 
-``hive.metastore.authentication.type``             Hive metastore authentication type.
-                                                   Possible values are ``NONE`` or ``KERBEROS``
-                                                   (defaults to ``NONE``).
+``hive.metastore.authentication.type``                        Hive metastore authentication type.
+                                                              Possible values are ``NONE`` or ``KERBEROS``
+                                                              (defaults to ``NONE``).
 
-``hive.metastore.thrift.impersonation.enabled``    Enable Hive metastore end user impersonation.
+``hive.metastore.thrift.impersonation.enabled``               Enable Hive metastore end user impersonation.
 
-``hive.metastore.service.principal``               The Kerberos principal of the Hive metastore service.
+``hive.metastore.thrift.delegation-token.cache-ttl``          Time to live delegation token cache for metastore.           ``1h``
 
-``hive.metastore.client.principal``                The Kerberos principal that Presto uses when connecting
-                                                   to the Hive metastore service.
+``hive.metastore.thrift.delegation-token.cache-maximum-size`` Delegation token cache maximum size.                         1,000
 
-``hive.metastore.client.keytab``                   Hive metastore client keytab location.
+``hive.metastore.thrift.client.ssl.enabled``                  Use SSL when connecting to metastore.                        ``false``
 
-``hive.metastore-cache-ttl``                       Time to live Hive metadata cache.                            ``0s``
+``hive.metastore.thrift.client.ssl.key``                      Path to PEM private key and client certificate (key store).
 
-``hive.metastore-refresh-interval``                How often to refresh the Hive metastore cache.
+``hive.metastore.thrift.client.ssl.key-password``             Password for the PEM private key.
 
-``hive.metastore-cache-maximum-size``              Hive metastore cache maximum size.                           10,000
+``hive.metastore.thrift.client.ssl.trust-certificate``        Path to the PEM server certificate chain (trust store).
+                                                              Required when SSL is enabled.
 
-``hive.metastore-refresh-max-threads``             Maximum number of threads to refresh Hive metastore cache.   100
-================================================== ============================================================ ============
+``hive.metastore.service.principal``                          The Kerberos principal of the Hive metastore service.
+
+``hive.metastore.client.principal``                           The Kerberos principal that Presto uses when connecting
+                                                              to the Hive metastore service.
+
+``hive.metastore.client.keytab``                              Hive metastore client keytab location.
+
+============================================================= ============================================================ ============
+
+
+.. _glue-metastore-properties:
 
 AWS Glue Catalog Configuration Properties
 -----------------------------------------
@@ -296,13 +343,23 @@ Property Name                                        Description
                                                      running in EC2, or when the catalog is in a different region.
                                                      Example: ``us-east-1``
 
+``hive.metastore.glue.endpoint-url``                 Glue API endpoint URL (optional).
+                                                     Example: ``https://glue.us-east-1.amazonaws.com``
+
 ``hive.metastore.glue.pin-client-to-current-region`` Pin Glue requests to the same region as the EC2 instance
                                                      where Presto is running, defaults to ``false``.
 
 ``hive.metastore.glue.max-connections``              Max number of concurrent connections to Glue,
                                                      defaults to ``5``.
 
-``hive.metastore.glue.default-warehouse-dir``        Hive Glue metastore default warehouse directory
+``hive.metastore.glue.default-warehouse-dir``        Default warehouse directory for schemas created without an
+                                                     explicit ``location`` property.
+
+``hive.metastore.glue.catalogid``                    Glue Catalog ID (optional).
+
+``hive.metastore.glue.aws-credentials-provider``     Fully qualified name of the Java class to use for obtaining
+                                                     AWS credentials. Can be used to supply a custom credentials
+                                                     provider.
 
 ``hive.metastore.glue.aws-access-key``               AWS access key to use to connect to the Glue Catalog. If
                                                      specified along with ``hive.metastore.glue.aws-secret-key``,
@@ -314,11 +371,20 @@ Property Name                                        Description
                                                      this parameter takes precedence over
                                                      ``hive.metastore.glue.iam-role``.
 
+``hive.metastore.glue.catalogid``                    The ID of the Glue Catalog in which the metadata database
+                                                     resides.
+
 ``hive.metastore.glue.iam-role``                     ARN of an IAM role to assume when connecting to the Glue
                                                      Catalog.
 
 ``hive.metastore.glue.external-id``                  External ID for the IAM role trust policy when connecting
                                                      to the Glue Catalog.
+
+``hive.metastore.glue.partitions-segments``          Number of segments for partitioned Glue tables, defaults
+                                                     to ``5``.
+
+``hive.metastore.glue.get-partition-threads``        Number of threads for parallel partition fetches from Glue,
+                                                     defaults to ``20``.
 ==================================================== ============================================================
 
 .. _hive-s3:
@@ -836,6 +902,10 @@ with keys ``p2_value1, p2_value2``.
 Note that if statistics were previously collected for all columns, they need to be dropped
 before re-analyzing just a subset::
 
+    CALL system.drop_stats(schema_name, table_name)
+
+You can also drop statistics for selected partitions only::
+
     CALL system.drop_stats(schema_name, table_name, ARRAY[ARRAY['p2_value1', 'p2_value2']])
 
 Schema Evolution
@@ -915,6 +985,8 @@ The following operations are not supported when ``avro_schema_url`` is set:
 * Using partitioning(``partitioned_by``) or bucketing(``bucketed_by``) columns are not supported in ``CREATE TABLE``.
 * ``ALTER TABLE`` commands modifying columns are not supported.
 
+.. _hive-procedures:
+
 Procedures
 ----------
 
@@ -922,7 +994,7 @@ Procedures
 
     Create an empty partition in the specified table.
 
-* ``system.sync_partition_metadata(schema_name, table_name, mode)``
+* ``system.sync_partition_metadata(schema_name, table_name, mode, case_sensitive)``
 
     Check and update partitions list in metastore. There are three modes available:
 
@@ -930,12 +1002,17 @@ Procedures
     * ``DROP``: drop any partitions that exist in the metastore, but not on the file system.
     * ``FULL``: perform both ``ADD`` and ``DROP``.
 
+    The ``case_sensitive`` argument is optional. The default value is ``true`` for compatibility
+    with Hive's ``MSCK REPAIR TABLE`` behavior, which expects the partition column names in
+    file system paths to use lowercase (e.g. ``col_x=SomeValue``). Partitions on the file system
+    not conforming to this convention are ignored, unless the argument is set to ``false``.
+
 * ``system.drop_stats(schema_name, table_name, partition_values)``
 
     Drops statistics for a subset of partitions or the entire table. The partitions are specified as an
     array whose elements are arrays of partition values (similar to the ``partition_values`` argument in
-    ``create_empty_partition``). A null value for the ``partition_values`` argument indicates that stats
-    should be dropped for the entire table.
+    ``create_empty_partition``). If ``partition_values`` argument is omitted, stats are dropped for the
+    entire table.
 
 .. _register_partition:
 

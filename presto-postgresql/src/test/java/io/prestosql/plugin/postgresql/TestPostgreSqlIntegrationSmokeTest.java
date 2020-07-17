@@ -25,7 +25,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.UUID;
 
+import static io.prestosql.tpch.TpchTable.CUSTOMER;
+import static io.prestosql.tpch.TpchTable.NATION;
 import static io.prestosql.tpch.TpchTable.ORDERS;
+import static io.prestosql.tpch.TpchTable.REGION;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
@@ -44,7 +47,7 @@ public class TestPostgreSqlIntegrationSmokeTest
     {
         this.postgreSqlServer = new TestingPostgreSqlServer();
         execute("CREATE EXTENSION file_fdw");
-        return PostgreSqlQueryRunner.createPostgreSqlQueryRunner(postgreSqlServer, ORDERS);
+        return PostgreSqlQueryRunner.createPostgreSqlQueryRunner(postgreSqlServer, CUSTOMER, NATION, ORDERS, REGION);
     }
 
     @AfterClass(alwaysRun = true)
@@ -119,7 +122,6 @@ public class TestPostgreSqlIntegrationSmokeTest
 
     @Test
     public void testSystemTable()
-            throws Exception
     {
         assertThat(computeActual("SHOW TABLES FROM pg_catalog").getOnlyColumnAsSet())
                 .contains("pg_tables", "pg_views", "pg_type", "pg_index");
@@ -173,7 +175,7 @@ public class TestPostgreSqlIntegrationSmokeTest
     }
 
     @Test
-    public void testInsertWithFailureDoesntLeaveBehindOrphanedTable()
+    public void testInsertWithFailureDoesNotLeaveBehindOrphanedTable()
             throws Exception
     {
         String schemaName = format("tmp_schema_%s", UUID.randomUUID().toString().replaceAll("-", ""));
@@ -287,10 +289,37 @@ public class TestPostgreSqlIntegrationSmokeTest
     }
 
     @Test
+    public void testAggregationPushdown()
+            throws Exception
+    {
+        // TODO support aggregation pushdown with GROUPING SETS
+        // TODO support aggregation over expressions
+
+        assertPushedDown("SELECT count(*) FROM nation");
+        assertPushedDown("SELECT count(nationkey) FROM nation");
+        assertPushedDown("SELECT regionkey, min(nationkey) FROM nation GROUP BY regionkey");
+        assertPushedDown("SELECT regionkey, max(nationkey) FROM nation GROUP BY regionkey");
+        assertPushedDown("SELECT regionkey, sum(nationkey) FROM nation GROUP BY regionkey");
+        assertPushedDown(
+                "SELECT regionkey, avg(nationkey) FROM nation GROUP BY regionkey",
+                "SELECT regionkey, avg(CAST(nationkey AS double)) FROM nation GROUP BY regionkey");
+
+        try (AutoCloseable ignoreTable = withTable("tpch.test_aggregation_pushdown", "(short_decimal decimal(9, 3), long_decimal decimal(30, 10))")) {
+            execute("INSERT INTO tpch.test_aggregation_pushdown VALUES (100.000, 100000000.000000000)");
+            execute("INSERT INTO tpch.test_aggregation_pushdown VALUES (123.321, 123456789.987654321)");
+
+            assertPushedDown("SELECT min(short_decimal), min(long_decimal) FROM test_aggregation_pushdown", "SELECT 100.000, 100000000.000000000");
+            assertPushedDown("SELECT max(short_decimal), max(long_decimal) FROM test_aggregation_pushdown", "SELECT 123.321, 123456789.987654321");
+            assertPushedDown("SELECT sum(short_decimal), sum(long_decimal) FROM test_aggregation_pushdown", "SELECT 223.321, 223456789.987654321");
+            assertPushedDown("SELECT avg(short_decimal), avg(long_decimal) FROM test_aggregation_pushdown", "SELECT 223.321 / 2, 223456789.987654321 / 2");
+        }
+    }
+
+    @Test
     public void testColumnComment()
             throws Exception
     {
-        try (AutoCloseable ignoreTable = withTable("tpch.test_column_comment",
+        try (AutoCloseable ignore = withTable("tpch.test_column_comment",
                 "(col1 bigint, col2 bigint, col3 bigint)")) {
             execute("COMMENT ON COLUMN tpch.test_column_comment.col1 IS 'test comment'");
             execute("COMMENT ON COLUMN tpch.test_column_comment.col2 IS ''"); // it will be NULL, PostgreSQL doesn't store empty comment

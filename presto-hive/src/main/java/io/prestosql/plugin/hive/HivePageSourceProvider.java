@@ -122,7 +122,7 @@ public class HivePageSourceProvider
                 hiveSplit.getTableToPartitionMapping(),
                 hiveSplit.getBucketConversion(),
                 hiveSplit.isS3SelectPushdownEnabled(),
-                hiveSplit.getDeleteDeltaLocations());
+                hiveSplit.getAcidInfo());
         if (pageSource.isPresent()) {
             return pageSource.get();
         }
@@ -149,7 +149,7 @@ public class HivePageSourceProvider
             TableToPartitionMapping tableToPartitionMapping,
             Optional<BucketConversion> bucketConversion,
             boolean s3SelectPushdownEnabled,
-            Optional<DeleteDeltaLocations> deleteDeltaLocations)
+            Optional<AcidInfo> acidInfo)
     {
         if (effectivePredicate.isNone()) {
             return Optional.of(new EmptyPageSource());
@@ -163,7 +163,8 @@ public class HivePageSourceProvider
                 path,
                 bucketNumber,
                 fileSize,
-                fileModifiedTime);
+                fileModifiedTime,
+                hiveStorageTimeZone);
         List<ColumnMapping> regularAndInterimColumnMappings = ColumnMapping.extractRegularAndInterimColumnMappings(columnMappings);
 
         Optional<BucketAdaptation> bucketAdaptation = createBucketAdaptation(bucketConversion, bucketNumber, regularAndInterimColumnMappings);
@@ -182,7 +183,7 @@ public class HivePageSourceProvider
                     desiredColumns,
                     effectivePredicate,
                     hiveStorageTimeZone,
-                    deleteDeltaLocations);
+                    acidInfo);
 
             if (readerWithProjections.isPresent()) {
                 ConnectorPageSource pageSource = readerWithProjections.get().getConnectorPageSource();
@@ -231,7 +232,7 @@ public class HivePageSourceProvider
                     delegate = new HiveReaderProjectionsAdaptingRecordCursor(delegate, projectionsAdapter);
                 }
 
-                checkArgument(!deleteDeltaLocations.isPresent(), "Delete delta is not supported");
+                checkArgument(acidInfo.isEmpty(), "Acid is not supported");
 
                 if (bucketAdaptation.isPresent()) {
                     delegate = new HiveBucketAdapterRecordCursor(
@@ -350,7 +351,8 @@ public class HivePageSourceProvider
                 Path path,
                 OptionalInt bucketNumber,
                 long fileSize,
-                long fileModifiedTime)
+                long fileModifiedTime,
+                DateTimeZone hiveStorageTimeZone)
         {
             Map<String, HivePartitionKey> partitionKeysByName = uniqueIndex(partitionKeys, HivePartitionKey::getName);
 
@@ -374,7 +376,7 @@ public class HivePageSourceProvider
                             "duplicate column in columns list");
 
                     // Add regular mapping if projection is valid for partition schema, otherwise add an empty mapping
-                    if (!baseTypeCoercionFrom.isPresent()
+                    if (baseTypeCoercionFrom.isEmpty()
                             || projectionValidForType(baseTypeCoercionFrom.get(), column.getHiveColumnProjectionInfo())) {
                         columnMappings.add(regular(column, regularIndex, baseTypeCoercionFrom));
                         regularIndex++;
@@ -386,7 +388,7 @@ public class HivePageSourceProvider
                 else {
                     columnMappings.add(prefilled(
                             column,
-                            getPrefilledColumnValue(column, partitionKeysByName.get(column.getName()), path, bucketNumber, fileSize, fileModifiedTime),
+                            getPrefilledColumnValue(column, partitionKeysByName.get(column.getName()), path, bucketNumber, fileSize, fileModifiedTime, hiveStorageTimeZone),
                             baseTypeCoercionFrom));
                 }
             }
@@ -431,7 +433,7 @@ public class HivePageSourceProvider
             return regularColumnMappings.stream()
                     .map(columnMapping -> {
                         HiveColumnHandle columnHandle = columnMapping.getHiveColumnHandle();
-                        if (!doCoercion || !columnMapping.getBaseTypeCoercionFrom().isPresent()) {
+                        if (!doCoercion || columnMapping.getBaseTypeCoercionFrom().isEmpty()) {
                             return columnHandle;
                         }
                         HiveType fromHiveTypeBase = columnMapping.getBaseTypeCoercionFrom().get();

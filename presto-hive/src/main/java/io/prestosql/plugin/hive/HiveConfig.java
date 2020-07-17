@@ -80,7 +80,7 @@ public class HiveConfig
     private HiveCompressionCodec hiveCompressionCodec = HiveCompressionCodec.GZIP;
     private boolean respectTableFormat = true;
     private boolean immutablePartitions;
-    private boolean createEmptyBucketFiles = true;
+    private boolean createEmptyBucketFiles;
     private int maxPartitionsPerWriter = 100;
     private int maxOpenSortFiles = 50;
     private int writeValidationThreads = 16;
@@ -128,6 +128,8 @@ public class HiveConfig
     private boolean allowRegisterPartition;
     private boolean queryPartitionFilterRequired;
     private boolean partitionUseColumnNames;
+
+    private boolean projectionPushdownEnabled = true;
 
     public int getMaxInitialSplits()
     {
@@ -883,18 +885,21 @@ public class HiveConfig
         return this;
     }
 
-    @Deprecated
     public boolean isAllowRegisterPartition()
     {
         return allowRegisterPartition;
     }
 
-    @Deprecated
     @Config("hive.allow-register-partition-procedure")
     public HiveConfig setAllowRegisterPartition(boolean allowRegisterPartition)
     {
         this.allowRegisterPartition = allowRegisterPartition;
         return this;
+    }
+
+    public boolean isQueryPartitionFilterRequired()
+    {
+        return queryPartitionFilterRequired;
     }
 
     @Config("hive.query-partition-filter-required")
@@ -903,11 +908,6 @@ public class HiveConfig
     {
         this.queryPartitionFilterRequired = queryPartitionFilterRequired;
         return this;
-    }
-
-    public boolean isQueryPartitionFilterRequired()
-    {
-        return queryPartitionFilterRequired;
     }
 
     public boolean getPartitionUseColumnNames()
@@ -920,6 +920,19 @@ public class HiveConfig
     public HiveConfig setPartitionUseColumnNames(boolean partitionUseColumnNames)
     {
         this.partitionUseColumnNames = partitionUseColumnNames;
+        return this;
+    }
+
+    public boolean isProjectionPushdownEnabled()
+    {
+        return projectionPushdownEnabled;
+    }
+
+    @Config("hive.projection-pushdown-enabled")
+    @ConfigDescription("Projection pushdown into hive is enabled through applyProjection")
+    public HiveConfig setProjectionPushdownEnabled(boolean projectionPushdownEnabled)
+    {
+        this.projectionPushdownEnabled = projectionPushdownEnabled;
         return this;
     }
 }

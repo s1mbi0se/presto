@@ -529,7 +529,7 @@ public class ParquetTester
             return new SqlDate(((Long) fieldFromCursor).intValue());
         }
         if (TIMESTAMP.equals(type)) {
-            return new SqlTimestamp((long) fieldFromCursor, UTC_KEY);
+            return SqlTimestamp.legacyFromMillis(3, (long) fieldFromCursor, UTC_KEY);
         }
         return fieldFromCursor;
     }
@@ -716,7 +716,10 @@ public class ParquetTester
                 new FileOutputStream(outputFile),
                 columnNames,
                 types,
-                ParquetWriterOptions.builder().build(),
+                ParquetWriterOptions.builder()
+                        .setMaxPageSize(DataSize.ofBytes(100))
+                        .setMaxBlockSize(DataSize.ofBytes(100000))
+                        .build(),
                 compressionCodecName);
 
         PageBuilder pageBuilder = new PageBuilder(types);

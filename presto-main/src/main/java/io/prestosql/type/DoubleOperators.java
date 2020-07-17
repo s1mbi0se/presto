@@ -36,7 +36,6 @@ import static io.airlift.slice.Slices.utf8Slice;
 import static io.prestosql.spi.StandardErrorCode.INVALID_CAST_ARGUMENT;
 import static io.prestosql.spi.StandardErrorCode.NUMERIC_VALUE_OUT_OF_RANGE;
 import static io.prestosql.spi.function.OperatorType.ADD;
-import static io.prestosql.spi.function.OperatorType.BETWEEN;
 import static io.prestosql.spi.function.OperatorType.CAST;
 import static io.prestosql.spi.function.OperatorType.DIVIDE;
 import static io.prestosql.spi.function.OperatorType.EQUAL;
@@ -166,13 +165,6 @@ public final class DoubleOperators
         return left >= right;
     }
 
-    @ScalarOperator(BETWEEN)
-    @SqlType(StandardTypes.BOOLEAN)
-    public static boolean between(@SqlType(StandardTypes.DOUBLE) double value, @SqlType(StandardTypes.DOUBLE) double min, @SqlType(StandardTypes.DOUBLE) double max)
-    {
-        return min <= value && value <= max;
-    }
-
     @ScalarOperator(CAST)
     @SqlType(StandardTypes.BOOLEAN)
     public static boolean castToBoolean(@SqlType(StandardTypes.DOUBLE) double value)
@@ -256,6 +248,9 @@ public final class DoubleOperators
     @SqlType(StandardTypes.BIGINT)
     public static long hashCode(@SqlType(StandardTypes.DOUBLE) double value)
     {
+        if (value == 0) {
+            value = 0;
+        }
         return AbstractLongType.hash(doubleToLongBits(value));
     }
 
@@ -376,6 +371,9 @@ public final class DoubleOperators
     @SqlType(StandardTypes.BIGINT)
     public static long xxHash64(@SqlType(StandardTypes.DOUBLE) double value)
     {
+        if (value == 0) {
+            value = 0;
+        }
         return XxHash64.hash(Double.doubleToLongBits(value));
     }
 }

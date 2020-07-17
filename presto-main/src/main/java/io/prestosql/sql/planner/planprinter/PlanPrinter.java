@@ -57,6 +57,7 @@ import io.prestosql.sql.planner.plan.Assignments;
 import io.prestosql.sql.planner.plan.CorrelatedJoinNode;
 import io.prestosql.sql.planner.plan.DeleteNode;
 import io.prestosql.sql.planner.plan.DistinctLimitNode;
+import io.prestosql.sql.planner.plan.DynamicFilterId;
 import io.prestosql.sql.planner.plan.EnforceSingleRowNode;
 import io.prestosql.sql.planner.plan.ExceptNode;
 import io.prestosql.sql.planner.plan.ExchangeNode;
@@ -822,7 +823,7 @@ public class PlanPrinter
                     .collect(Collectors.joining(", ", "{", "}"));
         }
 
-        private String printDynamicFilterAssignments(Map<String, Symbol> filters)
+        private String printDynamicFilterAssignments(Map<DynamicFilterId, Symbol> filters)
         {
             return filters.entrySet().stream()
                     .map(filter -> filter.getValue() + " -> " + filter.getKey())
@@ -873,10 +874,15 @@ public class PlanPrinter
             else {
                 name = "Unnest";
             }
+
+            List<Symbol> unnestInputs = node.getMappings().stream()
+                    .map(UnnestNode.Mapping::getInput)
+                    .collect(toImmutableList());
+
             addNode(
                     node,
                     name,
-                    format("[replicate=%s, unnest=%s", formatOutputs(types, node.getReplicateSymbols()), formatOutputs(types, node.getUnnestSymbols().keySet()))
+                    format("[replicate=%s, unnest=%s", formatOutputs(types, node.getReplicateSymbols()), formatOutputs(types, unnestInputs))
                             + (node.getFilter().isPresent() ? format(", filter=%s]", node.getFilter().get().toString()) : "]"));
             return processChildren(node, context);
         }
@@ -1171,7 +1177,7 @@ public class PlanPrinter
         {
             checkArgument(!constraint.isNone());
             Map<ColumnHandle, Domain> domains = constraint.getDomains().get();
-            if (!constraint.isAll() && domains.containsKey(column)) {
+            if (domains.containsKey(column)) {
                 nodeOutput.appendDetailsLine("    :: %s", formatDomain(domains.get(column).simplify()));
             }
         }

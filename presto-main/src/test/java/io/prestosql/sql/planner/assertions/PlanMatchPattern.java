@@ -13,10 +13,8 @@
  */
 package io.prestosql.sql.planner.assertions;
 
-import com.google.common.base.Predicate;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import io.prestosql.Session;
@@ -42,6 +40,7 @@ import io.prestosql.sql.planner.plan.ExceptNode;
 import io.prestosql.sql.planner.plan.ExchangeNode;
 import io.prestosql.sql.planner.plan.FilterNode;
 import io.prestosql.sql.planner.plan.GroupIdNode;
+import io.prestosql.sql.planner.plan.IndexJoinNode;
 import io.prestosql.sql.planner.plan.IndexSourceNode;
 import io.prestosql.sql.planner.plan.IntersectNode;
 import io.prestosql.sql.planner.plan.JoinNode;
@@ -76,6 +75,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -91,6 +91,7 @@ import static io.prestosql.sql.planner.assertions.MatchResult.NO_MATCH;
 import static io.prestosql.sql.planner.assertions.MatchResult.match;
 import static io.prestosql.sql.planner.assertions.StrictAssignedSymbolsMatcher.actualAssignments;
 import static io.prestosql.sql.planner.assertions.StrictSymbolsMatcher.actualOutputs;
+import static io.prestosql.sql.planner.plan.JoinNode.Type.INNER;
 import static io.prestosql.sql.tree.SortItem.NullOrdering.FIRST;
 import static io.prestosql.sql.tree.SortItem.NullOrdering.UNDEFINED;
 import static io.prestosql.sql.tree.SortItem.Ordering.ASCENDING;
@@ -183,10 +184,27 @@ public final class PlanMatchPattern
         return result.addColumnReferences(expectedTableName, columnReferences);
     }
 
-    public static PlanMatchPattern constrainedIndexSource(String expectedTableName, Map<String, Domain> constraint, Map<String, String> columnReferences)
+    public static PlanMatchPattern indexJoin(
+            IndexJoinNode.Type type,
+            List<ExpectedValueProvider<IndexJoinNode.EquiJoinClause>> criteria,
+            Optional<String> probeHashSymbol,
+            Optional<String> indexHashSymbol,
+            PlanMatchPattern probeSource,
+            PlanMatchPattern indexSource)
+    {
+        return node(IndexJoinNode.class, probeSource, indexSource)
+                .with(new IndexJoinMatcher(type, criteria, probeHashSymbol.map(SymbolAlias::new), indexHashSymbol.map(SymbolAlias::new)));
+    }
+
+    public static ExpectedValueProvider<IndexJoinNode.EquiJoinClause> indexJoinEquiClause(String probe, String index)
+    {
+        return new IndexJoinEquiClauseProvider(new SymbolAlias(probe), new SymbolAlias(index));
+    }
+
+    public static PlanMatchPattern constrainedIndexSource(String expectedTableName, Map<String, String> columnReferences)
     {
         return node(IndexSourceNode.class)
-                .with(new IndexSourceMatcher(expectedTableName, constraint))
+                .with(new IndexSourceMatcher(expectedTableName))
                 .addColumnReferences(expectedTableName, columnReferences);
     }
 
@@ -213,6 +231,18 @@ public final class PlanMatchPattern
             PlanMatchPattern source)
     {
         PlanMatchPattern result = node(AggregationNode.class, source).with(new AggregationStepMatcher(step));
+        aggregations.entrySet().forEach(
+                aggregation -> result.withAlias(aggregation.getKey(), new AggregationFunctionMatcher(aggregation.getValue())));
+        return result;
+    }
+
+    public static PlanMatchPattern aggregation(
+            Map<String, ExpectedValueProvider<FunctionCall>> aggregations,
+            Predicate<AggregationNode> predicate,
+            PlanMatchPattern source)
+    {
+        PlanMatchPattern result = node(AggregationNode.class, source)
+                .with(new PredicateMatcher(predicate));
         aggregations.entrySet().forEach(
                 aggregation -> result.withAlias(aggregation.getKey(), new AggregationFunctionMatcher(aggregation.getValue())));
         return result;
@@ -464,19 +494,56 @@ public final class PlanMatchPattern
 
     public static PlanMatchPattern spatialJoin(String expectedFilter, Optional<String> kdbTree, PlanMatchPattern left, PlanMatchPattern right)
     {
+        return spatialJoin(expectedFilter, kdbTree, Optional.empty(), left, right);
+    }
+
+    public static PlanMatchPattern spatialJoin(String expectedFilter, Optional<String> kdbTree, Optional<List<String>> outputSymbols, PlanMatchPattern left, PlanMatchPattern right)
+    {
         return node(SpatialJoinNode.class, left, right).with(
-                new SpatialJoinMatcher(SpatialJoinNode.Type.INNER, rewriteIdentifiersToSymbolReferences(new SqlParser().createExpression(expectedFilter, new ParsingOptions())), kdbTree));
+                new SpatialJoinMatcher(SpatialJoinNode.Type.INNER, rewriteIdentifiersToSymbolReferences(new SqlParser().createExpression(expectedFilter, new ParsingOptions())), kdbTree, outputSymbols));
     }
 
     public static PlanMatchPattern spatialLeftJoin(String expectedFilter, PlanMatchPattern left, PlanMatchPattern right)
     {
         return node(SpatialJoinNode.class, left, right).with(
-                new SpatialJoinMatcher(SpatialJoinNode.Type.LEFT, rewriteIdentifiersToSymbolReferences(new SqlParser().createExpression(expectedFilter, new ParsingOptions())), Optional.empty()));
+                new SpatialJoinMatcher(SpatialJoinNode.Type.LEFT, rewriteIdentifiersToSymbolReferences(new SqlParser().createExpression(expectedFilter, new ParsingOptions())), Optional.empty(), Optional.empty()));
     }
 
     public static PlanMatchPattern unnest(PlanMatchPattern source)
     {
         return node(UnnestNode.class, source);
+    }
+
+    public static PlanMatchPattern unnest(List<String> replicateSymbols, List<UnnestMapping> mappings, PlanMatchPattern source)
+    {
+        return unnest(replicateSymbols, mappings, Optional.empty(), INNER, Optional.empty(), source);
+    }
+
+    public static PlanMatchPattern unnest(
+            List<String> replicateSymbols,
+            List<UnnestMapping> mappings,
+            Optional<String> ordinalitySymbol,
+            Type type,
+            Optional<String> filter,
+            PlanMatchPattern source)
+    {
+        PlanMatchPattern result = node(UnnestNode.class, source)
+                .with(new UnnestMatcher(
+                        replicateSymbols,
+                        mappings,
+                        ordinalitySymbol,
+                        type,
+                        filter.map(predicate -> rewriteIdentifiersToSymbolReferences(new SqlParser().createExpression(predicate, new ParsingOptions())))));
+
+        mappings.forEach(mapping -> {
+            for (int i = 0; i < mapping.getOutputs().size(); i++) {
+                result.withAlias(mapping.getOutputs().get(i), new UnnestedSymbolMatcher(mapping.getInput(), i));
+            }
+        });
+
+        ordinalitySymbol.ifPresent(symbol -> result.withAlias(symbol, new OrdinalitySymbolMatcher()));
+
+        return result;
     }
 
     public static PlanMatchPattern exchange(PlanMatchPattern... sources)
@@ -549,7 +616,12 @@ public final class PlanMatchPattern
 
     public static PlanMatchPattern filter(Expression expectedPredicate, PlanMatchPattern source)
     {
-        return node(FilterNode.class, source).with(new FilterMatcher(expectedPredicate));
+        return node(FilterNode.class, source).with(new FilterMatcher(expectedPredicate, Optional.empty()));
+    }
+
+    public static PlanMatchPattern filter(Expression expectedPredicate, Expression dynamicFilter, PlanMatchPattern source)
+    {
+        return node(FilterNode.class, source).with(new FilterMatcher(expectedPredicate, Optional.of(dynamicFilter)));
     }
 
     public static PlanMatchPattern apply(List<String> correlationSymbolAliases, Map<String, ExpressionMatcher> subqueryAssignments, PlanMatchPattern inputPattern, PlanMatchPattern subqueryPattern)
@@ -567,9 +639,21 @@ public final class PlanMatchPattern
                 .with(new CorrelationMatcher(correlationSymbolAliases));
     }
 
-    public static PlanMatchPattern groupingSet(List<List<String>> groups, String groupIdAlias, PlanMatchPattern source)
+    public static PlanMatchPattern groupId(List<List<String>> groupingSets, String groupIdSymbol, PlanMatchPattern source)
     {
-        return node(GroupIdNode.class, source).with(new GroupIdMatcher(groups, ImmutableMap.of(), groupIdAlias));
+        return groupId(groupingSets, ImmutableList.of(), groupIdSymbol, source);
+    }
+
+    public static PlanMatchPattern groupId(
+            List<List<String>> groupingSets,
+            List<String> aggregationArguments,
+            String groupIdSymbol,
+            PlanMatchPattern source)
+    {
+        return node(GroupIdNode.class, source).with(new GroupIdMatcher(
+                groupingSets,
+                aggregationArguments,
+                groupIdSymbol));
     }
 
     private static PlanMatchPattern values(
@@ -983,6 +1067,33 @@ public final class PlanMatchPattern
                     .add("count", groupingSetCount)
                     .add("globalSets", globalGroupingSets)
                     .toString();
+        }
+    }
+
+    public static class UnnestMapping
+    {
+        private final String input;
+        private final List<String> outputs;
+
+        private UnnestMapping(String input, List<String> outputs)
+        {
+            this.input = requireNonNull(input, "input is null");
+            this.outputs = requireNonNull(outputs, "outputs is null");
+        }
+
+        public static UnnestMapping unnestMapping(String input, List<String> outputs)
+        {
+            return new UnnestMapping(input, outputs);
+        }
+
+        public String getInput()
+        {
+            return input;
+        }
+
+        public List<String> getOutputs()
+        {
+            return outputs;
         }
     }
 

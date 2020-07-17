@@ -51,6 +51,26 @@ public class AccessDeniedException
         throw new AccessDeniedException(format("Principal %s cannot become user %s%s", principal.orElse(null), userName, formatExtraInfo(extraInfo)));
     }
 
+    public static void denyReadSystemInformationAccess()
+    {
+        denyReadSystemInformationAccess(null);
+    }
+
+    public static void denyReadSystemInformationAccess(String extraInfo)
+    {
+        throw new AccessDeniedException(format("Cannot read system information%s", formatExtraInfo(extraInfo)));
+    }
+
+    public static void denyWriteSystemInformationAccess()
+    {
+        denyWriteSystemInformationAccess(null);
+    }
+
+    public static void denyWriteSystemInformationAccess(String extraInfo)
+    {
+        throw new AccessDeniedException(format("Cannot write system information%s", formatExtraInfo(extraInfo)));
+    }
+
     public static void denyExecuteQuery()
     {
         denyExecuteQuery(null);
@@ -134,6 +154,11 @@ public class AccessDeniedException
     public static void denyShowSchemas(String extraInfo)
     {
         throw new AccessDeniedException(format("Cannot show schemas%s", formatExtraInfo(extraInfo)));
+    }
+
+    public static void denyShowCreateSchema(String schemaName)
+    {
+        throw new AccessDeniedException(format("Cannot show create schema for %s", schemaName));
     }
 
     public static void denyShowCreateTable(String tableName)
@@ -349,6 +374,11 @@ public class AccessDeniedException
     public static void denyShowRoles(String catalogName)
     {
         throw new AccessDeniedException(format("Cannot show roles from catalog %s", catalogName));
+    }
+
+    public static void denyShowRoleAuthorizationDescriptors(String catalogName)
+    {
+        throw new AccessDeniedException(format("Cannot show role authorizatin descriptors from catalog %s", catalogName));
     }
 
     public static void denyShowCurrentRoles(String catalogName)

@@ -2,6 +2,13 @@
 Date and Time Functions and Operators
 =====================================
 
+These functions and operators operate on :ref:`date and time data types <date-time-data-types>`.
+
+.. contents::
+    :local:
+    :backlinks: none
+    :depth: 1
+
 Date and Time Operators
 -----------------------
 
@@ -30,10 +37,10 @@ Time Zone Conversion
 The ``AT TIME ZONE`` operator sets the time zone of a timestamp::
 
     SELECT timestamp '2012-10-31 01:00 UTC';
-    2012-10-31 01:00:00.000 UTC
+    -- 2012-10-31 01:00:00.000 UTC
 
     SELECT timestamp '2012-10-31 01:00 UTC' AT TIME ZONE 'America/Los_Angeles';
-    2012-10-30 18:00:00.000 America/Los_Angeles
+    -- 2012-10-30 18:00:00.000 America/Los_Angeles
 
 Date and Time Functions
 -----------------------
@@ -48,7 +55,17 @@ Date and Time Functions
 
 .. data:: current_timestamp
 
-    Returns the current timestamp with time zone as of the start of the query.
+    Returns the current timestamp with time zone as of the start of the query,
+    with ``3`` digits of subsecond precision,
+
+.. data:: current_timestamp(p)
+
+    Returns the current :ref:`timestamp with time zone
+    <timestamp-with-time-zone-data-type>` as of the start of the query, with
+    ``p`` digits of subsecond precision::
+
+        SELECT current_timestamp(6);
+        -- 2020-06-24 08:25:31.759993 America/Los_Angeles
 
 .. function:: current_timezone() -> varchar
 
@@ -63,35 +80,62 @@ Date and Time Functions
 
     Returns the last day of the month.
 
-.. function:: from_iso8601_timestamp(string) -> timestamp with time zone
+.. function:: from_iso8601_timestamp(string) -> timestamp(3) with time zone
 
-    Parses the ISO 8601 formatted ``string`` into a ``timestamp with time zone``.
+    Parses the ISO 8601 formatted date ``string``, optionally with time and time
+    zone, into a ``timestamp(3) with time zone``. The time defaults to
+    ``00:00:00.000``, and the time zone defaults to the session time zone::
+
+        SELECT from_iso8601_timestamp('2020-05-11');
+        -- 2020-05-11 00:00:00.000 America/Vancouver
+
+        SELECT from_iso8601_timestamp('2020-05-11T11:15:05');
+        -- 2020-05-11 11:15:05.000 America/Vancouver
+
+        SELECT from_iso8601_timestamp('2020-05-11T11:15:05.055+01:00');
+        -- 2020-05-11 11:15:05.055 +01:00
 
 .. function:: from_iso8601_date(string) -> date
 
-    Parses the ISO 8601 formatted ``string`` into a ``date``.
+    Parses the ISO 8601 formatted date ``string`` into a ``date``. The date can
+    be a calendar date, a week date using ISO week numbering, or year and day
+    of year combined::
 
-.. function:: at_timezone(timestamp, zone) -> timestamp with time zone
+        SELECT from_iso8601_date('2020-05-11');
+        -- 2020-05-11
 
-    Change the time zone component of ``timestamp`` to ``zone`` while preserving the instant in time.
+        SELECT from_iso8601_date('2020-W10');
+        -- 2020-03-02
 
-.. function:: with_timezone(timestamp, zone) -> timestamp with time zone
+        SELECT from_iso8601_date('2020-123');
+        -- 2020-05-02
 
-    Returns a timestamp with time zone from ``timestamp`` and ``zone``.
+.. function:: at_timezone(timestamp, zone) -> timestamp(p) with time zone
 
-.. function:: from_unixtime(unixtime) -> timestamp
+    Change the time zone component of ``timestamp`` with precision ``p`` to
+    ``zone`` while preserving the instant in time.
 
-    Returns the UNIX timestamp ``unixtime`` as a timestamp. ``unixtime`` is the number of seconds since ``1970-01-01 00:00:00``.
+.. function:: with_timezone(timestamp, zone) -> timestamp(p) with time zone
 
-.. function:: from_unixtime(unixtime, zone) -> timestamp with time zone
+    Returns a timestamp with time zone from ``timestamp`` with precision ``p``
+    and ``zone``.
+
+.. function:: from_unixtime(unixtime) -> timestamp(3)
+
+    Returns the UNIX timestamp ``unixtime`` as a timestamp. ``unixtime`` is the
+    number of seconds since ``1970-01-01 00:00:00 UTC``.
+
+.. function:: from_unixtime(unixtime, zone) -> timestamp(3) with time zone
 
     Returns the UNIX timestamp ``unixtime`` as a timestamp with time zone
-    using ``zone`` for the time zone. ``unixtime`` is the number of seconds since ``1970-01-01 00:00:00``.
+    using ``zone`` for the time zone. ``unixtime`` is the number of seconds
+    since ``1970-01-01 00:00:00 UTC``.
 
-.. function:: from_unixtime(unixtime, hours, minutes) -> timestamp with time zone
+.. function:: from_unixtime(unixtime, hours, minutes) -> timestamp(3) with time zone
 
     Returns the UNIX timestamp ``unixtime`` as a timestamp with time zone
-    using ``hours`` and ``minutes`` for the time zone offset. ``unixtime`` is the number of seconds since ``1970-01-01 00:00:00``.
+    using ``hours`` and ``minutes`` for the time zone offset. ``unixtime`` is
+    the number of seconds since ``1970-01-01 00:00:00`` in ``double`` data type.
 
 .. data:: localtime
 
@@ -99,9 +143,18 @@ Date and Time Functions
 
 .. data:: localtimestamp
 
-    Returns the current timestamp as of the start of the query.
+    Returns the current timestamp as of the start of the query, with ``3``
+    digits of subsecond precision.
 
-.. function:: now() -> timestamp with time zone
+.. data:: localtimestamp(p)
+
+    Returns the current :ref:`timestamp <timestamp-data-type>` as of the start
+    of the query, with ``p`` digits of subsecond precision::
+
+        SELECT localtimestamp(6);
+        -- 2020-06-10 15:55:23.383628
+
+.. function:: now() -> timestamp(3) with time zone
 
     This is an alias for ``current_timestamp``.
 
@@ -176,17 +229,33 @@ Unit              Description
     Adds an interval ``value`` of type ``unit`` to ``timestamp``.
     Subtraction can be performed by using a negative value::
 
-        SELECT date_add('second', 86, TIMESTAMP '2020-03-01 00:00:00'); -- 2020-03-01 00:01:26.000
-        SELECT date_add('hour', 9, TIMESTAMP '2020-03-01 00:00:00'); -- 2020-03-01 09:00:00.000
-        SELECT date_add('day', -1, TIMESTAMP '2020-03-01 00:00:00 UTC'); -- 2020-02-29 00:00:00.000 UTC
+        SELECT date_add('second', 86, TIMESTAMP '2020-03-01 00:00:00');
+        -- 2020-03-01 00:01:26.000
+
+        SELECT date_add('hour', 9, TIMESTAMP '2020-03-01 00:00:00');
+        -- 2020-03-01 09:00:00.000
+
+        SELECT date_add('day', -1, TIMESTAMP '2020-03-01 00:00:00 UTC');
+        -- 2020-02-29 00:00:00.000 UTC
 
 .. function:: date_diff(unit, timestamp1, timestamp2) -> bigint
 
     Returns ``timestamp2 - timestamp1`` expressed in terms of ``unit``::
 
-        SELECT date_diff('second', TIMESTAMP '2020-03-01 00:00:00', TIMESTAMP '2020-03-02 00:00:00'); -- 86400
-        SELECT date_diff('hour', TIMESTAMP '2020-03-01 00:00:00 UTC', TIMESTAMP '2020-03-02 00:00:00 UTC'); -- 24
-        SELECT date_diff('day', DATE '2020-03-01', DATE '2020-03-02'); -- 1
+        SELECT date_diff('second', TIMESTAMP '2020-03-01 00:00:00', TIMESTAMP '2020-03-02 00:00:00');
+        -- 86400
+
+        SELECT date_diff('hour', TIMESTAMP '2020-03-01 00:00:00 UTC', TIMESTAMP '2020-03-02 00:00:00 UTC');
+        -- 24
+
+        SELECT date_diff('day', DATE '2020-03-01', DATE '2020-03-02');
+        -- 1
+
+        SELECT date_diff('second', TIMESTAMP '2020-06-01 12:30:45.000000000', TIMESTAMP '2020-06-02 12:30:45.123456789');
+        -- 86400
+
+        SELECT date_diff('millisecond', TIMESTAMP '2020-06-01 12:30:45.000000000', TIMESTAMP '2020-06-02 12:30:45.123456789');
+        -- 86400123
 
 Duration Function
 -----------------
@@ -210,9 +279,14 @@ Unit    Description
     Parses ``string`` of format ``value unit`` into an interval, where
     ``value`` is fractional number of ``unit`` values::
 
-        SELECT parse_duration('42.8ms'); -- 0 00:00:00.043
-        SELECT parse_duration('3.81 d'); -- 3 19:26:24.000
-        SELECT parse_duration('5m');     -- 0 00:05:00.000
+        SELECT parse_duration('42.8ms');
+        -- 0 00:00:00.043
+
+        SELECT parse_duration('3.81 d');
+        -- 3 19:26:24.000
+
+        SELECT parse_duration('5m');
+        -- 0 00:05:00.000
 
 MySQL Date Functions
 --------------------
@@ -270,7 +344,7 @@ Specifier Description
 
     Formats ``timestamp`` as a string using ``format``.
 
-.. function:: date_parse(string, format) -> timestamp
+.. function:: date_parse(string, format) -> timestamp(3)
 
     Parses ``string`` into a timestamp using ``format``.
 

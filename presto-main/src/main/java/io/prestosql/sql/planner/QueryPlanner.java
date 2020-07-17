@@ -22,14 +22,11 @@ import io.prestosql.Session;
 import io.prestosql.metadata.Metadata;
 import io.prestosql.metadata.TableHandle;
 import io.prestosql.spi.block.SortOrder;
-import io.prestosql.spi.connector.ColumnHandle;
 import io.prestosql.spi.type.Type;
 import io.prestosql.sql.analyzer.Analysis;
+import io.prestosql.sql.analyzer.Analysis.GroupingSetAnalysis;
 import io.prestosql.sql.analyzer.Analysis.SelectExpression;
-import io.prestosql.sql.analyzer.Field;
 import io.prestosql.sql.analyzer.FieldId;
-import io.prestosql.sql.analyzer.RelationId;
-import io.prestosql.sql.analyzer.RelationType;
 import io.prestosql.sql.analyzer.Scope;
 import io.prestosql.sql.planner.plan.AggregationNode;
 import io.prestosql.sql.planner.plan.AggregationNode.Aggregation;
@@ -39,10 +36,8 @@ import io.prestosql.sql.planner.plan.FilterNode;
 import io.prestosql.sql.planner.plan.GroupIdNode;
 import io.prestosql.sql.planner.plan.LimitNode;
 import io.prestosql.sql.planner.plan.OffsetNode;
-import io.prestosql.sql.planner.plan.PlanNode;
 import io.prestosql.sql.planner.plan.ProjectNode;
 import io.prestosql.sql.planner.plan.SortNode;
-import io.prestosql.sql.planner.plan.TableScanNode;
 import io.prestosql.sql.planner.plan.TableWriterNode.DeleteTarget;
 import io.prestosql.sql.planner.plan.ValuesNode;
 import io.prestosql.sql.planner.plan.WindowNode;
@@ -65,6 +60,7 @@ import io.prestosql.sql.tree.Query;
 import io.prestosql.sql.tree.QuerySpecification;
 import io.prestosql.sql.tree.SortItem;
 import io.prestosql.sql.tree.SymbolReference;
+import io.prestosql.sql.tree.Table;
 import io.prestosql.sql.tree.Window;
 import io.prestosql.sql.tree.WindowFrame;
 import io.prestosql.type.TypeCoercion;
@@ -77,6 +73,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
@@ -261,45 +258,20 @@ class QueryPlanner
 
     public DeleteNode plan(Delete node)
     {
-        RelationType descriptor = analysis.getOutputDescriptor(node.getTable());
-        TableHandle handle = analysis.getTableHandle(node.getTable());
-        ColumnHandle rowIdHandle = metadata.getUpdateRowIdColumnHandle(session, handle);
-        Type rowIdType = metadata.getColumnMetadata(session, handle, rowIdHandle).getType();
-
-        // add table columns
-        ImmutableList.Builder<Symbol> outputSymbols = ImmutableList.builder();
-        ImmutableMap.Builder<Symbol, ColumnHandle> columns = ImmutableMap.builder();
-        ImmutableList.Builder<Field> fields = ImmutableList.builder();
-        for (Field field : descriptor.getAllFields()) {
-            Symbol symbol = symbolAllocator.newSymbol(field.getName().get(), field.getType());
-            outputSymbols.add(symbol);
-            columns.put(symbol, analysis.getColumn(field));
-            fields.add(field);
-        }
-
-        // add rowId column
-        Field rowIdField = Field.newUnqualified(Optional.empty(), rowIdType);
-        Symbol rowIdSymbol = symbolAllocator.newSymbol("$rowId", rowIdField.getType());
-        outputSymbols.add(rowIdSymbol);
-        columns.put(rowIdSymbol, rowIdHandle);
-        fields.add(rowIdField);
+        Table table = node.getTable();
+        TableHandle handle = analysis.getTableHandle(table);
 
         // create table scan
-        PlanNode tableScan = TableScanNode.newInstance(idAllocator.getNextId(), handle, outputSymbols.build(), columns.build());
-        Scope scope = Scope.builder().withRelationType(RelationId.anonymous(), new RelationType(fields.build())).build();
-        RelationPlan relationPlan = new RelationPlan(tableScan, scope, outputSymbols.build());
+        RelationPlan relationPlan = new RelationPlanner(analysis, symbolAllocator, idAllocator, lambdaDeclarationToSymbolMap, metadata, session)
+                .process(table, null);
 
-        TranslationMap translations = new TranslationMap(relationPlan, analysis, lambdaDeclarationToSymbolMap);
-        translations.setFieldMappings(relationPlan.getFieldMappings());
-
-        PlanBuilder builder = new PlanBuilder(translations, relationPlan.getRoot());
-
+        PlanBuilder builder = planBuilderFor(relationPlan);
         if (node.getWhere().isPresent()) {
             builder = filter(builder, node.getWhere().get(), node);
         }
 
         // create delete node
-        Symbol rowId = builder.translate(new FieldReference(relationPlan.getDescriptor().indexOf(rowIdField)));
+        Symbol rowId = builder.translate(analysis.getRowIdField(table));
         List<Symbol> outputs = ImmutableList.of(
                 symbolAllocator.newSymbol("partialrows", BIGINT),
                 symbolAllocator.newSymbol("fragment", VARBINARY));
@@ -333,7 +305,10 @@ class QueryPlanner
                     .process(node.getFrom().get(), null);
         }
         else {
-            relationPlan = planImplicitTable();
+            relationPlan = new RelationPlan(
+                    new ValuesNode(idAllocator.getNextId(), ImmutableList.of(), ImmutableList.of(ImmutableList.of())),
+                    analysis.getImplicitFromScope(node),
+                    ImmutableList.of());
         }
 
         return planBuilderFor(relationPlan);
@@ -362,16 +337,6 @@ class QueryPlanner
         translations.setFieldMappings(relationPlan.getFieldMappings());
 
         return new PlanBuilder(translations, relationPlan.getRoot());
-    }
-
-    private RelationPlan planImplicitTable()
-    {
-        List<Expression> emptyRow = ImmutableList.of();
-        Scope scope = Scope.create();
-        return new RelationPlan(
-                new ValuesNode(idAllocator.getNextId(), ImmutableList.of(), ImmutableList.of(emptyRow)),
-                scope,
-                ImmutableList.of());
     }
 
     private PlanBuilder filter(PlanBuilder subPlan, Expression predicate, Node node)
@@ -491,7 +456,7 @@ class QueryPlanner
         analysis.getAggregates(node).stream()
                 .map(FunctionCall::getArguments)
                 .flatMap(List::stream)
-                .filter(exp -> !(exp instanceof LambdaExpression)) // lambda expression is generated at execution time
+                .filter(expression -> !(expression instanceof LambdaExpression)) // lambda expression is generated at execution time
                 .forEach(arguments::add);
 
         analysis.getAggregates(node).stream()
@@ -554,7 +519,7 @@ class QueryPlanner
             // The catch is that simple group-by expressions can be arbitrary expressions (this is a departure from the SQL specification).
             // But, they don't affect the number of grouping sets or the behavior of "distinct" . We can compute all the candidate
             // grouping sets in terms of fieldId, dedup as appropriate and then cross-join them with the complex expressions.
-            Analysis.GroupingSetAnalysis groupingSetAnalysis = analysis.getGroupingSets(node);
+            GroupingSetAnalysis groupingSetAnalysis = analysis.getGroupingSets(node);
             columnOnlyGroupingSets = enumerateGroupingSets(groupingSetAnalysis);
 
             if (node.getGroupBy().get().isDistinct()) {
@@ -670,7 +635,7 @@ class QueryPlanner
         return handleGroupingOperations(subPlan, node, groupIdSymbol, columnOnlyGroupingSets);
     }
 
-    private List<Set<FieldId>> enumerateGroupingSets(Analysis.GroupingSetAnalysis groupingSetAnalysis)
+    private List<Set<FieldId>> enumerateGroupingSets(GroupingSetAnalysis groupingSetAnalysis)
     {
         List<List<Set<FieldId>>> partialSets = new ArrayList<>();
 
@@ -793,7 +758,9 @@ class QueryPlanner
 
             // Pre-project inputs
             ImmutableList.Builder<Expression> inputs = ImmutableList.<Expression>builder()
-                    .addAll(windowFunction.getArguments())
+                    .addAll(windowFunction.getArguments().stream()
+                            .filter(argument -> !(argument instanceof LambdaExpression)) // lambda expression is generated at execution time
+                            .collect(Collectors.toList()))
                     .addAll(window.getPartitionBy())
                     .addAll(getSortItemsFromOrderBy(window.getOrderBy()).stream()
                             .map(SortItem::getSortKey)
@@ -930,7 +897,7 @@ class QueryPlanner
 
     private Optional<OrderingScheme> orderingScheme(PlanBuilder subPlan, Optional<OrderBy> orderBy, List<Expression> orderByExpressions)
     {
-        if (!orderBy.isPresent() || (isSkipRedundantSort(session)) && analysis.isOrderByRedundant(orderBy.get())) {
+        if (orderBy.isEmpty() || (isSkipRedundantSort(session)) && analysis.isOrderByRedundant(orderBy.get())) {
             return Optional.empty();
         }
 
@@ -952,7 +919,7 @@ class QueryPlanner
 
     private PlanBuilder sort(PlanBuilder subPlan, Optional<OrderingScheme> orderingScheme)
     {
-        if (!orderingScheme.isPresent()) {
+        if (orderingScheme.isEmpty()) {
             return subPlan;
         }
 
@@ -966,7 +933,7 @@ class QueryPlanner
 
     private PlanBuilder offset(PlanBuilder subPlan, Optional<Offset> offset)
     {
-        if (!offset.isPresent()) {
+        if (offset.isEmpty()) {
             return subPlan;
         }
 

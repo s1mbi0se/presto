@@ -19,8 +19,10 @@ import io.prestosql.metadata.SessionPropertyManager;
 import io.prestosql.spi.PrestoException;
 import io.prestosql.spi.connector.ConnectorSession;
 import io.prestosql.spi.security.ConnectorIdentity;
+import io.prestosql.spi.session.metadata.QueryRequestMetadata;
 import io.prestosql.spi.type.TimeZoneKey;
 
+import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -105,9 +107,9 @@ public class FullConnectorSession
     }
 
     @Override
-    public long getStartTime()
+    public Instant getStart()
     {
-        return session.getStartTime();
+        return session.getStart();
     }
 
     @Override
@@ -133,6 +135,12 @@ public class FullConnectorSession
     }
 
     @Override
+    public Optional<QueryRequestMetadata> getQueryRequestMetadata()
+    {
+        return session.getQueryRequestMetadata();
+    }
+
+    @Override
     public String toString()
     {
         return toStringHelper(this)
@@ -142,7 +150,7 @@ public class FullConnectorSession
                 .add("traceToken", getTraceToken().orElse(null))
                 .add("timeZoneKey", getTimeZoneKey())
                 .add("locale", getLocale())
-                .add("startTime", getStartTime())
+                .add("start", getStart())
                 .add("properties", properties)
                 .omitNullValues()
                 .toString();

@@ -20,6 +20,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import io.airlift.units.Duration;
 import io.prestosql.spi.PrestoException;
+import io.prestosql.spi.connector.AggregateFunction;
 import io.prestosql.spi.connector.ColumnHandle;
 import io.prestosql.spi.connector.ColumnMetadata;
 import io.prestosql.spi.connector.ConnectorSession;
@@ -37,6 +38,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -127,6 +129,18 @@ public final class CachingJdbcClient
     }
 
     @Override
+    public boolean supportsGroupingSets()
+    {
+        return delegate.supportsGroupingSets();
+    }
+
+    @Override
+    public Optional<JdbcExpression> implementAggregation(ConnectorSession session, AggregateFunction aggregate, Map<String, ColumnHandle> assignments)
+    {
+        return delegate.implementAggregation(session, aggregate, assignments);
+    }
+
+    @Override
     public ConnectorSplitSource getSplits(ConnectorSession session, JdbcTableHandle tableHandle)
     {
         return delegate.getSplits(session, tableHandle);
@@ -160,9 +174,9 @@ public final class CachingJdbcClient
     }
 
     @Override
-    public boolean isLimitGuaranteed()
+    public boolean isLimitGuaranteed(ConnectorSession session)
     {
-        return delegate.isLimitGuaranteed();
+        return delegate.isLimitGuaranteed(session);
     }
 
     @Override
@@ -175,7 +189,7 @@ public final class CachingJdbcClient
             return cachedTableHandle;
         }
         Optional<JdbcTableHandle> tableHandle = delegate.getTableHandle(identity, schemaTableName);
-        if (!tableHandle.isPresent() || cacheMissing) {
+        if (tableHandle.isEmpty() || cacheMissing) {
             tableHandleCache.put(key, tableHandle);
         }
         return tableHandle;

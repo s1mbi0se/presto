@@ -13,7 +13,6 @@
  */
 package io.prestosql.plugin.hive.s3select;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.prestosql.plugin.hive.HdfsEnvironment;
 import io.prestosql.plugin.hive.HiveColumnHandle;
@@ -85,13 +84,13 @@ public class S3SelectRecordCursorProvider
 
         Optional<ReaderProjections> projectedReaderColumns = projectBaseColumns(columns);
         // Ignore predicates on partial columns for now.
-        effectivePredicate = effectivePredicate.transform(column -> column.isBaseColumn() ? column : null);
+        effectivePredicate = effectivePredicate.filter((column, domain) -> column.isBaseColumn());
 
         String serdeName = getDeserializerClassName(schema);
         if (CSV_SERDES.contains(serdeName)) {
             List<HiveColumnHandle> readerColumns = projectedReaderColumns
                     .map(ReaderProjections::getReaderColumns)
-                    .orElse(ImmutableList.of());
+                    .orElse(columns);
 
             IonSqlQueryBuilder queryBuilder = new IonSqlQueryBuilder(typeManager);
             String ionSqlQuery = queryBuilder.buildSql(readerColumns, effectivePredicate);

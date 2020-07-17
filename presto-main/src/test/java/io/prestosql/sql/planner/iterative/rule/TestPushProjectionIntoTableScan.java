@@ -22,13 +22,13 @@ import io.prestosql.connector.MockConnectorFactory.MockConnectorTableHandle;
 import io.prestosql.metadata.Metadata;
 import io.prestosql.metadata.TableHandle;
 import io.prestosql.plugin.tpch.TpchColumnHandle;
+import io.prestosql.spi.connector.Assignment;
 import io.prestosql.spi.connector.ColumnHandle;
 import io.prestosql.spi.connector.ColumnMetadata;
 import io.prestosql.spi.connector.ConnectorSession;
 import io.prestosql.spi.connector.ConnectorTableHandle;
 import io.prestosql.spi.connector.ConnectorTransactionHandle;
 import io.prestosql.spi.connector.ProjectionApplicationResult;
-import io.prestosql.spi.connector.ProjectionApplicationResult.Assignment;
 import io.prestosql.spi.connector.SchemaTableName;
 import io.prestosql.spi.expression.ConnectorExpression;
 import io.prestosql.spi.expression.Constant;
@@ -166,17 +166,17 @@ public class TestPushProjectionIntoTableScan
                     })
                     .withSession(MOCK_SESSION)
                     .matches(project(
-                        newNames.entrySet().stream()
-                            .collect(toImmutableMap(
-                                e -> e.getKey().getName(),
-                                e -> expression(symbolReference(e.getValue())))),
-                            tableScan(
-                                equalTo(createTableHandle(TEST_SCHEMA, "projected_" + TEST_TABLE).getConnectorHandle()),
-                                TupleDomain.all(),
-                                newNames.entrySet().stream()
+                            newNames.entrySet().stream()
                                     .collect(toImmutableMap(
-                                            e -> e.getValue(),
-                                            e -> equalTo(column(e.getValue(), types.get(e.getKey()))))))));
+                                            e -> e.getKey().getName(),
+                                            e -> expression(symbolReference(e.getValue())))),
+                            tableScan(
+                                    equalTo(createTableHandle(TEST_SCHEMA, "projected_" + TEST_TABLE).getConnectorHandle()),
+                                    TupleDomain.all(),
+                                    newNames.entrySet().stream()
+                                            .collect(toImmutableMap(
+                                                    e -> e.getValue(),
+                                                    e -> equalTo(column(e.getValue(), types.get(e.getKey()))))))));
         }
     }
 

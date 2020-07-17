@@ -23,10 +23,12 @@ import io.prestosql.spi.security.BasicPrincipal;
 import io.prestosql.spi.security.Identity;
 import io.prestosql.spi.security.SelectedRole;
 import io.prestosql.spi.session.ResourceEstimates;
+import io.prestosql.spi.session.metadata.QueryRequestMetadata;
 import io.prestosql.spi.type.TimeZoneKey;
 import io.prestosql.sql.SqlPath;
 import io.prestosql.transaction.TransactionId;
 
+import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -56,13 +58,14 @@ public final class SessionRepresentation
     private final Optional<String> clientInfo;
     private final Set<String> clientTags;
     private final Set<String> clientCapabilities;
-    private final long startTime;
+    private final Instant start;
     private final ResourceEstimates resourceEstimates;
     private final Map<String, String> systemProperties;
     private final Map<CatalogName, Map<String, String>> catalogProperties;
     private final Map<String, Map<String, String>> unprocessedCatalogProperties;
     private final Map<String, SelectedRole> roles;
     private final Map<String, String> preparedStatements;
+    private final Optional<QueryRequestMetadata> queryRequestMetadata;
 
     @JsonCreator
     public SessionRepresentation(
@@ -85,12 +88,13 @@ public final class SessionRepresentation
             @JsonProperty("clientTags") Set<String> clientTags,
             @JsonProperty("clientCapabilities") Set<String> clientCapabilities,
             @JsonProperty("resourceEstimates") ResourceEstimates resourceEstimates,
-            @JsonProperty("startTime") long startTime,
+            @JsonProperty("start") Instant start,
             @JsonProperty("systemProperties") Map<String, String> systemProperties,
             @JsonProperty("catalogProperties") Map<CatalogName, Map<String, String>> catalogProperties,
             @JsonProperty("unprocessedCatalogProperties") Map<String, Map<String, String>> unprocessedCatalogProperties,
             @JsonProperty("roles") Map<String, SelectedRole> roles,
-            @JsonProperty("preparedStatements") Map<String, String> preparedStatements)
+            @JsonProperty("preparedStatements") Map<String, String> preparedStatements,
+            @JsonProperty("queryRequestMetadata") Optional<QueryRequestMetadata> queryRequestMetadata)
     {
         this.queryId = requireNonNull(queryId, "queryId is null");
         this.transactionId = requireNonNull(transactionId, "transactionId is null");
@@ -111,10 +115,11 @@ public final class SessionRepresentation
         this.clientTags = requireNonNull(clientTags, "clientTags is null");
         this.clientCapabilities = requireNonNull(clientCapabilities, "clientCapabilities is null");
         this.resourceEstimates = requireNonNull(resourceEstimates, "resourceEstimates is null");
-        this.startTime = startTime;
+        this.start = start;
         this.systemProperties = ImmutableMap.copyOf(systemProperties);
         this.roles = ImmutableMap.copyOf(roles);
         this.preparedStatements = ImmutableMap.copyOf(preparedStatements);
+        this.queryRequestMetadata = requireNonNull(queryRequestMetadata, "queryMetadata is null");
 
         ImmutableMap.Builder<CatalogName, Map<String, String>> catalogPropertiesBuilder = ImmutableMap.builder();
         for (Entry<CatalogName, Map<String, String>> entry : catalogProperties.entrySet()) {
@@ -238,9 +243,9 @@ public final class SessionRepresentation
     }
 
     @JsonProperty
-    public long getStartTime()
+    public Instant getStart()
     {
-        return startTime;
+        return start;
     }
 
     @JsonProperty
@@ -279,6 +284,12 @@ public final class SessionRepresentation
         return preparedStatements;
     }
 
+    @JsonProperty
+    public Optional<QueryRequestMetadata> getQueryRequestMetadata()
+    {
+        return queryRequestMetadata;
+    }
+
     public Session toSession(SessionPropertyManager sessionPropertyManager)
     {
         return toSession(sessionPropertyManager, emptyMap());
@@ -309,11 +320,12 @@ public final class SessionRepresentation
                 clientTags,
                 clientCapabilities,
                 resourceEstimates,
-                startTime,
+                start,
                 systemProperties,
                 catalogProperties,
                 unprocessedCatalogProperties,
                 sessionPropertyManager,
-                preparedStatements);
+                preparedStatements,
+                queryRequestMetadata);
     }
 }

@@ -19,6 +19,7 @@ import io.prestosql.connector.CatalogName;
 import io.prestosql.server.SessionContext;
 import io.prestosql.spi.security.Identity;
 import io.prestosql.spi.session.ResourceEstimates;
+import io.prestosql.spi.session.metadata.QueryRequestMetadata;
 import io.prestosql.transaction.TransactionId;
 
 import java.util.Map;
@@ -160,5 +161,11 @@ public class TestingSessionContext
     public boolean supportClientTransaction()
     {
         return session.isClientTransactionSupport();
+    }
+
+    @Override
+    public Optional<QueryRequestMetadata> getQueryRequestMetadata()
+    {
+        return session.getQueryRequestMetadata();
     }
 }

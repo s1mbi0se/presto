@@ -359,7 +359,7 @@ public class ExpressionInterpreter
         @Override
         protected Object visitLiteral(Literal node, Object context)
         {
-            return LiteralInterpreter.evaluate(metadata, session, node);
+            return LiteralInterpreter.evaluate(metadata, session, expressionTypes, node);
         }
 
         @Override
@@ -678,7 +678,7 @@ public class ExpressionInterpreter
                     return value;
                 case MINUS:
                     ResolvedFunction resolvedOperator = metadata.resolveOperator(OperatorType.NEGATION, types(node.getValue()));
-                    MethodHandle handle = metadata.getScalarFunctionImplementation(resolvedOperator).getMethodHandle();
+                    MethodHandle handle = metadata.getScalarFunctionInvoker(resolvedOperator, Optional.empty()).getMethodHandle();
 
                     if (handle.type().parameterCount() > 0 && handle.type().parameterType(0) == ConnectorSession.class) {
                         handle = handle.bindTo(session);
@@ -775,7 +775,7 @@ public class ExpressionInterpreter
 
             Boolean greaterOrEqualToMin = null;
             if (min != null) {
-                greaterOrEqualToMin = (Boolean) invokeOperator(OperatorType.GREATER_THAN_OR_EQUAL, types(node.getValue(), node.getMin()), ImmutableList.of(value, min));
+                greaterOrEqualToMin = (Boolean) invokeOperator(OperatorType.LESS_THAN_OR_EQUAL, types(node.getMin(), node.getValue()), ImmutableList.of(min, value));
             }
             Boolean lessThanOrEqualToMax = null;
             if (max != null) {
@@ -932,8 +932,8 @@ public class ExpressionInterpreter
                     isDynamicFilter(node) ||
                     resolvedFunction.getSignature().getName().equals("fail"))) {
                 verify(!node.isDistinct(), "window does not support distinct");
-                verify(!node.getOrderBy().isPresent(), "window does not support order by");
-                verify(!node.getFilter().isPresent(), "window does not support filter");
+                verify(node.getOrderBy().isEmpty(), "window does not support order by");
+                verify(node.getFilter().isEmpty(), "window does not support filter");
                 return new FunctionCallBuilder(metadata)
                         .setName(node.getName())
                         .setWindow(node.getWindow())
@@ -1003,7 +1003,7 @@ public class ExpressionInterpreter
 
             if (value instanceof Slice &&
                     node.getPattern() instanceof StringLiteral &&
-                    (!node.getEscape().isPresent() || node.getEscape().get() instanceof StringLiteral)) {
+                    (node.getEscape().isEmpty() || node.getEscape().get() instanceof StringLiteral)) {
                 // fast path when we know the pattern and escape are constant
                 return evaluateLikePredicate(node, (Slice) value, getConstantPattern(node));
             }
@@ -1038,8 +1038,8 @@ public class ExpressionInterpreter
             }
 
             // if pattern is a constant without % or _ replace with a comparison
-            if (pattern instanceof Slice && (escape == null || escape instanceof Slice) && !isLikePattern((Slice) pattern, (Slice) escape)) {
-                Slice unescapedPattern = unescapeLiteralLikePattern((Slice) pattern, (Slice) escape);
+            if (pattern instanceof Slice && (escape == null || escape instanceof Slice) && !isLikePattern((Slice) pattern, Optional.ofNullable((Slice) escape))) {
+                Slice unescapedPattern = unescapeLiteralLikePattern((Slice) pattern, Optional.ofNullable((Slice) escape));
                 Type valueType = type(node.getValue());
                 Type patternType = createVarcharType(unescapedPattern.length());
                 Optional<Type> commonSuperType = typeCoercion.getCommonSuperType(valueType, patternType);

@@ -17,17 +17,18 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.prestosql.Session.ResourceEstimateBuilder;
-import io.prestosql.dispatcher.DispatcherConfig.HeaderSupport;
 import io.prestosql.security.AccessControl;
 import io.prestosql.spi.security.AccessDeniedException;
 import io.prestosql.spi.security.GroupProvider;
 import io.prestosql.spi.security.Identity;
 import io.prestosql.spi.security.SelectedRole;
 import io.prestosql.spi.session.ResourceEstimates;
+import io.prestosql.spi.session.metadata.QueryRequestMetadata;
 import io.prestosql.sql.parser.ParsingException;
 import io.prestosql.sql.parser.ParsingOptions;
 import io.prestosql.sql.parser.SqlParser;
@@ -57,7 +58,7 @@ import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
-import static com.google.common.net.HttpHeaders.X_FORWARDED_FOR;
+import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.prestosql.client.PrestoHeaders.PRESTO_CATALOG;
 import static io.prestosql.client.PrestoHeaders.PRESTO_CLIENT_CAPABILITIES;
 import static io.prestosql.client.PrestoHeaders.PRESTO_CLIENT_INFO;
@@ -66,6 +67,7 @@ import static io.prestosql.client.PrestoHeaders.PRESTO_EXTRA_CREDENTIAL;
 import static io.prestosql.client.PrestoHeaders.PRESTO_LANGUAGE;
 import static io.prestosql.client.PrestoHeaders.PRESTO_PATH;
 import static io.prestosql.client.PrestoHeaders.PRESTO_PREPARED_STATEMENT;
+import static io.prestosql.client.PrestoHeaders.PRESTO_QUERY_REQUEST_METADATA;
 import static io.prestosql.client.PrestoHeaders.PRESTO_RESOURCE_ESTIMATE;
 import static io.prestosql.client.PrestoHeaders.PRESTO_ROLE;
 import static io.prestosql.client.PrestoHeaders.PRESTO_SCHEMA;
@@ -75,8 +77,6 @@ import static io.prestosql.client.PrestoHeaders.PRESTO_TIME_ZONE;
 import static io.prestosql.client.PrestoHeaders.PRESTO_TRACE_TOKEN;
 import static io.prestosql.client.PrestoHeaders.PRESTO_TRANSACTION_ID;
 import static io.prestosql.client.PrestoHeaders.PRESTO_USER;
-import static io.prestosql.dispatcher.DispatcherConfig.HeaderSupport.ACCEPT;
-import static io.prestosql.dispatcher.DispatcherConfig.HeaderSupport.IGNORE;
 import static io.prestosql.sql.parser.ParsingOptions.DecimalLiteralTreatment.AS_DOUBLE;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -115,7 +115,10 @@ public final class HttpRequestSessionContext
     private final boolean clientTransactionSupport;
     private final String clientInfo;
 
-    public HttpRequestSessionContext(HeaderSupport forwardedHeaderSupport, MultivaluedMap<String, String> headers, String remoteAddress, Optional<Identity> authenticatedIdentity, GroupProvider groupProvider)
+    private final JsonCodec<QueryRequestMetadata> jsonCodecQueryRequestMetadata = jsonCodec(QueryRequestMetadata.class);
+    private final Optional<QueryRequestMetadata> queryRequestMetadata;
+
+    public HttpRequestSessionContext(MultivaluedMap<String, String> headers, String remoteAddress, Optional<Identity> authenticatedIdentity, GroupProvider groupProvider)
             throws WebApplicationException
     {
         catalog = trimEmptyToNull(headers.getFirst(PRESTO_CATALOG));
@@ -129,13 +132,14 @@ public final class HttpRequestSessionContext
         source = headers.getFirst(PRESTO_SOURCE);
         traceToken = Optional.ofNullable(trimEmptyToNull(headers.getFirst(PRESTO_TRACE_TOKEN)));
         userAgent = headers.getFirst(USER_AGENT);
-        remoteUserAddress = getRemoteUserAddress(forwardedHeaderSupport, headers.getFirst(X_FORWARDED_FOR), remoteAddress);
+        remoteUserAddress = remoteAddress;
         timeZoneId = headers.getFirst(PRESTO_TIME_ZONE);
         language = headers.getFirst(PRESTO_LANGUAGE);
         clientInfo = headers.getFirst(PRESTO_CLIENT_INFO);
         clientTags = parseClientTags(headers);
         clientCapabilities = parseClientCapabilities(headers);
         resourceEstimates = parseResourceEstimate(headers);
+        queryRequestMetadata = parseQueryRequestMetadata(headers);
 
         // parse session properties
         ImmutableMap.Builder<String, String> systemProperties = ImmutableMap.builder();
@@ -204,6 +208,15 @@ public final class HttpRequestSessionContext
         return identity;
     }
 
+    /**
+     * Create a Session Identity according to the defined parameters headers, credentials and groups.
+     *
+     * @param authenticatedIdentity an Optional Identity object.
+     * @param headers a MultivaluedMap containing all request headers.
+     * @param groupProvider a {@link GroupProvider} object.
+     *
+     * @return a session identity object.
+     */
     private static Identity buildSessionIdentity(Optional<Identity> authenticatedIdentity, MultivaluedMap<String, String> headers, GroupProvider groupProvider)
     {
         String prestoUser = trimEmptyToNull(headers.getFirst(PRESTO_USER));
@@ -216,34 +229,6 @@ public final class HttpRequestSessionContext
                 .withAdditionalExtraCredentials(parseExtraCredentials(headers))
                 .withAdditionalGroups(groupProvider.getGroups(user))
                 .build();
-    }
-
-    private static String getRemoteUserAddress(HeaderSupport forwardedHeaderSupport, String xForwarderForHeader, String remoteAddress)
-    {
-        // TODO support 'Forwarder' header (here & where other X-Forwarder-* are supported)
-
-        switch (forwardedHeaderSupport) {
-            case WARN:
-                if (xForwarderForHeader != null) {
-                    log.warn("Unsupported HTTP header '%s'. Presto needs to be explicitly configured to %s or %s this header", X_FORWARDED_FOR, IGNORE, ACCEPT);
-                }
-                return remoteAddress;
-
-            case IGNORE:
-                return remoteAddress;
-
-            case ACCEPT:
-                if (xForwarderForHeader != null) {
-                    List<String> addresses = Splitter.on(",").trimResults().omitEmptyStrings().splitToList(xForwarderForHeader);
-                    if (!addresses.isEmpty()) {
-                        return addresses.get(0);
-                    }
-                }
-                return remoteAddress;
-
-            default:
-                throw new UnsupportedOperationException("Unexpected forwardedHeaderSupport: " + forwardedHeaderSupport);
-        }
     }
 
     @Override
@@ -366,6 +351,24 @@ public final class HttpRequestSessionContext
         return traceToken;
     }
 
+    @Override
+    public Optional<QueryRequestMetadata> getQueryRequestMetadata()
+    {
+        return queryRequestMetadata;
+    }
+
+    /**
+     * Returns a list of the HTTP headers received on the request.
+     * <p>
+     * Extracts the HTTP headers from the received request and creates a list
+     * of these headers to be returned.
+     * Returns a flat (non-nested) list of resulting values or an empty list
+     *
+     * @param headers a MultivaluedMap containing all request headers.
+     * @param name a string that represents PrestoHeader's name.
+     *
+     * @return a list of all retrieved HTTP headers from request.
+     */
     private static List<String> splitHttpHeader(MultivaluedMap<String, String> headers, String name)
     {
         List<String> values = firstNonNull(headers.get(name), ImmutableList.of());
@@ -376,11 +379,29 @@ public final class HttpRequestSessionContext
                 .collect(toImmutableList());
     }
 
+    /**
+     * Extracts the specific header PRESTO_SESSION
+     *
+     * @param headers headers a MultivaluedMap containing all request headers.
+     *
+     * @return a Map with the {@link PRESTO_SESSION} properties
+     */
     private static Map<String, String> parseSessionHeaders(MultivaluedMap<String, String> headers)
     {
         return parseProperty(headers, PRESTO_SESSION);
     }
 
+    /**
+     * Checks if the header matches to the defined header pattern.
+     * <p>
+     * Checks if the received headers matches the defined headers pattern. If it does, this header will be extracted,
+     * if it doesn't, a WebApplicationException will be thrown.
+     * Returns a newly-created immutable map with the PRESTO_ROLE header extracted.
+     *
+     * @param headers a MultivaluedMap containing all request headers.
+     *
+     * @return a new ImmutableMap roles with the PRESTO_ROLE header extracted.
+     */
     private static Map<String, SelectedRole> parseRoleHeaders(MultivaluedMap<String, String> headers)
     {
         ImmutableMap.Builder<String, SelectedRole> roles = ImmutableMap.builder();
@@ -397,11 +418,30 @@ public final class HttpRequestSessionContext
         return roles.build();
     }
 
+    /**
+     * Extracts the specific header PRESTO_EXTRA_CREDENTIAL
+     *
+     * @param headers a MultivaluedMap containing all request headers.
+     *
+     * @return a Map with the {@link PRESTO_EXTRA_CREDENTIAL} properties
+     */
     private static Map<String, String> parseExtraCredentials(MultivaluedMap<String, String> headers)
     {
         return parseProperty(headers, PRESTO_EXTRA_CREDENTIAL);
     }
 
+    /**
+     * Returns a map containing all extracted properties from a given header.
+     * <p>
+     * Validates that each header presents a set of key/value and adds the valid values in a HashMap properties. For invalid values, an
+     * IllegalArgumentException is generated and handled.
+     * Returns a HashMap with valid values as properties.
+     *
+     * @param headers a MultivaluedMap containing all request headers.
+     * @param headerName the header name.
+     *
+     * @return a HashMap with the extracted header properties.
+     */
     private static Map<String, String> parseProperty(MultivaluedMap<String, String> headers, String headerName)
     {
         Map<String, String> properties = new HashMap<>();
@@ -418,18 +458,46 @@ public final class HttpRequestSessionContext
         return properties;
     }
 
+    /**
+     * Extracts the header PRESTO_CLIENT_TAGS
+     * <p>
+     * Returns a Set with the extracted {@code PRESTO_CLIENT_TAGS} header.
+     *
+     * @param headers a MultivaluedMap containing all request headers.
+     *
+     * @return a Set with {@code PRESTO_CLIENT_TAGS} headers.
+     */
     private static Set<String> parseClientTags(MultivaluedMap<String, String> headers)
     {
         Splitter splitter = Splitter.on(',').trimResults().omitEmptyStrings();
         return ImmutableSet.copyOf(splitter.split(nullToEmpty(headers.getFirst(PRESTO_CLIENT_TAGS))));
     }
 
+    /**
+     * Extracts the header PRESTO_CLIENT_CAPABILITIES.
+     * <p>
+     * Returns a Set with the extracted {@code PRESTO_CLIENT_CAPABILITIES} headers.
+     *
+     * @param headers a MultivaluedMap containing all request headers.
+     *
+     * @return a Set with {@code PRESTO_CLIENT_CAPABILITIES} headers.
+     */
     private static Set<String> parseClientCapabilities(MultivaluedMap<String, String> headers)
     {
         Splitter splitter = Splitter.on(',').trimResults().omitEmptyStrings();
         return ImmutableSet.copyOf(splitter.split(nullToEmpty(headers.getFirst(PRESTO_CLIENT_CAPABILITIES))));
     }
 
+    /**
+     * Check which resource estimate will be started and extracts PRESTO_RESOURCE_ESTIMATE header.
+     * <p>
+     * Checks in switch case the name is to execute the EXECUTION_TIME, CPU_TIME or PEAK_MEMORY.
+     * If the value is not valid, an IllegalArgumentException is generated an handled.
+     *
+     * @param headers headers a MultivaluedMap containing all request headers.
+     *
+     * @return {@link ResourceEstimates} that estimates resource usage for a query.
+     */
     private static ResourceEstimates parseResourceEstimate(MultivaluedMap<String, String> headers)
     {
         ResourceEstimateBuilder builder = new ResourceEstimateBuilder();
@@ -457,6 +525,42 @@ public final class HttpRequestSessionContext
         return builder.build();
     }
 
+    /**
+     * Extracts the Presto_QUERY_REQUEST_METADATA header.
+     * <p>
+     * Checks whether serializedData is null. If so, an empty Optional is returned.
+     * If not, put it in a pattern and put it in json format.
+     *
+     * @param headers headers a MultivaluedMap that takes a string as a key and another string as a value.
+     *
+     * @return an Optional of type {@link QueryRequestMetadata}.
+     */
+    private Optional<QueryRequestMetadata> parseQueryRequestMetadata(MultivaluedMap<String, String> headers)
+    {
+        String serializedData = trimEmptyToNull(headers.getFirst(PRESTO_QUERY_REQUEST_METADATA));
+        if (serializedData == null) {
+            return Optional.empty();
+        }
+
+        String serialized = serializedData.replaceAll("^\"|\"$", "").replace("\\\"", "\"");
+
+        QueryRequestMetadata queryRequestMetadata = jsonCodecQueryRequestMetadata.fromJson(serialized);
+
+        return Optional.ofNullable(queryRequestMetadata);
+    }
+
+    /**
+     * Assert if a given expression is true or false.
+     * <p>
+     * Receives a boolean expression, a message and multiple arguments as parameters.
+     * If the expression is false, the method will throw an WebApplicationException.
+     *
+     * @param expression any boolean expression
+     * @param format message that will be returned if the expression is false.
+     * @param args multiple arguments that can be inserted in the response message.
+     *
+     * @throws WebApplicationException if the expression is false.
+     */
     private static void assertRequest(boolean expression, String format, Object... args)
     {
         if (!expression) {
@@ -464,6 +568,16 @@ public final class HttpRequestSessionContext
         }
     }
 
+    /**
+     * Extract the PRESTO_PREPARED_STATEMENT header and parse the sql command.
+     * <p>
+     * Check all headers and extract the PRESTO_PREPARED_STATEMENT header. Decodes the statementName.
+     * Validates the sql command with sqlParser and returns a Map<String,String> with all occurrences.
+     *
+     * @param headers a MultivaluedMap that takes a string as a key and another string as a value.
+     *
+     * @return a Map<String,String> with the name and sql command as key/value.
+     */
     private static Map<String, String> parsePreparedStatementsHeaders(MultivaluedMap<String, String> headers)
     {
         ImmutableMap.Builder<String, String> preparedStatements = ImmutableMap.builder();
@@ -491,6 +605,17 @@ public final class HttpRequestSessionContext
         return preparedStatements.build();
     }
 
+    /**
+     * Try to instantiate a new {@link TransactionId}
+     * <p>
+     * Checks whether the transactionId is null. if so, an empty option is returned.
+     * If not, a new instance of the {@link TransactionId} is returned. For invalid values,
+     * an WebApplicationException is thrown and handled.
+     *
+     * @param transactionId a string that represents the transaction id.
+     *
+     * @return an Optional TransactionId
+     */
     private static Optional<TransactionId> parseTransactionId(String transactionId)
     {
         transactionId = trimEmptyToNull(transactionId);
@@ -514,6 +639,15 @@ public final class HttpRequestSessionContext
                 .build());
     }
 
+    /**
+     * Check and return a given string if it is non-null and non-empty.
+     *
+     * @param value a given string value that represents PrestoHeaders.
+     *
+     * @return The given string if it is non-null and non-empty
+     *
+     * @see io.prestosql.client.PrestoHeaders
+     */
     private static String trimEmptyToNull(String value)
     {
         return emptyToNull(nullToEmpty(value).trim());

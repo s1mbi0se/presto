@@ -18,6 +18,7 @@ import io.prestosql.spi.connector.ConnectorSession;
 import io.prestosql.spi.security.ConnectorIdentity;
 import io.prestosql.spi.type.TimeZoneKey;
 
+import java.time.Instant;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -60,9 +61,9 @@ public final class TestingSession
         }
 
         @Override
-        public long getStartTime()
+        public Instant getStart()
         {
-            return 0;
+            return Instant.ofEpochMilli(0);
         }
 
         @Override
@@ -81,6 +82,12 @@ public final class TestingSession
         public <T> T getProperty(String name, Class<T> type)
         {
             throw new PrestoException(INVALID_SESSION_PROPERTY, "Unknown session property " + name);
+        }
+
+        @Override
+        public <T> Optional<T> getQueryRequestMetadata()
+        {
+            return Optional.ofNullable(null);
         }
     };
 

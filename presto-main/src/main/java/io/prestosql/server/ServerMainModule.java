@@ -66,9 +66,12 @@ import io.prestosql.memory.MemoryPoolAssignmentsRequest;
 import io.prestosql.memory.MemoryResource;
 import io.prestosql.memory.NodeMemoryConfig;
 import io.prestosql.metadata.AnalyzePropertyManager;
+import io.prestosql.metadata.CatalogDeltaRetrieverScheduler;
 import io.prestosql.metadata.CatalogManager;
 import io.prestosql.metadata.ColumnPropertyManager;
 import io.prestosql.metadata.DiscoveryNodeManager;
+import io.prestosql.metadata.DynamicCatalogStore;
+import io.prestosql.metadata.DynamicCatalogStoreConfig;
 import io.prestosql.metadata.ForNodeManager;
 import io.prestosql.metadata.HandleJsonModule;
 import io.prestosql.metadata.InternalNodeManager;
@@ -153,6 +156,7 @@ import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static io.prestosql.execution.scheduler.NodeSchedulerConfig.NodeSchedulerPolicy.TOPOLOGY;
 import static io.prestosql.execution.scheduler.NodeSchedulerConfig.NodeSchedulerPolicy.UNIFORM;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -161,6 +165,13 @@ import static org.weakref.jmx.guice.ExportBinder.newExporter;
 public class ServerMainModule
         extends AbstractConfigurationAwareModule
 {
+    private final String nodeVersion;
+
+    public ServerMainModule(String nodeVersion)
+    {
+        this.nodeVersion = requireNonNull(nodeVersion, "nodeVersion is null");
+    }
+
     @Override
     protected void setup(Binder binder)
     {
@@ -336,6 +347,9 @@ public class ServerMainModule
         // metadata
         binder.bind(StaticCatalogStore.class).in(Scopes.SINGLETON);
         configBinder(binder).bindConfig(StaticCatalogStoreConfig.class);
+        binder.bind(DynamicCatalogStore.class).in(Scopes.SINGLETON);
+        configBinder(binder).bindConfig(DynamicCatalogStoreConfig.class);
+        binder.bind(CatalogDeltaRetrieverScheduler.class).in(Scopes.SINGLETON);
         binder.bind(MetadataManager.class).in(Scopes.SINGLETON);
         binder.bind(Metadata.class).to(MetadataManager.class).in(Scopes.SINGLETON);
 
@@ -374,13 +388,10 @@ public class ServerMainModule
         // split monitor
         binder.bind(SplitMonitor.class).in(Scopes.SINGLETON);
 
-        // Determine the NodeVersion
-        NodeVersion nodeVersion = new NodeVersion(serverConfig.getPrestoVersion());
-        binder.bind(NodeVersion.class).toInstance(nodeVersion);
-
-        // presto announcement
+        // version and announcement
+        binder.bind(NodeVersion.class).toInstance(new NodeVersion(nodeVersion));
         discoveryBinder(binder).bindHttpAnnouncement("presto")
-                .addProperty("node_version", nodeVersion.toString())
+                .addProperty("node_version", nodeVersion)
                 .addProperty("coordinator", String.valueOf(serverConfig.isCoordinator()));
 
         // server info resource

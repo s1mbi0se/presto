@@ -24,6 +24,7 @@ import io.prestosql.plugin.hive.orc.OrcFileWriterFactory;
 import io.prestosql.plugin.hive.orc.OrcPageSourceFactory;
 import io.prestosql.plugin.hive.orc.OrcReaderConfig;
 import io.prestosql.plugin.hive.orc.OrcWriterConfig;
+import io.prestosql.plugin.hive.parquet.ParquetFileWriterFactory;
 import io.prestosql.plugin.hive.parquet.ParquetPageSourceFactory;
 import io.prestosql.plugin.hive.parquet.ParquetReaderConfig;
 import io.prestosql.plugin.hive.parquet.ParquetWriterConfig;
@@ -439,6 +440,22 @@ public class TestHiveFileFormats
     }
 
     @Test(dataProvider = "rowCount")
+    public void testOptimizedParquetWriter(int rowCount)
+            throws Exception
+    {
+        ConnectorSession session = getHiveSession(new HiveConfig(), new ParquetWriterConfig().setParquetOptimizedWriterEnabled(true));
+        assertTrue(HiveSessionProperties.isParquetOptimizedWriterEnabled(session));
+
+        List<TestColumn> testColumns = getTestColumnsSupportedByParquet();
+        assertThatFileFormat(PARQUET)
+                .withSession(session)
+                .withColumns(testColumns)
+                .withRowsCount(rowCount)
+                .withFileWriterFactory(new ParquetFileWriterFactory(HDFS_ENVIRONMENT, TYPE_MANAGER, new NodeVersion("test"), new HiveConfig()))
+                .isReadableByPageSource(new ParquetPageSourceFactory(HDFS_ENVIRONMENT, STATS, new ParquetReaderConfig()));
+    }
+
+    @Test(dataProvider = "rowCount")
     public void testParquetPageSourceSchemaEvolution(int rowCount)
             throws Exception
     {
@@ -676,7 +693,7 @@ public class TestHiveFileFormats
                     // TODO: This is a bug in the RC text reader
                     // RC file does not support complex type as key of a map
                     return !testColumn.getName().equals("t_struct_null")
-                        && !testColumn.getName().equals("t_map_null_key_complex_key_value");
+                            && !testColumn.getName().equals("t_map_null_key_complex_key_value");
                 })
                 .collect(toImmutableList());
 
@@ -745,10 +762,10 @@ public class TestHiveFileFormats
         List<TestColumn> readColumns = readeColumnsBuilder.addAll(partitionColumns).build();
 
         assertThatFileFormat(RCBINARY)
-            .withWriteColumns(writeColumns)
-            .withReadColumns(readColumns)
-            .withRowsCount(rowCount)
-            .isReadableByRecordCursor(createGenericHiveRecordCursorProvider(HDFS_ENVIRONMENT));
+                .withWriteColumns(writeColumns)
+                .withReadColumns(readColumns)
+                .withRowsCount(rowCount)
+                .isReadableByRecordCursor(createGenericHiveRecordCursorProvider(HDFS_ENVIRONMENT));
     }
 
     @Test(dataProvider = "rowCount")
@@ -825,7 +842,7 @@ public class TestHiveFileFormats
             List<TestColumn> testReadColumns,
             ConnectorSession session,
             int rowCount)
-                throws Exception
+            throws Exception
     {
         Properties splitProperties = new Properties();
         splitProperties.setProperty(FILE_INPUT_FORMAT, storageFormat.getInputFormat());
@@ -885,12 +902,12 @@ public class TestHiveFileFormats
         splitProperties.setProperty(
                 "columns",
                 splitPropertiesColumnNames.build().stream()
-                    .collect(Collectors.joining(",")));
+                        .collect(Collectors.joining(",")));
 
         splitProperties.setProperty(
                 "columns.types",
                 splitPropertiesColumnTypes.build().stream()
-                    .collect(Collectors.joining(",")));
+                        .collect(Collectors.joining(",")));
 
         List<HivePartitionKey> partitionKeys = testReadColumns.stream()
                 .filter(TestColumn::isPartitionKey)

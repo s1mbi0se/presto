@@ -1,4 +1,3 @@
-package io.prestosql.operator.scalar;
 /*
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,6 +11,7 @@ package io.prestosql.operator.scalar;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.prestosql.operator.scalar;
 
 import com.google.common.collect.ImmutableList;
 import io.prestosql.metadata.BoundVariables;
@@ -25,6 +25,7 @@ import io.prestosql.spi.type.TypeSignature;
 
 import java.lang.invoke.MethodHandle;
 import java.util.List;
+import java.util.Optional;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.prestosql.metadata.Signature.comparableWithVariadicBound;
@@ -76,8 +77,7 @@ public class RowEqualOperator
     private static MethodHandle resolveEqualOperator(Type type, Metadata metadata)
     {
         ResolvedFunction operator = metadata.resolveOperator(EQUAL, ImmutableList.of(type, type));
-        ScalarFunctionImplementation implementation = metadata.getScalarFunctionImplementation(operator);
-        return implementation.getMethodHandle();
+        return metadata.getScalarFunctionInvoker(operator, Optional.empty()).getMethodHandle();
     }
 
     public static Boolean equals(RowType rowType, List<MethodHandle> fieldEqualOperators, Block leftRow, Block rightRow)

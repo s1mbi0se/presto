@@ -13,6 +13,7 @@
  */
 package io.prestosql.plugin.cassandra;
 
+import com.google.common.collect.ImmutableMap;
 import io.prestosql.testing.AbstractTestDistributedQueries;
 import io.prestosql.testing.MaterializedResult;
 import io.prestosql.testing.QueryRunner;
@@ -36,7 +37,7 @@ public class TestCassandraDistributedQueries
             throws Exception
     {
         this.server = new CassandraServer();
-        return createCassandraQueryRunner(server, TpchTable.getTables());
+        return createCassandraQueryRunner(server, ImmutableMap.of(), TpchTable.getTables());
     }
 
     @AfterClass(alwaysRun = true)
@@ -84,35 +85,25 @@ public class TestCassandraDistributedQueries
     @Override
     public void testInsert()
     {
-        // Cassandra connector currently does not support create table
         // TODO test inserts
     }
 
     @Override
     public void testInsertWithCoercion()
     {
-        // Cassandra connector currently does not support create table
         // TODO test inserts
     }
 
     @Override
     public void testInsertUnicode()
     {
-        // Cassandra connector currently does not support create table
         // TODO test inserts
     }
 
     @Override
     public void testInsertArray()
     {
-        // Cassandra connector currently does not support create table
         // TODO test inserts
-    }
-
-    @Override
-    public void testCreateTable()
-    {
-        // Cassandra connector currently does not support create table
     }
 
     @Override
@@ -163,6 +154,9 @@ public class TestCassandraDistributedQueries
     @Override
     public void testDataMappingSmokeTest(DataMappingTestSetup dataMappingTestSetup)
     {
-        // Cassandra connector currently does not support create table
+        // TODO Enable after fixing the following error messages
+        // - Multiple definition of identifier id
+        // - unsupported type: char(3), decimal(5,3), decimal(15,3), time, timestamp with time zone
+        // - Invalid (reserved) user type name smallint
     }
 }
