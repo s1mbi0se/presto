@@ -101,6 +101,11 @@ public class DispatchInfo
         return failureInfo;
     }
 
+    /**
+     * Returns the elapsed time of the query.
+     *
+     * @return the elapsed time of the query
+     */
     public Duration getElapsedTime()
     {
         return elapsedTime;
