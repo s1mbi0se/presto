@@ -395,6 +395,15 @@ public class QueuedStatementResource
             return dispatchManager.waitForDispatched(queryId);
         }
 
+        /**
+         * Retrieves an object that contains all information about the dispatched query.
+         *
+         * @param token a generated token that identifies the client's request used to obtain the response from server
+         * @param uriInfo an object used to obtain the URI where the query can be retrieved from server or construct the query representation inside
+         * the web interface
+         * @return an object with all query's metadata
+         * @throws WebApplicationException if token is invalid or program could not find information about dispatched query
+         */
         public QueryResults getQueryResults(long token, UriInfo uriInfo)
         {
             long lastToken = this.lastToken.get();
