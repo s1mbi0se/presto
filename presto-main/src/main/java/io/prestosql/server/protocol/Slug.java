@@ -52,13 +52,11 @@ public final class Slug
     }
 
     /**
-     * Computes a hash code based on the data that have been provided
-     * and turns it into a string slug.
+     * Computes a hash code based on data about the query state and the received token.
      *
-     * @param context fixed set of constants
-     * @param token generated token
-     *
-     * @return a slug as a string.
+     * @param context a constant that represents if query is running or queued
+     * @param token a generated token that identifies the client's request used to obtain the response from server
+     * @return a hash code based on data about the query state and the received token
      */
     public String makeSlug(Context context, long token)
     {
