@@ -170,7 +170,6 @@ public class QueuedStatementResource
      * @param servletRequest an object that provides request information for HTTP servlets.
      * @param httpHeaders an object containing the HTTP request headers.
      * @param uriInfo an object containing the uri metadata.
-     *
      * @return a {@link Response} object.
      */
     @ResourceSecurity(AUTHENTICATED_USER)
@@ -272,7 +271,6 @@ public class QueuedStatementResource
      *
      * @param queryId an object containing the query id
      * @param uriInfo an object containing the uri metadata
-     *
      * @return an URI with this format: ui/query.html?queryId
      */
     private static URI getQueryHtmlUri(QueryId queryId, UriInfo uriInfo)
@@ -293,7 +291,6 @@ public class QueuedStatementResource
      * @param slug an object responsible for translating a multibyte value into bytes.
      * @param token generated token.
      * @param uriInfo an object containing the uri metadata.
-     *
      * @return a {@link URI} object.
      */
     private static URI getQueuedUri(QueryId queryId, Slug slug, long token, UriInfo uriInfo)
@@ -308,17 +305,15 @@ public class QueuedStatementResource
     }
 
     /**
-     * Instantiates an object of type {@link QueryResults} with information about
-     * all query related metadata.
+     * Instantiates an object that contains all information about query metadata.
      *
-     * @param queryId an object containing the query identifier.
-     * @param nextUri an object that checks if the query is completed or directs another uri.
-     * @param queryError an object responsible for reporting error in the query.
-     * @param uriInfo an object responsible for taking metadata from the uri.
-     * @param elapsedTime time elapsed until the query response.
-     * @param queuedTime queue waiting time.
-     *
-     * @return a {@link QueryResults} object.
+     * @param queryId an object containing the query identifier
+     * @param nextUri an object that contains the URI where information about query can be retrieved
+     * @param queryError an object responsible for reporting the error that happened during the query's execution
+     * @param uriInfo an object that will be used to construct the query representation in web interface
+     * @param elapsedTime the time elapsed until the query obtains its response
+     * @param queuedTime the time the query waited to be executed
+     * @return an object with all query's metadata
      */
     private static QueryResults createQueryResults(
             QueryId queryId,
@@ -454,6 +449,15 @@ public class QueuedStatementResource
             sessionContext.getIdentity().destroy();
         }
 
+        /**
+         * Instantiates an object that contains all information about query metadata.
+         *
+         * @param token a generated token that identifies the client's request used to obtains the response from server
+         * @param uriInfo an object used to obtain the URI where the query can be retrieved from server or construct the query representation inside
+         * the web interface
+         * @param dispatchInfo an object responsible for taking the coordinator's location, response time and waiting time
+         * @return an object with all query's metadata
+         */
         private QueryResults createQueryResults(long token, UriInfo uriInfo, DispatchInfo dispatchInfo)
         {
             URI nextUri = getNextUri(token, uriInfo, dispatchInfo);
@@ -481,7 +485,6 @@ public class QueuedStatementResource
          * @param uriInfo an object containing the uri metadata.
          * @param dispatchInfo an object responsible for taking the coordinator's location, response time
          * and waiting time
-         *
          * @return a {@link URI} object
          */
         private URI getNextUri(long token, UriInfo uriInfo, DispatchInfo dispatchInfo)
