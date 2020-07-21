@@ -54,7 +54,7 @@ public final class Slug
     /**
      * Computes a hash code based on data about the query state and the received token.
      *
-     * @param context a constant that represents if query is running or queued
+     * @param context a constant that represents if query is running or is queued
      * @param token a generated token that identifies the client's request used to obtain the response from server
      * @return a hash code based on data about the query state and the received token
      */
@@ -68,6 +68,14 @@ public final class Slug
                 .toString();
     }
 
+    /**
+     * Checks if a slug is valid based on the received context and token.
+     *
+     * @param context a constant that represents if query is running or is queued
+     * @param slug a hash code based on data about the query state and the received token
+     * @param token a generated token that identifies the client's request used to obtain the response from server
+     * @return a flag that indicates if received slug is valid for the respective context and token
+     */
     public boolean isValid(Context context, String slug, long token)
     {
         return makeSlug(context, token).equals(slug);
