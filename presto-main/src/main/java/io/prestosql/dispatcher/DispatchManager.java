@@ -132,7 +132,7 @@ public class DispatchManager
     /**
      * Generates the next query identifier.
      *
-     * @return a {@link QueryId} object
+     * @return an object that identifies a unique query
      */
     public QueryId createQueryId()
     {
