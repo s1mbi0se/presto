@@ -20,6 +20,9 @@ import java.security.SecureRandom;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ *  Slug is a unique identifier for a resource.
+ */
 public final class Slug
 {
     public enum Context

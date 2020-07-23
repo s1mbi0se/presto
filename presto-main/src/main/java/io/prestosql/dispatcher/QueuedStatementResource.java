@@ -158,15 +158,13 @@ public class QueuedStatementResource
     }
 
     /**
-     * Creates new queries to be executed on Presto.
-     * <p>
-     * Receives POST requests that tries to create new queries to be executed on Presto.
+     * Receives POST requests that tries to create new queries to be executed on server.
      *
-     * @param statement a sql command.
-     * @param servletRequest an object that provides request information for HTTP servlets.
-     * @param httpHeaders an object containing the HTTP request headers.
-     * @param uriInfo an object containing the uri metadata.
-     * @return a {@link Response} object.
+     * @param statement a sql command
+     * @param servletRequest an object that provides information about the http request
+     * @param httpHeaders an object containing information about the request headers
+     * @param uriInfo an object containing metadata about the uri of endpoint
+     * @return the information about query that was created
      */
     @ResourceSecurity(AUTHENTICATED_USER)
     @POST
@@ -244,6 +242,15 @@ public class QueuedStatementResource
         return Response.noContent().build();
     }
 
+    /**
+     * Gets the query by id, slug and a generated toke.
+     *
+     * @param queryId an object containing the query identifier
+     * @param slug a resource identifier made using the token and query state
+     * @param token a generated token that identifies the client's request used to obtain the response from server
+     * @return an object that contains metadata about the query
+     * @throws WebApplicationException if passed token is invalid or query does not exists
+     */
     private Query getQuery(QueryId queryId, String slug, long token)
     {
         Query query = queries.get(queryId);
@@ -364,6 +371,11 @@ public class QueuedStatementResource
             return queryId;
         }
 
+        /**
+         * Gets query's slug.
+         *
+         * @return the query's slug.
+         */
         public Slug getSlug()
         {
             return slug;
@@ -395,6 +407,15 @@ public class QueuedStatementResource
             return dispatchManager.waitForDispatched(queryId);
         }
 
+        /**
+         * Retrieves an object that contains all information about the dispatched query.
+         *
+         * @param token a generated token that identifies the client's request used to obtain the response from server
+         * @param uriInfo an object used to obtain the URI where the query can be retrieved from server or construct the query representation inside
+         * the web interface
+         * @return an object with all query's metadata
+         * @throws WebApplicationException if token is invalid or program could not find information about dispatched query
+         */
         public QueryResults getQueryResults(long token, UriInfo uriInfo)
         {
             long lastToken = this.lastToken.get();
