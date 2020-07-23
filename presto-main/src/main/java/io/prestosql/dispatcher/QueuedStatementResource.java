@@ -375,6 +375,11 @@ public class QueuedStatementResource
             return queryId;
         }
 
+        /**
+         * Gets query's slug.
+         *
+         * @return the query's slug.
+         */
         public Slug getSlug()
         {
             return slug;
