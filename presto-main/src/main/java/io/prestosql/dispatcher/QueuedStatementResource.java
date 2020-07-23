@@ -246,6 +246,15 @@ public class QueuedStatementResource
         return Response.noContent().build();
     }
 
+    /**
+     * Gets the query by id, slug and a generated toke.
+     *
+     * @param queryId an object containing the query identifier
+     * @param slug a resource identifier made using the token and query state
+     * @param token a generated token that identifies the client's request used to obtain the response from server
+     * @return an object that contains metadata about the query
+     * @throws WebApplicationException if passed token is invalid or query does not exists
+     */
     private Query getQuery(QueryId queryId, String slug, long token)
     {
         Query query = queries.get(queryId);
