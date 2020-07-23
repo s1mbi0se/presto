@@ -162,15 +162,13 @@ public class QueuedStatementResource
     }
 
     /**
-     * Creates new queries to be executed on Presto.
-     * <p>
-     * Receives POST requests that tries to create new queries to be executed on Presto.
+     * Receives POST requests that tries to create new queries to be executed on server.
      *
-     * @param statement a sql command.
-     * @param servletRequest an object that provides request information for HTTP servlets.
-     * @param httpHeaders an object containing the HTTP request headers.
-     * @param uriInfo an object containing the uri metadata.
-     * @return a {@link Response} object.
+     * @param statement a sql command
+     * @param servletRequest an object that provides information about the http request
+     * @param httpHeaders an object containing information about the request headers
+     * @param uriInfo an object containing metadata about the uri of endpoint
+     * @return the information about query that was created
      */
     @ResourceSecurity(AUTHENTICATED_USER)
     @POST
