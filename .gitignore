@@ -25,4 +25,3 @@ benchmark_outputs
 .mvn/timing.properties
 node_modules
 run_server.sh
-external_dependencies/
