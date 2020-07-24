@@ -44,7 +44,7 @@ public class DynamicCatalogStoreConfig
     private String dataConnectionsUrl = "localhost";
     private String dataConnectionsApiKey = "apikey";
     private List<String> disabledCatalogs;
-    private String cryptoKey = "";
+    private String cryptoKey;
 
     public String getDataConnectionsEndpoint()
     {
