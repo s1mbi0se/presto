@@ -383,7 +383,6 @@ public final class HttpRequestSessionContext
      * Extracts the specific header PRESTO_SESSION
      *
      * @param headers headers a MultivaluedMap containing all request headers.
-     *
      * @return a Map with the {@link PRESTO_SESSION} properties
      */
     private static Map<String, String> parseSessionHeaders(MultivaluedMap<String, String> headers)
@@ -642,12 +641,10 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Check and return a given string if it is non-null and non-empty.
+     * Checks, trims, and returns a given string if it is neither null nor empty.
      *
-     * @param value a given string value.
-     *
-     * @return {@code string} the given string if it is non-null and non-empty
-     *
+     * @param value a given string value
+     * @return the given string trimmed if it is neither null nor empty, null otherwise
      * @see io.prestosql.client.PrestoHeaders
      */
     private static String trimEmptyToNull(String value)
