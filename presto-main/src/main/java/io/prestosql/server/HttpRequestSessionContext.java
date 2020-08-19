@@ -429,16 +429,15 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Returns a map containing all extracted properties from a given header
+     * Converts a header property value from a comma-separated list to a map
      * <p>
-     * Validates that each header presents a set of key/value and adds the valid values in a HashMap properties. For invalid values, an
-     * IllegalArgumentException is generated and handled.
-     * Returns a HashMap with valid values as properties.
+     * As an example:
+     * - header in request: X-Generic-Header-Property: property1=value1, property2=value2
+     * - method output: {property1: value1 , property2: value2}
      *
-     * @param headers headers a MultivaluedMap containing all request headers.
-     * @param headerName a string with the header name.
-     *
-     * @return a HashMap with the extracted header properties.
+     * @param headers all request headers properties and respective values
+     * @param headerName the header property that needs to extract its values
+     * @return a map containing all values for an HTTP header property
      */
     private static Map<String, String> parseProperty(MultivaluedMap<String, String> headers, String headerName)
     {
