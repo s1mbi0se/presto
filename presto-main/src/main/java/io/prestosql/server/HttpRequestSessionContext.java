@@ -551,16 +551,12 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Assert if a given expression is true or false.
-     * <p>
-     * Receives a boolean expression, a message and multiple arguments as parameters.
-     * If the expression is false, the method will throw an WebApplicationException.
+     * Asserts whether a given expression is true, throwing an exception otherwise.
      *
-     * @param expression any boolean expression
-     * @param format message that will be returned if the expression is false.
-     * @param args multiple arguments that can be inserted in the format
-     *
-     * @throws WebApplicationException if the expression is false.
+     * @param expression a generic boolean expression
+     * @param format message that will be in exception if expression is false
+     * @param args arguments used to construct the message that will be on exception
+     * @throws WebApplicationException if the expression is false
      */
     private static void assertRequest(boolean expression, String format, Object... args)
     {
