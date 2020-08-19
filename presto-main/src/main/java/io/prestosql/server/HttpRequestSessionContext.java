@@ -358,16 +358,15 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Returns a list of the HTTP headers received on the request.
+     * Returns a list of properties for a given header name in HTTP header.
      * <p>
-     * Extracts the HTTP headers from the received request and creates a list
-     * of these headers to be returned.
-     * Returns a flat (non-nested) list of resulting values or an empty list
+     * It is used for headers that contains a list of comma separated values. As an example:
+     * - header in request: X-Generic-Header-Property: property1=value1, property2=value2
+     * - method output: ['property1=value1' , 'property2=value2']
      *
-     * @param headers a MultivaluedMap containing all request headers.
-     * @param name a string that represents PrestoHeader's name
-     *
-     * @return  a list of all retrieved HTTP headers from request.
+     * @param headers a map of request headers to respective values
+     * @param name the header property that needs to extract its value
+     * @return a list of all values for an HTTP header property
      */
     private static List<String> splitHttpHeader(MultivaluedMap<String, String> headers, String name)
     {
