@@ -358,16 +358,15 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Returns a list of the HTTP headers received on the request.
+     * Returns a list of properties for a given header name in HTTP header.
      * <p>
-     * Extracts the HTTP headers from the received request and creates a list
-     * of these headers to be returned.
-     * Returns a flat (non-nested) list of resulting values or an empty list
+     * It is used for headers that contains a list of comma separated values. As an example:
+     * - header in request: X-Generic-Header-Property: property1=value1, property2=value2
+     * - method output: ['property1=value1' , 'property2=value2']
      *
-     * @param headers a MultivaluedMap containing all request headers.
-     * @param name a string that represents PrestoHeader's name
-     *
-     * @return  a list of all retrieved HTTP headers from request.
+     * @param headers a map of request headers to respective values
+     * @param name the header property that needs to extract its value
+     * @return a list of all values for an HTTP header property
      */
     private static List<String> splitHttpHeader(MultivaluedMap<String, String> headers, String name)
     {
@@ -383,7 +382,6 @@ public final class HttpRequestSessionContext
      * Extracts the specific header PRESTO_SESSION
      *
      * @param headers headers a MultivaluedMap containing all request headers.
-     *
      * @return a Map with the {@link PRESTO_SESSION} properties
      */
     private static Map<String, String> parseSessionHeaders(MultivaluedMap<String, String> headers)
@@ -431,16 +429,15 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Returns a map containing all extracted properties from a given header
+     * Converts a header property value from a comma-separated list to a map
      * <p>
-     * Validates that each header presents a set of key/value and adds the valid values in a HashMap properties. For invalid values, an
-     * IllegalArgumentException is generated and handled.
-     * Returns a HashMap with valid values as properties.
+     * As an example:
+     * - header in request: X-Generic-Header-Property: property1=value1, property2=value2
+     * - method output: {property1: value1 , property2: value2}
      *
-     * @param headers headers a MultivaluedMap containing all request headers.
-     * @param headerName a string with the header name.
-     *
-     * @return a HashMap with the extracted header properties.
+     * @param headers all request headers properties and respective values
+     * @param headerName the header property that needs to extract its values
+     * @return a map containing all values for an HTTP header property
      */
     private static Map<String, String> parseProperty(MultivaluedMap<String, String> headers, String headerName)
     {
@@ -552,16 +549,12 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Assert if a given expression is true or false.
-     * <p>
-     * Receives a boolean expression, a message and multiple arguments as parameters.
-     * If the expression is false, the method will throw an WebApplicationException.
+     * Asserts whether a given expression is true, throwing an exception otherwise.
      *
-     * @param expression any boolean expression
-     * @param format message that will be returned if the expression is false.
-     * @param args multiple arguments that can be inserted in the format
-     *
-     * @throws WebApplicationException if the expression is false.
+     * @param expression a generic boolean expression
+     * @param format message that will be in exception if expression is false
+     * @param args arguments used to construct the message that will be on exception
+     * @throws WebApplicationException if the expression is false
      */
     private static void assertRequest(boolean expression, String format, Object... args)
     {
@@ -642,12 +635,10 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Check and return a given string if it is non-null and non-empty.
+     * Checks, trims, and returns a given string if it is neither null nor empty.
      *
-     * @param value a given string value.
-     *
-     * @return {@code string} the given string if it is non-null and non-empty
-     *
+     * @param value a given string value
+     * @return the given string trimmed if it is neither null nor empty, null otherwise
      * @see io.prestosql.client.PrestoHeaders
      */
     private static String trimEmptyToNull(String value)
