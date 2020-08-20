@@ -416,10 +416,10 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts the specific header PRESTO_EXTRA_CREDENTIAL
+     * Extracts the values from X-Presto-Extra-Credential header.
      *
-     * @param headers a MultivaluedMap containing all request headers.
-     * @return a Map with the {@link PRESTO_EXTRA_CREDENTIAL} properties
+     * @param headers all request headers properties and respective values
+     * @return a map containing each extra credential and its respective value
      */
     private static Map<String, String> parseExtraCredentials(MultivaluedMap<String, String> headers)
     {
