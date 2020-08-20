@@ -214,7 +214,6 @@ public final class HttpRequestSessionContext
      * @param authenticatedIdentity an Optional Session {@link Identity}
      * @param headers a MultivaluedMap containing all request headers.
      * @param groupProvider a {@link GroupProvider} object.
-     *
      * @return a session identity object.
      */
     private static Identity buildSessionIdentity(Optional<Identity> authenticatedIdentity, MultivaluedMap<String, String> headers, GroupProvider groupProvider)
@@ -390,15 +389,15 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Checks if the received header PRESTO_ROLE matches the defined headers pattern.
+     * Checks if the received roles in X-Presto-Role header are valid.
      * <p>
-     * Checks if the received headers matches the defined headers pattern. If it does, this header will be extracted,
-     * if it doesn't, a WebApplicationException will be thrown.
-     * Returns a newly-created immutable map with the PRESTO_ROLE header extracted.
+     * The header contains a comma-separated list of connectors and respective roles for each one.
+     * Example:
+     * - X-Presto-Role: connector1=ALL,connector2=NONE,connector3=ROLE{role-name}
      *
-     * @param headers a MultivaluedMap containing all request headers.
-     *
-     * @return a new ImmutableMap roles with the PRESTO_ROLE header extracted.
+     * @param headers a map with all passed HTTP headers and respective values
+     * @return a map of connectors' names and their respective roles
+     * @throws WebApplicationException if a type of role that does not exist is passed
      */
     private static Map<String, SelectedRole> parseRoleHeaders(MultivaluedMap<String, String> headers)
     {
@@ -420,7 +419,6 @@ public final class HttpRequestSessionContext
      * Extracts the specific header PRESTO_EXTRA_CREDENTIAL
      *
      * @param headers a MultivaluedMap containing all request headers.
-     *
      * @return a Map with the {@link PRESTO_EXTRA_CREDENTIAL} properties
      */
     private static Map<String, String> parseExtraCredentials(MultivaluedMap<String, String> headers)
@@ -462,7 +460,6 @@ public final class HttpRequestSessionContext
      * Returns a Set with the extracted {@code PRESTO_CLIENT_TAGS} header.
      *
      * @param headers headers a MultivaluedMap containing all request headers.
-     *
      * @return a Set with {@code PRESTO_CLIENT_TAGS} headers.
      */
     private static Set<String> parseClientTags(MultivaluedMap<String, String> headers)
@@ -478,7 +475,6 @@ public final class HttpRequestSessionContext
      * Returns a Set with the extracted {@code PRESTO_CLIENT_CAPABILITIES} header.
      *
      * @param headers headers a MultivaluedMap containing all request headers.
-     *
      * @return a Set with {@code PRESTO_CLIENT_CAPABILITIES} headers.
      */
     private static Set<String> parseClientCapabilities(MultivaluedMap<String, String> headers)
@@ -494,7 +490,6 @@ public final class HttpRequestSessionContext
      * If the value is not valid, an IllegalArgumentException is generated an handled.
      *
      * @param headers headers a MultivaluedMap containing all request headers.
-     *
      * @return {@link ResourceEstimates} that estimates resource usage for a query.
      */
     private static ResourceEstimates parseResourceEstimate(MultivaluedMap<String, String> headers)
@@ -531,7 +526,6 @@ public final class HttpRequestSessionContext
      * If not, put it in a pattern and put it in json format.
      *
      * @param headers headers a MultivaluedMap that takes a string as a key and another string as a value.
-     *
      * @return an Optional of type {@link QueryRequestMetadata}.
      */
     private Optional<QueryRequestMetadata> parseQueryRequestMetadata(MultivaluedMap<String, String> headers)
@@ -570,7 +564,6 @@ public final class HttpRequestSessionContext
      * Validates the sql command with sqlParser and returns a Map<String,String> with all occurrences.
      *
      * @param headers a MultivaluedMap that takes a string as a key and another string as a value.
-     *
      * @return a Map<String,String> with the name and sql command as key/value.
      */
     private static Map<String, String> parsePreparedStatementsHeaders(MultivaluedMap<String, String> headers)
@@ -608,7 +601,6 @@ public final class HttpRequestSessionContext
      * an WebApplicationException is thrown and handled.
      *
      * @param transactionId a string that represents the transaction id.
-     *
      * @return an Optional TransactionId
      */
     private static Optional<TransactionId> parseTransactionId(String transactionId)
