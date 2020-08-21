@@ -530,13 +530,18 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts the Presto_QUERY_REQUEST_METADATA header.
+     * Extracts the metadata about tables where query will use from X-Presto-Query-Metadata header.
      * <p>
-     * Checks whether serializedData is null. If so, an empty Optional is returned.
-     * If not, put it in a pattern and put it in json format.
+     * The metadata is passed in JSON format:
+     * {"metadata": [{"name":table-name, "type": table-type, "owner":table-owner,
+     * "storage":{ "format":storage-format, "location":table-location, "skewed":true/false},
+     * "data_columns":[
+     * {"name":column-name, data_type":column-data-type, "column_type": column-type, "hidden":false/true}, ...
+     * ]}, ...
+     * ]}
      *
-     * @param headers headers a MultivaluedMap that takes a string as a key and another string as a value.
-     * @return an Optional of type {@link QueryRequestMetadata}.
+     * @param headers a map with all passed HTTP headers and respective values
+     * @return an object with metadata about tables and columns where query will be executed
      */
     private Optional<QueryRequestMetadata> parseQueryRequestMetadata(MultivaluedMap<String, String> headers)
     {
