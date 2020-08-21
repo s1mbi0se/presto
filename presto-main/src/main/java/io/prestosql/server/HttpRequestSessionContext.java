@@ -476,13 +476,13 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts the header PRESTO_CLIENT_CAPABILITIES.
+     * Extracts all values defined in the X-Presto-Client-Capabilities header.
      * <p>
-     * Extract the header and add it to a Set.
-     * Returns a Set with the extracted {@code PRESTO_CLIENT_CAPABILITIES} header.
+     * The values are defined as a comma-separated list and they are used when it is necessary to specify
+     * which are the functions that client support.
      *
-     * @param headers headers a MultivaluedMap containing all request headers.
-     * @return a Set with {@code PRESTO_CLIENT_CAPABILITIES} headers.
+     * @param headers a map with all defined HTTP headers and respective values
+     * @return the list of all passed capabilities
      */
     private static Set<String> parseClientCapabilities(MultivaluedMap<String, String> headers)
     {
