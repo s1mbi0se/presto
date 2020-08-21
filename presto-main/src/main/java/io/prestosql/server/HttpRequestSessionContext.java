@@ -209,13 +209,19 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Creates a session identity.
+     * Extracts information from request headers about the user requester and his roles and credentials.
+     * <p>
+     * The headers used to retrieve this information are:
+     * - X-Presto-User
+     * - X-Presto-Extra-Credential
+     * - X-Presto-Role
      *
-     * @param authenticatedIdentity an Optional Session {@link Identity}
-     * @param headers a MultivaluedMap containing all request headers.
-     * @param groupProvider a {@link GroupProvider} object.
-     *
-     * @return a session identity object.
+     * @param authenticatedIdentity the authenticated user defined in the request
+     * @param headers a map with all defined HTTP headers and respective values
+     * @param groupProvider an object used to retrieves all groups for a user
+     * @return an object with user's roles and credentials
+     * @throws WebApplicationException if a user is not set for the request
+     * @see SelectedRole
      */
     private static Identity buildSessionIdentity(Optional<Identity> authenticatedIdentity, MultivaluedMap<String, String> headers, GroupProvider groupProvider)
     {
@@ -390,15 +396,15 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Checks if the received header PRESTO_ROLE matches the defined headers pattern.
+     * Checks if the received roles in X-Presto-Role header are valid.
      * <p>
-     * Checks if the received headers matches the defined headers pattern. If it does, this header will be extracted,
-     * if it doesn't, a WebApplicationException will be thrown.
-     * Returns a newly-created immutable map with the PRESTO_ROLE header extracted.
+     * The header contains a comma-separated list of connectors and respective roles for each one.
+     * Example:
+     * - X-Presto-Role: connector1=ALL,connector2=NONE,connector3=ROLE{role-name}
      *
-     * @param headers a MultivaluedMap containing all request headers.
-     *
-     * @return a new ImmutableMap roles with the PRESTO_ROLE header extracted.
+     * @param headers a map with all passed HTTP headers and respective values
+     * @return a map of connectors' names and their respective roles
+     * @throws WebApplicationException if a type of role that does not exist is passed
      */
     private static Map<String, SelectedRole> parseRoleHeaders(MultivaluedMap<String, String> headers)
     {
@@ -417,11 +423,10 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts the specific header PRESTO_EXTRA_CREDENTIAL
+     * Extracts the values from X-Presto-Extra-Credential header.
      *
-     * @param headers a MultivaluedMap containing all request headers.
-     *
-     * @return a Map with the {@link PRESTO_EXTRA_CREDENTIAL} properties
+     * @param headers all request headers properties and respective values
+     * @return a map containing each extra credential and its respective value
      */
     private static Map<String, String> parseExtraCredentials(MultivaluedMap<String, String> headers)
     {
@@ -456,14 +461,13 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts the header PRESTO_CLIENT_TAGS.
+     * Extracts all tags defined on X-Presto-Client-Tags header.
      * <p>
-     * Extract the header and add it to a Set.
-     * Returns a Set with the extracted {@code PRESTO_CLIENT_TAGS} header.
+     * The tags are defined as a comma-separated list of values and they are used to
+     * identify resource groups.
      *
-     * @param headers headers a MultivaluedMap containing all request headers.
-     *
-     * @return a Set with {@code PRESTO_CLIENT_TAGS} headers.
+     * @param headers a map with all defined HTTP headers and respective values
+     * @return the list of all passed tags
      */
     private static Set<String> parseClientTags(MultivaluedMap<String, String> headers)
     {
@@ -472,14 +476,13 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts the header PRESTO_CLIENT_CAPABILITIES.
+     * Extracts all values defined in the X-Presto-Client-Capabilities header.
      * <p>
-     * Extract the header and add it to a Set.
-     * Returns a Set with the extracted {@code PRESTO_CLIENT_CAPABILITIES} header.
+     * The values are defined as a comma-separated list and they are used when it is necessary to specify
+     * which are the functions that client support.
      *
-     * @param headers headers a MultivaluedMap containing all request headers.
-     *
-     * @return a Set with {@code PRESTO_CLIENT_CAPABILITIES} headers.
+     * @param headers a map with all defined HTTP headers and respective values
+     * @return the list of all passed capabilities
      */
     private static Set<String> parseClientCapabilities(MultivaluedMap<String, String> headers)
     {
@@ -488,14 +491,16 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Check which resource estimate will be started and extracts PRESTO_RESOURCE_ESTIMATE header.
+     * Extract all estimated resource usage from X-Presto-Resource-Estimate header.
      * <p>
-     * Checks in switch case the name is to execute the EXECUTION_TIME, CPU_TIME or PEAK_MEMORY.
-     * If the value is not valid, an IllegalArgumentException is generated an handled.
+     * The currently estimated resources are:
+     * - execution time
+     * - cpu time
+     * - peak memory
      *
-     * @param headers headers a MultivaluedMap containing all request headers.
-     *
-     * @return {@link ResourceEstimates} that estimates resource usage for a query.
+     * @param headers a map with all defined HTTP headers and respective values
+     * @return an object with information about estimated resource usage for a query
+     * @throws WebApplicationException if is passed some invalid resource name
      */
     private static ResourceEstimates parseResourceEstimate(MultivaluedMap<String, String> headers)
     {
@@ -525,14 +530,18 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts the Presto_QUERY_REQUEST_METADATA header.
+     * Extracts the metadata about tables where query will use from X-Presto-Query-Metadata header.
      * <p>
-     * Checks whether serializedData is null. If so, an empty Optional is returned.
-     * If not, put it in a pattern and put it in json format.
+     * The metadata is passed in JSON format:
+     * {"metadata": [{"name":table-name, "type": table-type, "owner":table-owner,
+     * "storage":{ "format":storage-format, "location":table-location, "skewed":true/false},
+     * "data_columns":[
+     * {"name":column-name, data_type":column-data-type, "column_type": column-type, "hidden":false/true}, ...
+     * ]}, ...
+     * ]}
      *
-     * @param headers headers a MultivaluedMap that takes a string as a key and another string as a value.
-     *
-     * @return an Optional of type {@link QueryRequestMetadata}.
+     * @param headers a map with all passed HTTP headers and respective values
+     * @return an object with metadata about tables and columns where query will be executed
      */
     private Optional<QueryRequestMetadata> parseQueryRequestMetadata(MultivaluedMap<String, String> headers)
     {
@@ -570,7 +579,6 @@ public final class HttpRequestSessionContext
      * Validates the sql command with sqlParser and returns a Map<String,String> with all occurrences.
      *
      * @param headers a MultivaluedMap that takes a string as a key and another string as a value.
-     *
      * @return a Map<String,String> with the name and sql command as key/value.
      */
     private static Map<String, String> parsePreparedStatementsHeaders(MultivaluedMap<String, String> headers)
@@ -608,7 +616,6 @@ public final class HttpRequestSessionContext
      * an WebApplicationException is thrown and handled.
      *
      * @param transactionId a string that represents the transaction id.
-     *
      * @return an Optional TransactionId
      */
     private static Optional<TransactionId> parseTransactionId(String transactionId)
