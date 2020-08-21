@@ -209,12 +209,19 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Creates a session identity.
+     * Extracts information from request headers about the user requester and his roles and credentials.
+     * <p>
+     * The headers used to retrieve this information are:
+     * - X-Presto-User
+     * - X-Presto-Extra-Credential
+     * - X-Presto-Role
      *
-     * @param authenticatedIdentity an Optional Session {@link Identity}
-     * @param headers a MultivaluedMap containing all request headers.
-     * @param groupProvider a {@link GroupProvider} object.
-     * @return a session identity object.
+     * @param authenticatedIdentity the authenticated user defined in the request
+     * @param headers a map with all defined HTTP headers and respective values
+     * @param groupProvider an object used to retrieves all groups for a user
+     * @return an object with user's roles and credentials
+     * @throws WebApplicationException if a user is not set for the request
+     * @see SelectedRole
      */
     private static Identity buildSessionIdentity(Optional<Identity> authenticatedIdentity, MultivaluedMap<String, String> headers, GroupProvider groupProvider)
     {
