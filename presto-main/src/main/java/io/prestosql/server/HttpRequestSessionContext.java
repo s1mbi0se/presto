@@ -491,13 +491,16 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Check which resource estimate will be started and extracts PRESTO_RESOURCE_ESTIMATE header.
+     * Extract all estimated resource usage from X-Presto-Resource-Estimate header.
      * <p>
-     * Checks in switch case the name is to execute the EXECUTION_TIME, CPU_TIME or PEAK_MEMORY.
-     * If the value is not valid, an IllegalArgumentException is generated an handled.
+     * The currently estimated resources are:
+     * - execution time
+     * - cpu time
+     * - peak memory
      *
-     * @param headers headers a MultivaluedMap containing all request headers.
-     * @return {@link ResourceEstimates} that estimates resource usage for a query.
+     * @param headers a map with all defined HTTP headers and respective values
+     * @return an object with information about estimated resource usage for a query
+     * @throws WebApplicationException if is passed some invalid resource name
      */
     private static ResourceEstimates parseResourceEstimate(MultivaluedMap<String, String> headers)
     {
