@@ -789,11 +789,9 @@ public final class Session
         }
 
         /**
-         * Estimate the resource usage for an executed query.
-         * <p>
-         * Takes the estimate of the CPU runtime and memory used for an executed query.
+         * Builds the object responsible for estimating the resource usage of a query (CPU and memory).
          *
-         * @return {@link ResourceEstimates} wich shows estimated resource usage for a query.
+         * @return the estimated resource usage for a query
          */
         public ResourceEstimates build()
         {
