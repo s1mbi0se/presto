@@ -461,13 +461,13 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts the header PRESTO_CLIENT_TAGS.
+     * Extracts all tags defined on X-Presto-Client-Tags header.
      * <p>
-     * Extract the header and add it to a Set.
-     * Returns a Set with the extracted {@code PRESTO_CLIENT_TAGS} header.
+     * The tags are defined as a comma-separated list of values and they are used to
+     * identify resource groups.
      *
-     * @param headers headers a MultivaluedMap containing all request headers.
-     * @return a Set with {@code PRESTO_CLIENT_TAGS} headers.
+     * @param headers a map with all defined HTTP headers and respective values
+     * @return the list of all passed tags
      */
     private static Set<String> parseClientTags(MultivaluedMap<String, String> headers)
     {
