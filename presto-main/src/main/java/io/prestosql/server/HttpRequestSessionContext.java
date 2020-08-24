@@ -385,10 +385,13 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts the specific header PRESTO_SESSION
+     * Extracts all values defined for X-Presto-Session header
+     * <p>
+     * The values are defined as a comma-separated list:
+     * - X-Presto-Session: session_variable1=90,session_variable2=true
      *
-     * @param headers headers a MultivaluedMap containing all request headers.
-     * @return a Map with the {@link PRESTO_SESSION} properties
+     * @param headers a map with all defined HTTP headers and respective values
+     * @return all keys and values defined for the header
      */
     private static Map<String, String> parseSessionHeaders(MultivaluedMap<String, String> headers)
     {
