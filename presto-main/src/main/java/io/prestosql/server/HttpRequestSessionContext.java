@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Strings.emptyToNull;
@@ -615,14 +616,14 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Try to instantiate a new {@link TransactionId}
+     * Creates a new {@link TransactionId} from a UUID string.
      * <p>
-     * Checks whether the transactionId is null. if so, an empty option is returned.
-     * If not, a new instance of the {@link TransactionId} is returned. For invalid values,
-     * an WebApplicationException is thrown and handled.
+     * The TransactionId is only a {@link UUID} that identifies a request being executed
+     * by Presto.
      *
-     * @param transactionId a string that represents the transaction id.
-     * @return an Optional TransactionId
+     * @param transactionId a UUID string
+     * @return the object that identifies a request being executed by Presto
+     * @throws WebApplicationException if the uuid is invalid
      */
     private static Optional<TransactionId> parseTransactionId(String transactionId)
     {
