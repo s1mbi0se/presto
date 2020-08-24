@@ -576,13 +576,16 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extract the PRESTO_PREPARED_STATEMENT header and parse the sql command.
+     * Extracts all statements defined on X-Presto-Prepared-Statement header.
      * <p>
-     * Check all headers and extract the PRESTO_PREPARED_STATEMENT header. Decodes the statementName.
-     * Validates the sql command with sqlParser and returns a Map<String,String> with all occurrences.
+     * The statements are defined as a comma-separated list of values
+     * - X-Presto-Prepared-Statement: statement1=sql_command1,statement2=sql_command2
+     * For long statements, the request header size limit must be increased, or the query
+     * will throw an exception during execution
      *
-     * @param headers a MultivaluedMap that takes a string as a key and another string as a value.
-     * @return a Map<String,String> with the name and sql command as key/value.
+     * @param headers a map with all passed HTTP headers and respective values
+     * @return the statements' names and respective sql command
+     * @throws WebApplicationException if any value has an invalid name or sql statement
      */
     private static Map<String, String> parsePreparedStatementsHeaders(MultivaluedMap<String, String> headers)
     {
