@@ -21,7 +21,7 @@ import java.security.SecureRandom;
 import static java.util.Objects.requireNonNull;
 
 /**
- *  Slug is a unique identifier for a resource.
+ * Slug is a unique identifier for a resource.
  */
 public final class Slug
 {
@@ -34,11 +34,11 @@ public final class Slug
     private static final SecureRandom RANDOM = new SecureRandom();
 
     /**
-     * Instantiates a new Slug object.
+     * Creates a slug for a request.
      * <p>
-     * A slug object is a one-time security token protecting query results from other users.
+     * Slug is the object used in the request URL to identify a resource.
      *
-     * @return a {@link Slug} object
+     * @return a unique identifier for a resource
      */
     public static Slug createNew()
     {
