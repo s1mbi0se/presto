@@ -110,9 +110,12 @@ public class QueryIdGenerator
     }
 
     /**
-     * Returns the actual time in milliseconds.
+     * Gets the actual timestamp in milliseconds.
+     * <p>
+     * It avoids using the system clock, because it lead to errors related to
+     * clock moving backwards.
      *
-     * @return response time in milliseconds
+     * @return actual timestamp in milliseconds
      */
     @VisibleForTesting
     protected long nowInMillis()
