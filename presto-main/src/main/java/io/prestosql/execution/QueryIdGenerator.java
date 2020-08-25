@@ -79,7 +79,7 @@ public class QueryIdGenerator
      * Index rolls at the start of every day or when it reaches 99,999, and the
      * coordId is a randomly generated when this instance is created.
      *
-     * @return a {@link QueryId} object
+     * @return the object responsible to identify a query request
      */
     public synchronized QueryId createNextQueryId()
     {
