@@ -297,11 +297,12 @@ public class QueuedStatementResource
     }
 
     /**
-     * Instantiates an object that contains all information about query metadata.
+     * Instantiates the object that holds all metadata about a query result.
      *
      * @param queryId an object containing the query identifier
      * @param nextUri an object that contains the URI where information about query can be retrieved
-     * @param queryError an object responsible for reporting the error that happened during the query's execution
+     * @param queryError an object responsible for reporting the error that happened during the
+     * query's execution
      * @param uriInfo an object that will be used to construct the query representation in web interface
      * @param elapsedTime the time elapsed until the query obtains its response
      * @param queuedTime the time the query waited to be executed
@@ -466,11 +467,11 @@ public class QueuedStatementResource
         }
 
         /**
-         * Instantiates an object that contains all information about query metadata.
+         * Instantiates the object that holds all metadata about query results.
          *
          * @param token a generated token that identifies the client's request used to obtains the response from server
-         * @param uriInfo an object used to obtain the URI where the query can be retrieved from server or construct the query representation inside
-         * the web interface
+         * @param uriInfo an object used to obtain the URI where the query can be retrieved from server or construct the
+         * query representation inside the web interface
          * @param dispatchInfo an object responsible for taking the coordinator's location, response time and waiting time
          * @return an object with all query's metadata
          */
