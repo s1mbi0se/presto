@@ -81,7 +81,7 @@ public class DispatchInfo
     /**
      * Returns an object with information about coordinator's URI.
      *
-     * @return an Optional object with information about coordinator's URI
+     * @return an object with information about coordinator's URI
      * @see java.net.URI
      */
     public Optional<CoordinatorLocation> getCoordinatorLocation()
