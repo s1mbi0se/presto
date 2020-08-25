@@ -432,7 +432,7 @@ public class QueuedStatementResource
         /**
          * Retrieves an object that contains all information about the dispatched query.
          *
-         * @param token a generated token that identifies the client's request used to obtain the response from server
+         * @param token a generated token that identifies the user's request used to obtain the server response
          * @param uriInfo an object used to obtain the URI where the query can be retrieved from server or construct the query representation inside
          * the web interface
          * @return an object with all query's metadata
