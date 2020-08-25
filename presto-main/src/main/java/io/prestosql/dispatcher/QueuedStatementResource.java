@@ -366,6 +366,11 @@ public class QueuedStatementResource
             this.queryId = dispatchManager.createQueryId();
         }
 
+        /**
+         * Gets the query's identifier
+         *
+         * @return the query's identifier
+         */
         public QueryId getQueryId()
         {
             return queryId;
@@ -381,6 +386,11 @@ public class QueuedStatementResource
             return slug;
         }
 
+        /**
+         * Gets the generated token that identifies the user's request used to retrieve the server response.
+         *
+         * @return the generated token that identifies the user's request used to retrieve the server response
+         */
         public long getLastToken()
         {
             return lastToken.get();

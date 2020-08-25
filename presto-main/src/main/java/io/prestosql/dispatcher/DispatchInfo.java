@@ -28,12 +28,11 @@ public class DispatchInfo
     private final Duration queuedTime;
 
     /**
-     * Creates a new DispatchInfo object with information about a query waiting
-     * to be processed.
+     * Creates a new object with information about a query waiting to be processed.
      *
      * @param elapsedTime time elapsed until the query response
      * @param queuedTime time the query is waiting to be executed
-     * @return a new DispatchInfo instance with information about a query waiting to be processed
+     * @return an object with information about a query waiting to be processed
      */
     public static DispatchInfo queued(Duration elapsedTime, Duration queuedTime)
     {

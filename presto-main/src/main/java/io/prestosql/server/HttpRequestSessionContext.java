@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Strings.emptyToNull;
@@ -385,10 +386,13 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extracts the specific header PRESTO_SESSION
+     * Extracts all values defined for X-Presto-Session header
+     * <p>
+     * The values are defined as a comma-separated list:
+     * - X-Presto-Session: session_variable1=90,session_variable2=true
      *
-     * @param headers headers a MultivaluedMap containing all request headers.
-     * @return a Map with the {@link PRESTO_SESSION} properties
+     * @param headers a map with all defined HTTP headers and respective values
+     * @return all keys and values defined for the header
      */
     private static Map<String, String> parseSessionHeaders(MultivaluedMap<String, String> headers)
     {
@@ -573,13 +577,16 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Extract the PRESTO_PREPARED_STATEMENT header and parse the sql command.
+     * Extracts all statements defined on X-Presto-Prepared-Statement header.
      * <p>
-     * Check all headers and extract the PRESTO_PREPARED_STATEMENT header. Decodes the statementName.
-     * Validates the sql command with sqlParser and returns a Map<String,String> with all occurrences.
+     * The statements are defined as a comma-separated list of values
+     * - X-Presto-Prepared-Statement: statement1=sql_command1,statement2=sql_command2
+     * For long statements, the request header size limit must be increased, or the query
+     * will throw an exception during execution
      *
-     * @param headers a MultivaluedMap that takes a string as a key and another string as a value.
-     * @return a Map<String,String> with the name and sql command as key/value.
+     * @param headers a map with all passed HTTP headers and respective values
+     * @return the statements' names and respective sql command
+     * @throws WebApplicationException if any value has an invalid name or sql statement
      */
     private static Map<String, String> parsePreparedStatementsHeaders(MultivaluedMap<String, String> headers)
     {
@@ -609,14 +616,14 @@ public final class HttpRequestSessionContext
     }
 
     /**
-     * Try to instantiate a new {@link TransactionId}
+     * Creates a new {@link TransactionId} from a UUID string.
      * <p>
-     * Checks whether the transactionId is null. if so, an empty option is returned.
-     * If not, a new instance of the {@link TransactionId} is returned. For invalid values,
-     * an WebApplicationException is thrown and handled.
+     * The TransactionId is only a {@link UUID} that identifies a request being executed
+     * by Presto.
      *
-     * @param transactionId a string that represents the transaction id.
-     * @return an Optional TransactionId
+     * @param transactionId a UUID string
+     * @return the object that identifies a request being executed by Presto
+     * @throws WebApplicationException if the uuid is invalid
      */
     private static Optional<TransactionId> parseTransactionId(String transactionId)
     {

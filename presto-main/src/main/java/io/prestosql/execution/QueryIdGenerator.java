@@ -79,7 +79,7 @@ public class QueryIdGenerator
      * Index rolls at the start of every day or when it reaches 99,999, and the
      * coordId is a randomly generated when this instance is created.
      *
-     * @return a {@link QueryId} object
+     * @return the object responsible to identify a query request
      */
     public synchronized QueryId createNextQueryId()
     {
@@ -110,9 +110,12 @@ public class QueryIdGenerator
     }
 
     /**
-     * Returns the actual time in milliseconds.
+     * Gets the actual timestamp in milliseconds.
+     * <p>
+     * It avoids using the system clock, because it lead to errors related to
+     * clock moving backwards.
      *
-     * @return response time in milliseconds
+     * @return actual timestamp in milliseconds
      */
     @VisibleForTesting
     protected long nowInMillis()
