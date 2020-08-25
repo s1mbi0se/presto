@@ -90,10 +90,9 @@ public class DispatchInfo
     }
 
     /**
-     * Returns detailed information about a failure during query execution, such as its type,
-     * message and cause.
+     * Gets detailed information about a failure during query execution, such as its type, message and cause.
      *
-     * @return an Optional object with detailed information about a failure during query execution
+     * @return an object with detailed information about a failure during query execution
      */
     public Optional<ExecutionFailureInfo> getFailureInfo()
     {
