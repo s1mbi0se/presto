@@ -366,6 +366,11 @@ public class QueuedStatementResource
             this.queryId = dispatchManager.createQueryId();
         }
 
+        /**
+         * Gets the query's identifier
+         *
+         * @return the query's identifier
+         */
         public QueryId getQueryId()
         {
             return queryId;
