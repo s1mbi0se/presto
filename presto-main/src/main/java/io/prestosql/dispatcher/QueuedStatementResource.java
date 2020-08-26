@@ -293,7 +293,7 @@ public class QueuedStatementResource
      *
      * @param queryId an object containing the query identifier
      * @param slug a resource identifier made using the token and query state
-     * @param token a generated token that identifies the client's request used to obtain the
+     * @param token a generated token that identifies the user's request used to obtain the
      * response from server
      * @param uriInfo the object used to build the URI
      * @return the URI used to retrieve information about a queued query
