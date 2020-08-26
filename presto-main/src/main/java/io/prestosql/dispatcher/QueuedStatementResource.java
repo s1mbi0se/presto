@@ -415,6 +415,15 @@ public class QueuedStatementResource
             return querySubmissionFuture != null && querySubmissionFuture.isDone();
         }
 
+        /**
+         * Waits the query being submitted or complete the execution.
+         * <p>
+         * Checks if the query was already submitted, if not it will wait for this process to continue,
+         * otherwise it will wait until the query is processed.
+         *
+         * @return a future that encapsulates the task of submitting the query
+         * or execute the query
+         */
         private ListenableFuture<?> waitForDispatched()
         {
             // if query query submission has not finished, wait for it to finish

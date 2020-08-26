@@ -251,6 +251,12 @@ public class DispatchManager
         return queryAdded;
     }
 
+    /**
+     * Checks if a query exists and retrieves the future that represents the dispatch operation to be executed
+     *
+     * @param queryId the query's identifier
+     * @return the future that represents the query dispatch operation to be executed
+     */
     public ListenableFuture<?> waitForDispatched(QueryId queryId)
     {
         return queryTracker.tryGetQuery(queryId)
