@@ -252,6 +252,11 @@ class QueryStateTimer
     // Helper methods
     //
 
+    /**
+     * Returns the number of nanoseconds elapsed since the ticker's fixed point of reference.
+     *
+     * @return the number of nanoseconds elapsed since the ticker's fixed point of reference.
+     */
     private long tickerNanos()
     {
         return ticker.read();
