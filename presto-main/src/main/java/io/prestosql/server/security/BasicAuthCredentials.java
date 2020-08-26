@@ -34,6 +34,17 @@ public class BasicAuthCredentials
     private final String user;
     private final Optional<String> password;
 
+    /**
+     * Extracts the credentials defined in the Authorization header.
+     * <p>
+     * The credential follows the 'Basic' scheme, defined by RFC7617:
+     * - Authorization: Basic user:password
+     *
+     * @param request an object with metadata about the HTTP request executed to
+     * Presto
+     * @return an object with authorization metadata
+     * @throws AuthenticationException if the defined credential has an invalid format
+     */
     public static Optional<BasicAuthCredentials> extractBasicAuthCredentials(ContainerRequestContext request)
             throws AuthenticationException
     {
@@ -46,6 +57,16 @@ public class BasicAuthCredentials
         return extractBasicAuthCredentials(header);
     }
 
+    /**
+     * Extracts the credentials defined in the Authorization header.
+     * <p>
+     * The credential follows the 'Basic' scheme, defined by RFC7617:
+     * - Authorization: Basic user:password
+     *
+     * @param header value defined in the Authorization header
+     * @return an object with authorization metadata
+     * @throws AuthenticationException if the defined credential has an invalid format
+     */
     public static Optional<BasicAuthCredentials> extractBasicAuthCredentials(String header)
             throws AuthenticationException
     {
