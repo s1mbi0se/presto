@@ -243,13 +243,13 @@ public class QueuedStatementResource
     }
 
     /**
-     * Gets the query by id, slug and a generated toke.
+     * Gets a queued query by its id, slug and a generated token.
      *
-     * @param queryId an object containing the query identifier
+     * @param queryId the query's identifier
      * @param slug a resource identifier made using the token and query state
-     * @param token a generated token that identifies the client's request used to obtain the response from server
+     * @param token a generated token that identifies the user's request used to obtain the server response
      * @return an object that contains metadata about the query
-     * @throws WebApplicationException if passed token is invalid or query does not exists
+     * @throws WebApplicationException if the token is invalid or query does not exists
      */
     private Query getQuery(QueryId queryId, String slug, long token)
     {
