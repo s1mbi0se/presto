@@ -197,6 +197,16 @@ public class QueuedStatementResource
         return createQueryResultsResponse(query.getQueryResults(query.getLastToken(), uriInfo), compressionEnabled);
     }
 
+    /**
+     * Receives GET HTTP requests used to retrieve the query's execution status.
+     *
+     * @param queryId the query's identifier
+     * @param slug a identifier for the resource(query) and its state
+     * @param token a generated token that identifies the user's request used to obtain the server response
+     * @param maxWait the time limit to wait for a server response
+     * @param uriInfo an object containing metadata about the endpoint URI
+     * @param asyncResponse an object used to build the request response asynchronously
+     */
     @ResourceSecurity(PUBLIC)
     @GET
     @Path("queued/{queryId}/{slug}/{token}")
