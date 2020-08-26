@@ -147,6 +147,12 @@ public class QueryTracker<T extends TrackedQuery>
                 .orElseThrow(() -> new NoSuchElementException(queryId.toString()));
     }
 
+    /**
+     * Gets a query by its id
+     *
+     * @param queryId the query's identifier
+     * @return an object with the query metadata
+     */
     public Optional<T> tryGetQuery(QueryId queryId)
     {
         requireNonNull(queryId, "queryId is null");
