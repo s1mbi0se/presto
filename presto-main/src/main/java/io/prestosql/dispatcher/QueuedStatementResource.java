@@ -390,6 +390,8 @@ public class QueuedStatementResource
 
         /**
          * Gets query's slug.
+         * <p>
+         * Is used to identify a resource(request) and its state.
          *
          * @return the query's slug.
          */
