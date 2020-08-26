@@ -276,16 +276,14 @@ public class QueuedStatementResource
     }
 
     /**
-     * Builds a new QueuedURI for the specified queryId.
-     * <p>
-     * Replaces the existing path and add the query id at the end of the uri.
-     * Then, builds the new QueuedURI for the specified queryId.
+     * Builds the URI to retrieve information about a queued query.
      *
-     * @param queryId an object containing the query id.
-     * @param slug an object responsible for translating a multibyte value into bytes.
-     * @param token generated token.
-     * @param uriInfo an object containing the uri metadata.
-     * @return a {@link URI} object.
+     * @param queryId an object containing the query identifier
+     * @param slug a resource identifier made using the token and query state
+     * @param token a generated token that identifies the user's request used to obtain the
+     * response from server
+     * @param uriInfo the object used to build the URI
+     * @return the URI used to retrieve information about a queued query
      */
     private static URI getQueuedUri(QueryId queryId, Slug slug, long token, UriInfo uriInfo)
     {
@@ -299,11 +297,12 @@ public class QueuedStatementResource
     }
 
     /**
-     * Instantiates an object that contains all information about query metadata.
+     * Instantiates the object that holds all metadata about a query result.
      *
      * @param queryId an object containing the query identifier
      * @param nextUri an object that contains the URI where information about query can be retrieved
-     * @param queryError an object responsible for reporting the error that happened during the query's execution
+     * @param queryError an object responsible for reporting the error that happened during the
+     * query's execution
      * @param uriInfo an object that will be used to construct the query representation in web interface
      * @param elapsedTime the time elapsed until the query obtains its response
      * @param queuedTime the time the query waited to be executed
@@ -420,7 +419,7 @@ public class QueuedStatementResource
         /**
          * Retrieves an object that contains all information about the dispatched query.
          *
-         * @param token a generated token that identifies the client's request used to obtain the response from server
+         * @param token a generated token that identifies the user's request used to obtain the server response
          * @param uriInfo an object used to obtain the URI where the query can be retrieved from server or construct the query representation inside
          * the web interface
          * @return an object with all query's metadata
@@ -468,11 +467,11 @@ public class QueuedStatementResource
         }
 
         /**
-         * Instantiates an object that contains all information about query metadata.
+         * Instantiates the object that holds all metadata about query results.
          *
          * @param token a generated token that identifies the client's request used to obtains the response from server
-         * @param uriInfo an object used to obtain the URI where the query can be retrieved from server or construct the query representation inside
-         * the web interface
+         * @param uriInfo an object used to obtain the URI where the query can be retrieved from server or construct the
+         * query representation inside the web interface
          * @param dispatchInfo an object responsible for taking the coordinator's location, response time and waiting time
          * @return an object with all query's metadata
          */

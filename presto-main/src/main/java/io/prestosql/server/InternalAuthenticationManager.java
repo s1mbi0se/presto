@@ -76,6 +76,16 @@ public class InternalAuthenticationManager
         this.nodeId = nodeId;
     }
 
+    /**
+     * Checks if a request was made by an internal user.
+     *
+     * When a request is made by an internal user, a value for
+     * X-Presto-Internal-Bearer header must be defined using a
+     * JWT encoded string.
+     *
+     * @param request handle all information about HTTP request sent to the server
+     * @return a flag which indicates if the request was made by an internal user
+     */
     public static boolean isInternalRequest(ContainerRequestContext request)
     {
         return request.getHeaders().getFirst(PRESTO_INTERNAL_BEARER) != null;
