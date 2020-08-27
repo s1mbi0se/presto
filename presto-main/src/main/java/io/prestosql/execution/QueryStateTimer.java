@@ -170,6 +170,14 @@ class QueryStateTimer
         analysisTime.compareAndSet(null, nanosSince(beginAnalysisNanos, now));
     }
 
+    /**
+     * Records the last time that Presto act on the query.
+     * <p>
+     * As an example: every time that a request is executed to know the query status in Presto,
+     * the last heartbeat is increases.
+     * If the time passed from last heartbeat is greater than the defined timeout, the query is
+     * abandoned by the sever.
+     */
     public void recordHeartbeat()
     {
         lastHeartbeatNanos.set(tickerNanos());
@@ -252,6 +260,11 @@ class QueryStateTimer
     // Helper methods
     //
 
+    /**
+     * Returns the number of nanoseconds elapsed since the ticker's fixed point of reference.
+     *
+     * @return the number of nanoseconds elapsed since the ticker's fixed point of reference.
+     */
     private long tickerNanos()
     {
         return ticker.read();

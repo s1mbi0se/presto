@@ -193,6 +193,16 @@ public class QueuedStatementResource
         return Response.ok(query.getQueryResults(query.getLastToken(), uriInfo)).build();
     }
 
+    /**
+     * Receives GET HTTP requests used to retrieve the query's execution status.
+     *
+     * @param queryId the query's identifier
+     * @param slug a identifier for the resource(query) and its state
+     * @param token a generated token that identifies the user's request used to obtain the server response
+     * @param maxWait the time limit to wait for a server response
+     * @param uriInfo an object containing metadata about the endpoint URI
+     * @param asyncResponse an object used to build the request response asynchronously
+     */
     @ResourceSecurity(PUBLIC)
     @GET
     @Path("queued/{queryId}/{slug}/{token}")
@@ -243,13 +253,13 @@ public class QueuedStatementResource
     }
 
     /**
-     * Gets the query by id, slug and a generated toke.
+     * Gets a queued query by its id, slug and a generated token.
      *
-     * @param queryId an object containing the query identifier
+     * @param queryId the query's identifier
      * @param slug a resource identifier made using the token and query state
-     * @param token a generated token that identifies the client's request used to obtain the response from server
+     * @param token a generated token that identifies the user's request used to obtain the server response
      * @return an object that contains metadata about the query
-     * @throws WebApplicationException if passed token is invalid or query does not exists
+     * @throws WebApplicationException if the token is invalid or query does not exists
      */
     private Query getQuery(QueryId queryId, String slug, long token)
     {
@@ -377,6 +387,8 @@ public class QueuedStatementResource
 
         /**
          * Gets query's slug.
+         * <p>
+         * Is used to identify a resource(request) and its state.
          *
          * @return the query's slug.
          */
@@ -400,6 +412,15 @@ public class QueuedStatementResource
             return querySubmissionFuture != null && querySubmissionFuture.isDone();
         }
 
+        /**
+         * Waits the query being submitted or complete the execution.
+         * <p>
+         * Checks if the query was already submitted, if not it will wait for this process to continue,
+         * otherwise it will wait until the query is processed.
+         *
+         * @return a future that encapsulates the task of submitting the query
+         * or execute the query
+         */
         private ListenableFuture<?> waitForDispatched()
         {
             // if query query submission has not finished, wait for it to finish

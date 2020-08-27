@@ -22,6 +22,11 @@ public interface DispatchQuery
 {
     void recordHeartbeat();
 
+    /**
+     * Gets the futures that represent the query dispatch operation to be executed
+     *
+     * @return future that represents the query dispatch operation to be executed
+     */
     ListenableFuture<?> getDispatchedFuture();
 
     DispatchInfo getDispatchInfo();
