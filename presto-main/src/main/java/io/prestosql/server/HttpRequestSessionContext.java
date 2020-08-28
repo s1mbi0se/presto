@@ -471,7 +471,7 @@ public final class HttpRequestSessionContext
      * identify resource groups.
      *
      * @param headers a map with all defined HTTP headers and respective values
-     * @return the list of all passed tags
+     * @return the list of all defined tags
      */
     private static Set<String> parseClientTags(MultivaluedMap<String, String> headers)
     {
