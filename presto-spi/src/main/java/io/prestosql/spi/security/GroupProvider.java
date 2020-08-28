@@ -17,5 +17,14 @@ import java.util.Set;
 
 public interface GroupProvider
 {
+    /**
+     * Gets all groups for a specific user.
+     * <p>
+     * Groups are used by Presto to control the access to a
+     * resource.
+     *
+     * @param user the representation of a user executing a query in Presto
+     * @return all groups for a specific user
+     */
     Set<String> getGroups(String user);
 }
