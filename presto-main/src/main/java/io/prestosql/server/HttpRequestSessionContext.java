@@ -579,10 +579,10 @@ public final class HttpRequestSessionContext
     /**
      * Extracts all statements defined on X-Presto-Prepared-Statement header.
      * <p>
-     * The statements are defined as a comma-separated list of values
+     * The statements are defined as a comma-separated list of values:
      * - X-Presto-Prepared-Statement: statement1=sql_command1,statement2=sql_command2
      * For long statements, the request header size limit must be increased, or the query
-     * will throw an exception during execution
+     * will throw an exception during execution.
      *
      * @param headers a map with all passed HTTP headers and respective values
      * @return the statements' names and respective sql command
