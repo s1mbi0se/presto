@@ -471,7 +471,7 @@ public final class HttpRequestSessionContext
      * identify resource groups.
      *
      * @param headers a map with all defined HTTP headers and respective values
-     * @return the list of all passed tags
+     * @return the list of all defined tags
      */
     private static Set<String> parseClientTags(MultivaluedMap<String, String> headers)
     {
@@ -483,10 +483,10 @@ public final class HttpRequestSessionContext
      * Extracts all values defined in the X-Presto-Client-Capabilities header.
      * <p>
      * The values are defined as a comma-separated list and they are used when it is necessary to specify
-     * which are the functions that client support.
+     * which are the supported functions for the presto client requester.
      *
      * @param headers a map with all defined HTTP headers and respective values
-     * @return the list of all passed capabilities
+     * @return the list of all defined capabilities for the requester presto client
      */
     private static Set<String> parseClientCapabilities(MultivaluedMap<String, String> headers)
     {
@@ -579,10 +579,10 @@ public final class HttpRequestSessionContext
     /**
      * Extracts all statements defined on X-Presto-Prepared-Statement header.
      * <p>
-     * The statements are defined as a comma-separated list of values
+     * The statements are defined as a comma-separated list of values:
      * - X-Presto-Prepared-Statement: statement1=sql_command1,statement2=sql_command2
      * For long statements, the request header size limit must be increased, or the query
-     * will throw an exception during execution
+     * will throw an exception during execution.
      *
      * @param headers a map with all passed HTTP headers and respective values
      * @return the statements' names and respective sql command

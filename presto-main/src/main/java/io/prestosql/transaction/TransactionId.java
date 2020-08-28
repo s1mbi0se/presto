@@ -35,6 +35,12 @@ public final class TransactionId
         return new TransactionId(UUID.randomUUID());
     }
 
+    /**
+     * Instantiates a new TransactionId for a given {@link UUID} string.
+     *
+     * @param value a UUID string
+     * @return an object that identifies a request being executed in Presto
+     */
     @JsonCreator
     public static TransactionId valueOf(String value)
     {
