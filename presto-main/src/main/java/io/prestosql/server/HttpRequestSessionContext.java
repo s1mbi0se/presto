@@ -483,10 +483,10 @@ public final class HttpRequestSessionContext
      * Extracts all values defined in the X-Presto-Client-Capabilities header.
      * <p>
      * The values are defined as a comma-separated list and they are used when it is necessary to specify
-     * which are the functions that client support.
+     * which are the supported functions for the presto client requester.
      *
      * @param headers a map with all defined HTTP headers and respective values
-     * @return the list of all passed capabilities
+     * @return the list of all defined capabilities for the requester presto client
      */
     private static Set<String> parseClientCapabilities(MultivaluedMap<String, String> headers)
     {
