@@ -451,13 +451,13 @@ public class QueuedStatementResource
         }
 
         /**
-         * Retrieves an object that contains all information about the dispatched query.
+         * Retrieves an object that contains the result of a dispatched query.
          *
          * @param token a generated token that identifies the user's request used to obtain the server response
-         * @param uriInfo an object used to obtain the URI where the query can be retrieved from server or construct the query representation inside
+         * @param uriInfo an object used to obtain the URI where the query can be retrieved from the server or construct the query representation inside
          * the web interface
          * @return an object with all query's metadata
-         * @throws WebApplicationException if token is invalid or program could not find information about dispatched query
+         * @throws WebApplicationException if the token is invalid or program could not find information about a dispatched query
          */
         public QueryResults getQueryResults(long token, UriInfo uriInfo)
         {
