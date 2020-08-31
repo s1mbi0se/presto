@@ -90,7 +90,13 @@ public class DispatchInfo
     }
 
     /**
-     * Gets detailed information about a failure during query execution, such as its type, message and cause.
+     * Gets detailed information about a failure during query execution.
+     * <p>
+     * Some returned information are:
+     * - The error's type
+     * - The error's message
+     * - The error's main cause
+     * - The error's stack trace
      *
      * @return an object with detailed information about a failure during query execution
      */
