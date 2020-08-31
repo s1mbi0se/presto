@@ -67,7 +67,9 @@ public enum QueryState
     }
 
     /**
-     * Is this a terminal state.
+     * Returns if the query execution is finished.
+     *
+     * @return a flag which indicates if the query execution is finished
      */
     public boolean isDone()
     {

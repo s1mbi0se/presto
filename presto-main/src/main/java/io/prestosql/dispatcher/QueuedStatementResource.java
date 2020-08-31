@@ -158,13 +158,13 @@ public class QueuedStatementResource
     }
 
     /**
-     * Receives POST requests that tries to create new queries to be executed on server.
+     * Receives POST requests that try to create new queries to be executed on the server.
      *
-     * @param statement a sql command
-     * @param servletRequest an object that provides information about the http request
+     * @param statement a SQL command
+     * @param servletRequest an object that provides information about the HTTP request
      * @param httpHeaders an object containing information about the request headers
-     * @param uriInfo an object containing metadata about the uri of endpoint
-     * @return the information about query that was created
+     * @param uriInfo an object containing metadata about the URI of the endpoint
+     * @return the result of the processed query
      */
     @ResourceSecurity(AUTHENTICATED_USER)
     @POST
@@ -398,9 +398,9 @@ public class QueuedStatementResource
         }
 
         /**
-         * Gets the generated token that identifies the user's request used to retrieve the server response.
+         * Gets the generated token that identifies the user's request.
          *
-         * @return the generated token that identifies the user's request used to retrieve the server response
+         * @return the generated token that identifies the user's request
          */
         public long getLastToken()
         {
@@ -438,13 +438,13 @@ public class QueuedStatementResource
         }
 
         /**
-         * Retrieves an object that contains all information about the dispatched query.
+         * Retrieves an object that contains the result of a dispatched query.
          *
          * @param token a generated token that identifies the user's request used to obtain the server response
-         * @param uriInfo an object used to obtain the URI where the query can be retrieved from server or construct the query representation inside
+         * @param uriInfo an object used to obtain the URI where the query can be retrieved from the server or construct the query representation inside
          * the web interface
          * @return an object with all query's metadata
-         * @throws WebApplicationException if token is invalid or program could not find information about dispatched query
+         * @throws WebApplicationException if the token is invalid or program could not find information about a dispatched query
          */
         public QueryResults getQueryResults(long token, UriInfo uriInfo)
         {
@@ -513,12 +513,12 @@ public class QueuedStatementResource
         }
 
         /**
-         * Gets the URI where information about query can be found inside server if it is not completed.
+         * Gets the URI where a query's process result can be found inside the server if it is not completed.
          *
-         * @param token a generated token that identifies the client's request used to obtains the response from server
+         * @param token a generated token that identifies the client's request used to obtain the response from server
          * @param uriInfo an object used to obtain the URI where the query can be retrieved from the server
          * @param dispatchInfo an object responsible for taking the coordinator's location, response time and waiting time
-         * @return the URI where information about query can be found inside server if it is not completed.
+         * @return the URI where information about the query can be found inside the server if it is not completed.
          */
         private URI getNextUri(long token, UriInfo uriInfo, DispatchInfo dispatchInfo)
         {
