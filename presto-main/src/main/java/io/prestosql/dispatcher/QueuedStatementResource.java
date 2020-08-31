@@ -158,13 +158,13 @@ public class QueuedStatementResource
     }
 
     /**
-     * Receives POST requests that tries to create new queries to be executed on server.
+     * Receives POST requests that try to create new queries to be executed on the server.
      *
-     * @param statement a sql command
-     * @param servletRequest an object that provides information about the http request
+     * @param statement a SQL command
+     * @param servletRequest an object that provides information about the HTTP request
      * @param httpHeaders an object containing information about the request headers
-     * @param uriInfo an object containing metadata about the uri of endpoint
-     * @return the information about query that was created
+     * @param uriInfo an object containing metadata about the URI of the endpoint
+     * @return the result of the processed query
      */
     @ResourceSecurity(AUTHENTICATED_USER)
     @POST
