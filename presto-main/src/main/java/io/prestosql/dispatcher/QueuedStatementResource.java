@@ -526,12 +526,12 @@ public class QueuedStatementResource
         }
 
         /**
-         * Gets the URI where information about query can be found inside server if it is not completed.
+         * Gets the URI where a query's process result can be found inside the server if it is not completed.
          *
-         * @param token a generated token that identifies the client's request used to obtains the response from server
+         * @param token a generated token that identifies the client's request used to obtain the response from server
          * @param uriInfo an object used to obtain the URI where the query can be retrieved from the server
          * @param dispatchInfo an object responsible for taking the coordinator's location, response time and waiting time
-         * @return the URI where information about query can be found inside server if it is not completed.
+         * @return the URI where information about the query can be found inside the server if it is not completed.
          */
         private URI getNextUri(long token, UriInfo uriInfo, DispatchInfo dispatchInfo)
         {
