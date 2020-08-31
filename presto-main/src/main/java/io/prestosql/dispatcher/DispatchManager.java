@@ -132,6 +132,9 @@ public class DispatchManager
     /**
      * Generates the next query identifier.
      *
+     * The id format is:
+     * - `{YYYYMMdd_HHmmss}_{generic-count}_{coordinator-id}
+     *
      * @return an object that identifies a unique query
      */
     public QueryId createQueryId()
