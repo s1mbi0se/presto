@@ -398,9 +398,9 @@ public class QueuedStatementResource
         }
 
         /**
-         * Gets the generated token that identifies the user's request used to retrieve the server response.
+         * Gets the generated token that identifies the user's request.
          *
-         * @return the generated token that identifies the user's request used to retrieve the server response
+         * @return the generated token that identifies the user's request
          */
         public long getLastToken()
         {
