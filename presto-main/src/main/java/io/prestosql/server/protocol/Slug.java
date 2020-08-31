@@ -57,7 +57,7 @@ public final class Slug
     /**
      * Computes a hash code based on data about the query state and the received token.
      *
-     * @param context a constant that represents if query is running or is queued
+     * @param context a constant that represents if the query is running or is queued
      * @param token a generated token that identifies the client's request used to obtain the response from server
      * @return a hash code based on data about the query state and the received token
      */
