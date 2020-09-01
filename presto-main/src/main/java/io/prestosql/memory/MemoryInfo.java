@@ -42,6 +42,11 @@ public class MemoryInfo
         this.availableProcessors = availableProcessors;
     }
 
+    /**
+     * Gets the number of available processors for the node.
+     *
+     * @return the number of available processors for the node
+     */
     @JsonProperty
     public int getAvailableProcessors()
     {
