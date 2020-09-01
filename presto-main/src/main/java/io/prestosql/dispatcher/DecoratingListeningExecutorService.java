@@ -144,8 +144,26 @@ public class DecoratingListeningExecutorService
 
     public interface TaskDecorator
     {
+        /**
+         * Receives an object an modifies its metadata.
+         * <p>
+         * It is used to embed the server version into object's class name.
+         *
+         * @param command the object that will be modified
+         * @return the modified object
+         */
         Runnable decorate(Runnable command);
 
+        /**
+         * Receives an object an modifies its metadata.
+         * <p>
+         * It is used to embed the server version into object's class name.
+         *
+         * @param task the object that will be modified
+         * @param <T> the returned variable type when the callable is
+         * executed
+         * @return the modified object
+         */
         <T> Callable<T> decorate(Callable<T> task);
     }
 }
