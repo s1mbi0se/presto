@@ -50,6 +50,12 @@ public class MemoryResource
         this.taskManager = requireNonNull(taskManager, "taskManager is null");
     }
 
+    /**
+     * Assigns queries to respective memory pool and gets metadata about node's memory usage.
+     *
+     * @param request a request to update memory pools for each query
+     * @return the metadata about node's memory usage
+     */
     @ResourceSecurity(INTERNAL_ONLY)
     @POST
     @Produces(MediaType.APPLICATION_JSON)
