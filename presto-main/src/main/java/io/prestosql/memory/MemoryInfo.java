@@ -54,6 +54,11 @@ public class MemoryInfo
         return totalNodeMemory;
     }
 
+    /**
+     * Gets a map of memory pool identifier and its metadata.
+     *
+     * @return a map of memory pool identifier and respective metadata
+     */
     @JsonProperty
     public Map<MemoryPoolId, MemoryPoolInfo> getPools()
     {
