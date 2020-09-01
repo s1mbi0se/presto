@@ -48,6 +48,11 @@ public class MemoryInfo
         return availableProcessors;
     }
 
+    /**
+     * Gets the total node's available memory in bytes.
+     *
+     * @return the total node's available memory in bytes
+     */
     @JsonProperty
     public DataSize getTotalNodeMemory()
     {
