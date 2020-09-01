@@ -82,6 +82,11 @@ public class MemoryPool
         return id;
     }
 
+    /**
+     * Gets the metadata about a Presto's memory pool.
+     *
+     * @return the metadata about a Presto's memory pool
+     */
     public synchronized MemoryPoolInfo getInfo()
     {
         Map<QueryId, List<MemoryAllocation>> memoryAllocations = new HashMap<>();
