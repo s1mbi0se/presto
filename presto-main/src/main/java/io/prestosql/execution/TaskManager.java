@@ -77,6 +77,16 @@ public interface TaskManager
      */
     ListenableFuture<TaskStatus> getTaskStatus(TaskId taskId, TaskState currentState);
 
+    /**
+     * Changes the {@link io.prestosql.memory.MemoryPool} which a query must be assigned.
+     * <p>
+     * Presto has two memory pools:
+     * - General pool: It is used by default.
+     * - Reserved pool: It is used to run the heaviest query when
+     * general pool is full.
+     *
+     * @param assignments a list of queries and the memory pool they must use
+     */
     void updateMemoryPoolAssignments(MemoryPoolAssignmentsRequest assignments);
 
     /**
