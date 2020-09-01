@@ -78,7 +78,7 @@ public class InternalAuthenticationManager
 
     /**
      * Checks if a request was made by an internal user.
-     *
+     * <p>
      * When a request is made by an internal user, a value for
      * X-Presto-Internal-Bearer header must be defined using a
      * JWT encoded string.
@@ -131,6 +131,12 @@ public class InternalAuthenticationManager
                 .compact();
     }
 
+    /**
+     * Decodes a JWT token.
+     *
+     * @param jwt a JWT token
+     * @return the information encoded by the token
+     */
     private String parseJwt(String jwt)
     {
         return Jwts.parser()
