@@ -21,12 +21,28 @@ import static java.util.Objects.requireNonNull;
 public interface VersionEmbedder
 {
     /**
-     * Encodes Presto server version information in the stack
+     * Encodes Presto server version information in the class name.
+     *
+     * @param runnable the object that will be modified
+     * @return an object with embedded version information in its class name
      */
     Runnable embedVersion(Runnable runnable);
 
+    /**
+     * Encodes Presto server version information in the class name.
+     *
+     * @param runnable the object that will be modified
+     * @param <T> the type of returned parameter when the callable is executed
+     * @return an object with embedded version information in its class name
+     */
     <T> Callable<T> embedVersion(Callable<T> runnable);
 
+    /**
+     * Gets an executor that automatically embeds the server version when executes a runnable.
+     *
+     * @param delegate the executor that will execute the runnable
+     * @return an executor that automatically embeds the server version when executes a runnable.
+     */
     default Executor embedVersion(Executor delegate)
     {
         requireNonNull(delegate, "delegate is null");
