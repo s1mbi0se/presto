@@ -42,6 +42,14 @@ public class MemoryPoolAssignmentsRequest
         return coordinatorId;
     }
 
+    /**
+     * Gets the version of the request.
+     * <p>
+     * It is used to ensure the consistency if requests
+     * come out of order.
+     *
+     * @return the version of the request.
+     */
     @JsonProperty
     public long getVersion()
     {
