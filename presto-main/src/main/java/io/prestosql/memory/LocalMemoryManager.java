@@ -92,6 +92,16 @@ public final class LocalMemoryManager
         }
     }
 
+    /**
+     * Gets the information about the node's memory.
+     * <p>
+     * The returned information are:
+     * - The number of available processors
+     * - The total available memory
+     * - The available memory pools
+     *
+     * @return an object that contains information about node's memory
+     */
     public MemoryInfo getInfo()
     {
         ImmutableMap.Builder<MemoryPoolId, MemoryPoolInfo> builder = ImmutableMap.builder();

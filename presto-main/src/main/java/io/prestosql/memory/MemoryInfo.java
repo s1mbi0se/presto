@@ -42,18 +42,33 @@ public class MemoryInfo
         this.availableProcessors = availableProcessors;
     }
 
+    /**
+     * Gets the number of available processors for the node.
+     *
+     * @return the number of available processors for the node
+     */
     @JsonProperty
     public int getAvailableProcessors()
     {
         return availableProcessors;
     }
 
+    /**
+     * Gets the total node's available memory in bytes.
+     *
+     * @return the total node's available memory in bytes
+     */
     @JsonProperty
     public DataSize getTotalNodeMemory()
     {
         return totalNodeMemory;
     }
 
+    /**
+     * Gets a map of memory pool identifier and its metadata.
+     *
+     * @return a map of memory pool identifier and respective metadata
+     */
     @JsonProperty
     public Map<MemoryPoolId, MemoryPoolInfo> getPools()
     {

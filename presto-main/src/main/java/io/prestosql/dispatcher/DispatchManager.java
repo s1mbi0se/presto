@@ -131,7 +131,7 @@ public class DispatchManager
 
     /**
      * Generates the next query identifier.
-     *
+     * <p>
      * The id format is:
      * - `{YYYYMMdd_HHmmss}_{generic-count}_{coordinator-id}
      *
@@ -142,6 +142,16 @@ public class DispatchManager
         return queryIdGenerator.createNextQueryId();
     }
 
+    /**
+     * Submits a query to be executed in server.
+     *
+     * @param queryId the query's identifier
+     * @param slug a identifier for the resource(query) and its state
+     * @param sessionContext an object that contains the metadata about the
+     * context of executed query(the catalog, the user, the language, etc.)
+     * @param query a SQL command
+     * @return an object that holds the task of submit a query to be executed in server.
+     */
     public ListenableFuture<?> createQuery(QueryId queryId, Slug slug, SessionContext sessionContext, String query)
     {
         requireNonNull(queryId, "queryId is null");

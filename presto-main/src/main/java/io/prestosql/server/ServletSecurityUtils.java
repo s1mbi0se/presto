@@ -70,6 +70,12 @@ public final class ServletSecurityUtils
                         .build());
     }
 
+    /**
+     * Updates the request metadata about the user and security policies.
+     *
+     * @param request an object that contains the metadata about the request
+     * @param authenticatedIdentity the metadata about user executing the request
+     */
     public static void setAuthenticatedIdentity(ContainerRequestContext request, Identity authenticatedIdentity)
     {
         request.setProperty(AUTHENTICATED_IDENTITY, authenticatedIdentity);
