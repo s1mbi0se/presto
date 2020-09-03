@@ -137,6 +137,15 @@ class OutputBufferMemoryManager
         return bufferedBytes.get() > maxBufferedBytes && blockOnFull.get();
     }
 
+    /**
+     * Indicates if the system can reserve memory to execute a task.
+     * <p>
+     * The {@code blockedOnMemory} future should not be cancelled, or
+     * the server will allocate memory even if memory pools are full.
+     *
+     * @return a flag which indicates if the system can allocate necessary
+     * memory to execute the task
+     */
     private synchronized boolean isBlockedOnMemory()
     {
         return !blockedOnMemory.isDone();
