@@ -526,6 +526,18 @@ public class SqlTask
             return finalTaskInfo != null;
         }
 
+        /**
+         * Gets the metadata about the executed task.
+         * <p>
+         * The metadata contains:
+         * - The {@link io.prestosql.operator.Driver} set that compounds
+         * the task.
+         * - The buffer that stores the output result.
+         * - The metadata about the {@link io.prestosql.metadata.Split} where
+         * query is executed.
+         *
+         * @return the metadata about the executed task.
+         */
         @Nullable
         public SqlTaskExecution getTaskExecution()
         {
