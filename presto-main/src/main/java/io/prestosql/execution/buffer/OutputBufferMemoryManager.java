@@ -169,6 +169,11 @@ class OutputBufferMemoryManager
         return peakMemoryUsage.get();
     }
 
+    /**
+     * Resets all the buffer's metadata.
+     * <p>
+     * It allows the buffer to be reused.
+     */
     public synchronized void close()
     {
         updateMemoryUsage(-bufferedBytes.get());
