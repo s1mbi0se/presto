@@ -91,6 +91,11 @@ public class PartitioningScheme
         return outputLayout;
     }
 
+    /**
+     * Gets the hash of a column that is used in a task.
+     *
+     * @return the hash of a used column in a task
+     */
     @JsonProperty
     public Optional<Symbol> getHashColumn()
     {

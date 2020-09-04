@@ -61,6 +61,17 @@ public class TaskInfo
         this.needsPlan = needsPlan;
     }
 
+    /**
+     * Gets the information about a task execution.
+     * <p>
+     * Some returned information:
+     * - Task state(running, aborted, planned, etc.)
+     * - Task identifier
+     * - Node where the task is being executed
+     * - Task's used memory
+     *
+     * @return the information about the task execution
+     */
     @JsonProperty
     public TaskStatus getTaskStatus()
     {

@@ -108,6 +108,14 @@ class OutputBufferMemoryManager
         return bufferBlockedFuture;
     }
 
+    /**
+     * Allows task execution even if the buffer is full.
+     * <p>
+     * By default each task has an buffer to hold the output data,
+     * if this buffer reaches the maximum quantity of bytes, the task is blocked.
+     * This method allows a task to finish its execution even if the buffer
+     * size limit is reached.
+     */
     public synchronized void setNoBlockOnFull()
     {
         blockOnFull.set(false);
@@ -137,6 +145,15 @@ class OutputBufferMemoryManager
         return bufferedBytes.get() > maxBufferedBytes && blockOnFull.get();
     }
 
+    /**
+     * Indicates if the system can reserve memory to execute a task.
+     * <p>
+     * The {@code blockedOnMemory} future should not be cancelled, or
+     * the server will allocate memory even if memory pools are full.
+     *
+     * @return a flag which indicates if the system can allocate necessary
+     * memory to execute the task
+     */
     private synchronized boolean isBlockedOnMemory()
     {
         return !blockedOnMemory.isDone();
@@ -160,6 +177,11 @@ class OutputBufferMemoryManager
         return peakMemoryUsage.get();
     }
 
+    /**
+     * Resets all the buffer's metadata.
+     * <p>
+     * It allows the buffer to be reused.
+     */
     public synchronized void close()
     {
         updateMemoryUsage(-bufferedBytes.get());
