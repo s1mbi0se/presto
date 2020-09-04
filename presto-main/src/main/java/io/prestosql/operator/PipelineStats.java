@@ -344,6 +344,11 @@ public class PipelineStats
         return blockedReasons;
     }
 
+    /**
+     * Gets the amount of data in bytes received by a pipeline.
+     *
+     * @return the amount of data in bytes received by a pipeline
+     */
     @JsonProperty
     public DataSize getPhysicalInputDataSize()
     {
