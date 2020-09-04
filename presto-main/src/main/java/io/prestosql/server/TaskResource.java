@@ -182,6 +182,16 @@ public class TaskResource
                 .withTimeout(timeout);
     }
 
+    /**
+     * Receives GET HTTP requests and returns the metadata about a task.
+     *
+     * @param taskId the task's identifier
+     * @param currentState the task current state
+     * @param maxWait the time that the server should wait until
+     * throw a timeout exception
+     * @param uriInfo an object with metadata about this endpoint URI
+     * @param asyncResponse an object used to build the response in an asynchronous way
+     */
     @ResourceSecurity(INTERNAL_ONLY)
     @GET
     @Path("{taskId}/status")
