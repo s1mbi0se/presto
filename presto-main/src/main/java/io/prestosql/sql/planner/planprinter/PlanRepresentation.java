@@ -66,6 +66,18 @@ class PlanRepresentation
         return Optional.ofNullable(nodeInfo.get(id));
     }
 
+    /**
+     * Adds a node in the query plan tree.
+     * <p>
+     * A query plan tree represents the data that must be retrieved by a query,
+     * with each node representing an operation. As an example of a sql plan tree:
+     * - Aggregate(FINAL)[regionkey] => [regionkey:bigint, count:bigint]
+     * |-- LocalExchange[HASH][$hashvalue] ("regionkey") => regionkey:bigint, count_8:bigint, $hashvalue:bigint
+     * |---RemoteExchange[REPARTITION][$hashvalue_9] => regionkey:bigint, count_8:bigint, $hashvalue_9:bigint
+     * |----Project[] => [regionkey:bigint, count_8:bigint, $hashvalue_10:bigint]
+     *
+     * @param node an object with a query plan tree node's metadata
+     */
     public void addNode(NodeRepresentation node)
     {
         nodeInfo.put(node.getId(), node);
