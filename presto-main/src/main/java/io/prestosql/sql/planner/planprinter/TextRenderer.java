@@ -325,6 +325,15 @@ public class TextRenderer
         return positions + " " + noun;
     }
 
+    /**
+     * Gets an n-level indentation string.
+     * <p>
+     * Each indentation level is represented for
+     * 4 spaces.
+     *
+     * @param indent the level of indentation
+     * @return an n-level indentation string
+     */
     static String indentString(int indent)
     {
         return Strings.repeat("    ", indent);
