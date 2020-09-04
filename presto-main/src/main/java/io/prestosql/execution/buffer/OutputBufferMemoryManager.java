@@ -108,6 +108,14 @@ class OutputBufferMemoryManager
         return bufferBlockedFuture;
     }
 
+    /**
+     * Allows task execution even if the buffer is full.
+     * <p>
+     * By default each task has an buffer to hold the output data,
+     * if this buffer reaches the maximum quantity of bytes, the task is blocked.
+     * This method allows a task to finish its execution even if the buffer
+     * size limit is reached.
+     */
     public synchronized void setNoBlockOnFull()
     {
         blockOnFull.set(false);
