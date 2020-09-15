@@ -172,6 +172,11 @@ public class QueryInfo
         this.resourceGroupId = resourceGroupId;
     }
 
+    /**
+     * Gets the query's identifier.
+     *
+     * @return the query's identifier
+     */
     @JsonProperty
     public QueryId getQueryId()
     {
