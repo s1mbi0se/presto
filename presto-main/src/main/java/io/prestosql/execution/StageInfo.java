@@ -86,6 +86,14 @@ public class StageInfo
         return state;
     }
 
+    /**
+     * Gets the plan fragment that the stage is responsible for the processing.
+     * <p>
+     * To achieve more performance, a query plan is broken in many fragments
+     * and divided between stages, that can process each one in parallel.
+     *
+     * @return the fragment of the query plan that the stage is responsible for processing
+     */
     @JsonProperty
     @Nullable
     public PlanFragment getPlan()
