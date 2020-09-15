@@ -271,8 +271,11 @@ public class TaskContext
 
     /**
      * Returns the completed driver groups (excluding taskWide).
+     * <p>
      * A driver group is considered complete if all drivers associated with it
      * has completed, and no new drivers associated with it will be created.
+     *
+     * @return a group of drivers that are all completed
      */
     public Set<Lifespan> getCompletedDriverGroups()
     {
