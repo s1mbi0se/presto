@@ -338,6 +338,11 @@ public class TaskStats
         return userMemoryReservation;
     }
 
+    /**
+     * Gets the amount of memory that can be spilled to the disk
+     *
+     * @return the amount of memory that can be spilled to the disk
+     */
     @JsonProperty
     public DataSize getRevocableMemoryReservation()
     {
