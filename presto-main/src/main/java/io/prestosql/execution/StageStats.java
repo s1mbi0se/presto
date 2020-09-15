@@ -229,6 +229,11 @@ public class StageStats
         return runningTasks;
     }
 
+    /**
+     * Gets the number of completed tasks for a stage.
+     *
+     * @return the number of completed tasks for a stage
+     */
     @JsonProperty
     public int getCompletedTasks()
     {
