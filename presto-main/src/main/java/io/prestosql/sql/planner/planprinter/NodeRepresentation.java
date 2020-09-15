@@ -137,6 +137,11 @@ public class NodeRepresentation
         return estimatedStats;
     }
 
+    /**
+     * Gets the list of all estimated cost for the node's children
+     *
+     * @return all estimated cost for all node's children
+     */
     public List<PlanCostEstimate> getEstimatedCost()
     {
         return estimatedCost;
