@@ -177,6 +177,11 @@ public class QueryInfo
         this.queryType = queryType;
     }
 
+    /**
+     * Gets the query's identifier.
+     *
+     * @return the query's identifier
+     */
     @JsonProperty
     public QueryId getQueryId()
     {
