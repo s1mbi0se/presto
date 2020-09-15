@@ -34,6 +34,15 @@ public class FutureStateChange<T>
     @GuardedBy("listeners")
     private final Set<SettableFuture<T>> listeners = new HashSet<>();
 
+    /**
+     * Creates a generic listener.
+     * <p>
+     * The listener is tracked by the{@code listeners} variable,
+     * so its metadata can be changed in future.
+     *
+     * @return a generic listener
+     * @see SettableFuture
+     */
     public ListenableFuture<T> createNewListener()
     {
         SettableFuture<T> listener = SettableFuture.create();
