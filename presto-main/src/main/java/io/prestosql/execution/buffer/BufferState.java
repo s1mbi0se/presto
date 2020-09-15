@@ -72,6 +72,14 @@ public enum BufferState
         return newPagesAllowed;
     }
 
+    /**
+     * Returns if new buffers can be added in a task.
+     * <p>
+     * Buffers are used to keep the physical data that is
+     * exchanged between the tasks.
+     *
+     * @return a flag which indicates if new buffers can be added in a task
+     */
     public boolean canAddBuffers()
     {
         return newBuffersAllowed;

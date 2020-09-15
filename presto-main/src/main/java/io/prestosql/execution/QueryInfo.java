@@ -172,6 +172,11 @@ public class QueryInfo
         this.resourceGroupId = resourceGroupId;
     }
 
+    /**
+     * Gets the query's identifier.
+     *
+     * @return the query's identifier
+     */
     @JsonProperty
     public QueryId getQueryId()
     {
@@ -356,6 +361,17 @@ public class QueryInfo
         return referencedTables;
     }
 
+    /**
+     * Gets all routines defined in a sql query.
+     * <p>
+     * Routines are methods(operations) that are used in
+     * sql queries:
+     * - SELECT SUM(age) FROM users -> sum is a routine;
+     * - SELECT MAX(age), MIN(income) FROM users -> max
+     * and min are routines.
+     *
+     * @return all routines defined in a sql query
+     */
     @JsonProperty
     public List<RoutineInfo> getRoutines()
     {

@@ -421,6 +421,11 @@ public class PipelineStats
         return physicalWrittenDataSize;
     }
 
+    /**
+     * Gets the metadata for all operators of a pipeline.
+     *
+     * @return the metadata for all operators of a pipeline
+     */
     @JsonProperty
     public List<OperatorStats> getOperatorSummaries()
     {

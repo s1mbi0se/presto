@@ -403,6 +403,15 @@ public class OperatorStats
         return peakTotalMemoryReservation;
     }
 
+    /**
+     * Gets the quantity of memory spilled to disk.
+     * <p>
+     * When Presto is executing a memory exhausting query,
+     * it can use some memory from the disk instead of the RAM, so it
+     * allows finishing to process the query.
+     *
+     * @return the quantity of memory spilled to disk
+     */
     @JsonProperty
     public DataSize getSpilledDataSize()
     {

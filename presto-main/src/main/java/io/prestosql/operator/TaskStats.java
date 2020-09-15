@@ -327,12 +327,22 @@ public class TaskStats
         return cumulativeUserMemory;
     }
 
+    /**
+     * Gets the memory reserved to execute query in general pool.
+     *
+     * @return the memory reserved to execute query in general pool
+     */
     @JsonProperty
     public DataSize getUserMemoryReservation()
     {
         return userMemoryReservation;
     }
 
+    /**
+     * Gets the amount of memory that can be spilled to the disk
+     *
+     * @return the amount of memory that can be spilled to the disk
+     */
     @JsonProperty
     public DataSize getRevocableMemoryReservation()
     {
