@@ -401,6 +401,20 @@ public class TextRenderer
             return nextLinesPrefix + pad(indent, 4);
         }
 
+        /**
+         * Adds spaces at the end of a string until it reaches a specific length.
+         * <p>
+         * The padding is used by Presto to allows indentation when server constructs
+         * the visual representation of sql query plan tree:
+         * [node1]
+         * ├─ [node2]
+         * │
+         * └─ [last node]
+         *
+         * @param text the string that will be padded
+         * @param length the final length of the returned string
+         * @return a string with the defined length completed with spaces
+         */
         private static String pad(String text, int length)
         {
             checkArgument(text.length() <= length, "text is longer that length");
