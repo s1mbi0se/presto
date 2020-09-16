@@ -54,6 +54,14 @@ public class StatsAndCosts
         return stats;
     }
 
+    /**
+     * Gets the costs for each node in sql parse tree.
+     * <p>
+     * The costs are the amount of cpu and memory resources
+     * used to process the node.
+     *
+     * @return the costs for each node in sql parse tree
+     */
     @JsonProperty
     public Map<PlanNodeId, PlanCostEstimate> getCosts()
     {
