@@ -89,6 +89,11 @@ public class PlanNodeStats
         return planNodeCpuTime;
     }
 
+    /**
+     * Gets all operators that can be used by a plan.
+     *
+     * @return all operators that can be used by a plan
+     */
     public Set<String> getOperatorTypes()
     {
         return operatorInputStats.keySet();

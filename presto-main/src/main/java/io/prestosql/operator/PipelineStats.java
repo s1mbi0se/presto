@@ -326,6 +326,11 @@ public class PipelineStats
         return totalCpuTime;
     }
 
+    /**
+     * Gets the time that a pipeline is blocked waiting for the data-source response.
+     *
+     * @return Gets the time that a pipeline is blocked waiting for the data-source response
+     */
     @JsonProperty
     public Duration getTotalBlockedTime()
     {
