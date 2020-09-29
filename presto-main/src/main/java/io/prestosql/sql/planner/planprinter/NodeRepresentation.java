@@ -127,6 +127,14 @@ public class NodeRepresentation
         return details.toString();
     }
 
+    /**
+     * Gets the statistics when processing a node in query plan.
+     * <p>
+     * The statistics are about produced and consumed data and the cpu
+     * consumption.
+     *
+     * @return the statistics when processing a node in query plan
+     */
     public Optional<PlanNodeStats> getStats()
     {
         return stats;
