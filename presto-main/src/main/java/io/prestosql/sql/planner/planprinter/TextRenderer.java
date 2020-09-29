@@ -386,9 +386,9 @@ public class TextRenderer
         }
 
         /**
-         * Gets the indentation level when constructing query node representation
+         * Gets the indentation level when constructing a query node representation.
          *
-         * @return the indentation level when constructing query node representation
+         * @return the indentation level when constructing a query node representation
          */
         public String nodeIndent()
         {
