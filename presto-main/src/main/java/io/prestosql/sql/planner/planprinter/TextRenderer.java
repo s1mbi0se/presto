@@ -384,6 +384,11 @@ public class TextRenderer
             return new Indent(nextLinesPrefix + first, nextLinesPrefix + next, hasChildren);
         }
 
+        /**
+         * Gets the indentation level when constructing query node representation
+         *
+         * @return the indentation level when constructing query node representation
+         */
         public String nodeIndent()
         {
             return firstLinePrefix;
