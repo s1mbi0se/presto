@@ -217,6 +217,13 @@ public class BasicStageStats
         return totalScheduledTime;
     }
 
+    /**
+     * Gets a flag which indicates if there is something blocking stage execution.
+     * <p>
+     * The reasons of stage becomes blocked is given by the {@link BlockedReason}
+     *
+     * @return a flag which indicates if there is something blocking stage execution
+     */
     public boolean isFullyBlocked()
     {
         return fullyBlocked;
