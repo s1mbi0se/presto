@@ -68,12 +68,12 @@ public enum BufferState
     }
 
     /**
-     * Gets a flag which indicates if can add more pages in buffer's output response
+     * Gets a flag which indicates if more pages can be added in buffer's output response
      * <p>
      * Pages are the physical data transferred between tasks and operators. They are
      * the set of returned rows with their data split in columnar format.
      *
-     * @return a flag which indicates if can add more pages in buffer's response
+     * @return a flag which indicates if more pages can be added in buffer's response
      */
     public boolean canAddPages()
     {
