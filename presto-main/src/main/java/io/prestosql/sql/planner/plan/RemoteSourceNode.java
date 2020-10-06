@@ -78,6 +78,14 @@ public class RemoteSourceNode
         return sourceFragmentIds;
     }
 
+    /**
+     * Gets the object with metadata about ORDER BY clauses.
+     * <p>
+     * The object contains the class that ORDER BY clauses must be
+     * applied and the type of order(ASC, DESC..).
+     *
+     * @return the object with metadata about ORDER BY clauses
+     */
     @JsonProperty("orderingScheme")
     public Optional<OrderingScheme> getOrderingScheme()
     {
