@@ -92,6 +92,14 @@ public class RemoteSourceNode
         return orderingScheme;
     }
 
+    /**
+     * Gets the way that a node in the SQL plan tree is processed through Presto's instances.
+     * <p>
+     * A fragment of SQL plan tree can be processed only by a node or can be split
+     * between different instances.
+     *
+     * @return the way that a node in SQL plan tree is processed through Presto's instances
+     */
     @JsonProperty("exchangeType")
     public ExchangeNode.Type getExchangeType()
     {
