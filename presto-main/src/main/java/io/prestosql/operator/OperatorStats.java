@@ -344,6 +344,11 @@ public class OperatorStats
         return blockedWall;
     }
 
+    /**
+     * Gets the the quantity of times that {@link Operator#finish()} is called.
+     *
+     * @return the quantity of times that {@link Operator#finish()} is called
+     */
     @JsonProperty
     public long getFinishCalls()
     {
