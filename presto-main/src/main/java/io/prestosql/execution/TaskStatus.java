@@ -219,6 +219,11 @@ public class TaskStatus
         return revocableMemoryReservation;
     }
 
+    /**
+     * Gets the the number of full garbage collector occurrences.
+     *
+     * @return the number of full garbage collector occurrences
+     */
     @JsonProperty
     public long getFullGcCount()
     {
