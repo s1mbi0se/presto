@@ -398,6 +398,15 @@ public class OperatorStats
         return peakSystemMemoryReservation;
     }
 
+    /**
+     * Gets the maximum of total memory used by an operator.
+     * <p>
+     * The total memory is user memory + system memory. The user memory
+     * is related to the size of user data returned by the query and the system
+     * memory is the byproduct of its execution(buffers, hash tables...).
+     *
+     * @return the maximum of total memory used by an operator
+     */
     @JsonProperty
     public DataSize getPeakTotalMemoryReservation()
     {
