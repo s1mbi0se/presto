@@ -97,6 +97,11 @@ class ClientBuffer
         return new BufferInfo(bufferId, destroyed, bufferedPages, sequenceId, pageBufferInfo);
     }
 
+    /**
+     * Gets a flag which indicates if the buffer was deleted.
+     *
+     * @return a flag which indicates if the buffer was deleted
+     */
     public boolean isDestroyed()
     {
         //
