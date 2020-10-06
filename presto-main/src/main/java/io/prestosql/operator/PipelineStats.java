@@ -390,6 +390,11 @@ public class PipelineStats
         return rawInputPositions;
     }
 
+    /**
+     * Gets the size of the data sent to be processed by the pipeline.
+     *
+     * @return the size of the data sent to be processed by the pipeline
+     */
     @JsonProperty
     public DataSize getProcessedInputDataSize()
     {
