@@ -41,6 +41,11 @@ public interface OutputBuffer
 
     /**
      * Check if the buffer is blocking producers.
+     * <p>
+     * It means that buffers are full and they are set
+     * to block producer when reaches that condition.
+     *
+     * @return a flag which indicates if the buffer is blocking any process
      */
     boolean isOverutilized();
 
