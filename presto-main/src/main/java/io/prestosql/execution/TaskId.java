@@ -23,6 +23,12 @@ import java.util.Objects;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.Integer.parseInt;
 
+/**
+ * Represents a unique identifier for a task.
+ * <p>
+ * It is compound of query id, stage id and the
+ * task identifier.
+ */
 public class TaskId
 {
     @JsonCreator
