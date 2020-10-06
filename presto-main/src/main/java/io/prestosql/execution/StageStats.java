@@ -293,6 +293,11 @@ public class StageStats
         return totalMemoryReservation;
     }
 
+    /**
+     * Gets the maximum of general memory used by a stage.
+     *
+     * @return the maximum general memory used by the stage
+     */
     @JsonProperty
     public DataSize getPeakUserMemoryReservation()
     {
