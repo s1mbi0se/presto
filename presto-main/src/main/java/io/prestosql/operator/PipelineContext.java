@@ -495,6 +495,16 @@ public class PipelineContext
         return pipelineMemoryContext;
     }
 
+    /**
+     * Gets the metadata about the running status of a pipeline.
+     *
+     * @param driverContextsIterator an object that contains a list of metadata
+     * about executing drivers
+     * @param totalSplits the number of splits that the pipeline is processing
+     * @param completedDrivers the number of already completed drivers
+     * @param partitioned a flag which indicates that the pipeline is partitioned
+     * @return the metadata about the running status of a pipeline
+     */
     private static PipelineStatus getPipelineStatus(Iterator<DriverContext> driverContextsIterator, int totalSplits, int completedDrivers, boolean partitioned)
     {
         int runningDrivers = 0;
