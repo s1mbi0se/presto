@@ -67,6 +67,11 @@ public class TaskSource
         return noMoreSplitsForLifespan;
     }
 
+    /**
+     * Gets a flag which indicates that there is no more splits to be processed by the task.
+     *
+     * @return a flag which indicates that there is no more splits to be processed by the task
+     */
     @JsonProperty
     public boolean isNoMoreSplits()
     {
