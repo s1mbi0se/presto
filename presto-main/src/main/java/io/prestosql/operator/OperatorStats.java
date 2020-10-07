@@ -343,6 +343,11 @@ public class OperatorStats
         return blockedWall;
     }
 
+    /**
+     * Gets the the quantity of times that {@link Operator#finish()} is called.
+     *
+     * @return the quantity of times that {@link Operator#finish()} is called
+     */
     @JsonProperty
     public long getFinishCalls()
     {
@@ -397,6 +402,15 @@ public class OperatorStats
         return peakSystemMemoryReservation;
     }
 
+    /**
+     * Gets the maximum total memory used by an operator.
+     * <p>
+     * The total memory is user memory + system memory. The user memory
+     * is related to the size of user data returned by the query and the system
+     * memory is the byproduct of its execution(buffers, hash tables...).
+     *
+     * @return the maximum of total memory used by an operator
+     */
     @JsonProperty
     public DataSize getPeakTotalMemoryReservation()
     {

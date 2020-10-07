@@ -74,6 +74,11 @@ public class BufferInfo
         return pagesSent;
     }
 
+    /**
+     * Gets the metadata about the quantity of pages inside the buffer.
+     *
+     * @return the metadata about the quantity of pages inside the buffer
+     */
     @JsonProperty
     public PageBufferInfo getPageBufferInfo()
     {

@@ -217,6 +217,11 @@ public class SqlTask
         }
     }
 
+    /**
+     * Gets the metadata about an executed task.
+     *
+     * @return the metadata about an executed task
+     */
     public TaskStatus getTaskStatus()
     {
         try (SetThreadName ignored = new SetThreadName("Task-%s", taskId)) {

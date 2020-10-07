@@ -151,6 +151,12 @@ public class StageInfo
                 .toString();
     }
 
+    /**
+     * Gets a stage and all its sub-stages.
+     *
+     * @param stageInfo the stage that will be retrieved
+     * @return a stage an all its sub-stages.
+     */
     public static List<StageInfo> getAllStages(Optional<StageInfo> stageInfo)
     {
         ImmutableList.Builder<StageInfo> collector = ImmutableList.builder();

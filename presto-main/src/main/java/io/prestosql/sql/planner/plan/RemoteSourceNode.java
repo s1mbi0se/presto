@@ -78,12 +78,28 @@ public class RemoteSourceNode
         return sourceFragmentIds;
     }
 
+    /**
+     * Gets the object with metadata about ORDER BY clauses.
+     * <p>
+     * The object contains the class that ORDER BY clauses must be
+     * applied and the type of order(ASC, DESC..).
+     *
+     * @return the object with metadata about ORDER BY clauses
+     */
     @JsonProperty("orderingScheme")
     public Optional<OrderingScheme> getOrderingScheme()
     {
         return orderingScheme;
     }
 
+    /**
+     * Gets the way that a node in the SQL plan tree is processed through Presto's instances.
+     * <p>
+     * A fragment of SQL plan tree can be processed only by a node or can be split
+     * between different instances.
+     *
+     * @return the way that a node in SQL plan tree is processed through Presto's instances
+     */
     @JsonProperty("exchangeType")
     public ExchangeNode.Type getExchangeType()
     {

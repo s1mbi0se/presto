@@ -40,7 +40,12 @@ public interface OutputBuffer
     double getUtilization();
 
     /**
-     * Check if the buffer is blocking producers.
+     * Checks if the buffer is blocking producers.
+     * <p>
+     * It means that buffers are full and they are set
+     * to block producer when reaches that condition.
+     *
+     * @return a flag which indicates if the buffer is blocking any process
      */
     boolean isOverutilized();
 
@@ -63,6 +68,11 @@ public interface OutputBuffer
      * next token field in the BufferResult returned from the previous request.
      * If the buffer result is marked as complete, the client must call abort to acknowledge
      * receipt of the final state.
+     *
+     * @param bufferId the unique identifier for the buffer that the system needs to retrieve
+     * the pages
+     * @param token the identifier for a request
+     * @param maxSize the max size of data returned by the buffer
      */
     ListenableFuture<BufferResult> get(OutputBufferId bufferId, long token, DataSize maxSize);
 
