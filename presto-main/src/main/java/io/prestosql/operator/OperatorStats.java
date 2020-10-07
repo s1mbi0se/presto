@@ -361,6 +361,11 @@ public class OperatorStats
         return finishCalls;
     }
 
+    /**
+     * Gets the time used to process all splits.
+     *
+     * @return the time used to process all splits
+     */
     @JsonProperty
     public Duration getFinishWall()
     {
