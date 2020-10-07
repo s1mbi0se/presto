@@ -81,6 +81,14 @@ public final class SystemPartitioningHandle
         this.function = requireNonNull(function, "function is null");
     }
 
+    /**
+     * Gets the type of used partition.
+     * <p>
+     * The type of partition shows if the fragment will be executed only
+     * in one node or more than one.
+     *
+     * @return the type of partitioning
+     */
     @JsonProperty
     public SystemPartitioning getPartitioning()
     {
