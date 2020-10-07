@@ -270,6 +270,9 @@ public class PartitionedOutputBuffer
         return memoryManager.getPeakMemoryUsage();
     }
 
+    /**
+     * Frees the memory used by the buffer.
+     */
     @VisibleForTesting
     void forceFreeMemory()
     {
