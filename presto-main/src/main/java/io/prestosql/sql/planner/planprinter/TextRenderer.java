@@ -373,6 +373,19 @@ public class TextRenderer
             this.hasChildren = hasChildren;
         }
 
+        /**
+         * Gets the indentation level for a node in the SQL query tree.
+         * <p>
+         * It is used to construct the visual representation of a
+         * query tree.
+         *
+         * @param last a flag which indicates if the node is the last in
+         * query tree
+         * @param hasChildren a flag which indicates if the node has some
+         * children
+         * @return the indentation level for a node in SQL query tree
+         */
+
         public Indent forChild(boolean last, boolean hasChildren)
         {
             String first;
