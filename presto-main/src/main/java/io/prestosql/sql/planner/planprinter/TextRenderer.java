@@ -311,6 +311,12 @@ public class TextRenderer
         return DataSize.succinctBytes(Math.round(value)).toString();
     }
 
+    /**
+     * Gets a double value with two decimal fields.
+     *
+     * @param value the double value to be formatted
+     * @return a double value with two decimal fields
+     */
     static String formatDouble(double value)
     {
         if (isFinite(value)) {
