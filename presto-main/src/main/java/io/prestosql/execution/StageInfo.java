@@ -130,6 +130,11 @@ public class StageInfo
         return subStages;
     }
 
+    /**
+     * Gets the map of nodes in SQL plan tree and respective table to be applied.
+     *
+     * @return the map of nodes in SQL plan tree and respective table to be applied
+     */
     @JsonProperty
     public Map<PlanNodeId, TableInfo> getTables()
     {
