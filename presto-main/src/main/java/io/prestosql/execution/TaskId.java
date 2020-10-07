@@ -26,8 +26,8 @@ import static java.lang.Integer.parseInt;
 /**
  * Represents a unique identifier for a task.
  * <p>
- * It is compound of query id, stage id and the
- * task identifier.
+ * It is compound of a query id, stage id and the
+ * task id.
  */
 public class TaskId
 {
