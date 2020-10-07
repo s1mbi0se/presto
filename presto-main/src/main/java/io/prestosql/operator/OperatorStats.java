@@ -295,6 +295,12 @@ public class OperatorStats
         return sumSquaredInputPositions;
     }
 
+    /**
+     * Gets the quantity of times that the method to get output buffer from a operator was called
+     *
+     * @return the quantity of times that the method to get output buffer
+     * from a operator was called
+     */
     @JsonProperty
     public long getGetOutputCalls()
     {
