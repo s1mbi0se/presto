@@ -247,6 +247,8 @@ public class StateMachine<T>
 
     /**
      * Gets a future that completes when the state is no longer {@code .equals()} to {@code currentState)}.
+     *
+     * @return a future that completes when the state is no longer equals to the current state
      */
     public ListenableFuture<T> getStateChange(T currentState)
     {
