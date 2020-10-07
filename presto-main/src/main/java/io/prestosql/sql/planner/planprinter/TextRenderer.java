@@ -320,10 +320,10 @@ public class TextRenderer
     }
 
     /**
-     * Gets the string which indicates the quantity of rows in response.
+     * Gets the string which indicates the number of rows in response.
      *
      * @param positions quantity of rows in query response
-     * @return the string which indicates the quantity of rows in response
+     * @return the string which indicates the number of rows in response
      */
     static String formatPositions(long positions)
     {
