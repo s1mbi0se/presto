@@ -141,6 +141,13 @@ public class TextRenderer
         return output.toString();
     }
 
+    /**
+     * Prints some statistics about the processed data for a node in the SQL plan tree.
+     *
+     * @param output an object used to build the final string to be printed
+     * @param stats an object with statistics about processed data for a node in
+     * SQL plan tree
+     */
     private void printDistributions(StringBuilder output, PlanNodeStats stats)
     {
         Map<String, Double> inputAverages = stats.getOperatorInputPositionsAverages();
