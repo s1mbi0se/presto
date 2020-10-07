@@ -107,6 +107,11 @@ public class ValuesNode
         return outputSymbols;
     }
 
+    /**
+     * Retrieves the rows after queries are processed.
+     *
+     * @return the rows that are retrieved after query is processed
+     */
     @JsonProperty
     public int getRowCount()
     {
