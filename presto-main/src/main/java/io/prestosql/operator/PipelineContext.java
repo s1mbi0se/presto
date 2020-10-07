@@ -310,6 +310,11 @@ public class PipelineContext
         return stat;
     }
 
+    /**
+     * Gets the size in bytes of disk written data for all drivers.
+     *
+     * @return the size in bytes of disk written data for all drivers
+     */
     public long getPhysicalWrittenDataSize()
     {
         return drivers.stream()
