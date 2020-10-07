@@ -403,7 +403,7 @@ public class OperatorStats
     }
 
     /**
-     * Gets the maximum of total memory used by an operator.
+     * Gets the maximum total memory used by an operator.
      * <p>
      * The total memory is user memory + system memory. The user memory
      * is related to the size of user data returned by the query and the system
