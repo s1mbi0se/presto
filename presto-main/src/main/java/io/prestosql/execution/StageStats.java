@@ -295,7 +295,7 @@ public class StageStats
     }
 
     /**
-     * Gets the maximum of general memory used by a stage.
+     * Gets the maximum general memory used by a stage.
      *
      * @return the maximum general memory used by the stage
      */
