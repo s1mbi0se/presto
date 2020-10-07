@@ -211,6 +211,11 @@ public class StageStats
         return schedulingComplete;
     }
 
+    /**
+     * Gets an object with statistics about the splits used by a stage.
+     *
+     * @return an object with statistics about the splits used by a stage
+     */
     @JsonProperty
     public DistributionSnapshot getGetSplitDistribution()
     {
