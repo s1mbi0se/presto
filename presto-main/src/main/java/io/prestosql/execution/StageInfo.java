@@ -101,6 +101,11 @@ public class StageInfo
         return plan;
     }
 
+    /**
+     * Gets the type of columns that can be returned by the stage.
+     *
+     * @return the type of columns that can be returned by the stage
+     */
     @JsonProperty
     public List<Type> getTypes()
     {
