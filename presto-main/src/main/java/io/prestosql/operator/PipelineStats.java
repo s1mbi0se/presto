@@ -442,6 +442,11 @@ public class PipelineStats
         return operatorSummaries;
     }
 
+    /**
+     * Gets the metadata for all drivers of a pipeline.
+     *
+     * @return the metadata for all drivers of a pipeline
+     */
     @JsonProperty
     public List<DriverStats> getDrivers()
     {
