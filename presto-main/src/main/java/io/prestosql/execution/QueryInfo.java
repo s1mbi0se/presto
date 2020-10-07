@@ -219,6 +219,11 @@ public class QueryInfo
         return fieldNames;
     }
 
+    /**
+     * Gets the SQL statement sent by the user.
+     *
+     * @return the SQL statement sent by the user
+     */
     @JsonProperty
     public String getQuery()
     {
