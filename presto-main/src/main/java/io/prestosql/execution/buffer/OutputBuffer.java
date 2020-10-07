@@ -40,7 +40,7 @@ public interface OutputBuffer
     double getUtilization();
 
     /**
-     * Check if the buffer is blocking producers.
+     * Checks if the buffer is blocking producers.
      * <p>
      * It means that buffers are full and they are set
      * to block producer when reaches that condition.
