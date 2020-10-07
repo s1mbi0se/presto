@@ -289,6 +289,11 @@ public class OperatorStats
         return inputPositions;
     }
 
+    /**
+     * Gets the sum of the square of all input positions.
+     *
+     * @return the sum of the square of all input positions
+     */
     @JsonProperty
     public double getSumSquaredInputPositions()
     {
