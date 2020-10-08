@@ -314,6 +314,11 @@ public class PipelineStats
         return elapsedTime;
     }
 
+    /**
+     * Gets the total time that drivers waited when executing I/O tasks.
+     *
+     * @return the total time that drivers waited when executing I/O tasks
+     */
     @JsonProperty
     public Duration getTotalScheduledTime()
     {
@@ -442,6 +447,11 @@ public class PipelineStats
         return operatorSummaries;
     }
 
+    /**
+     * Gets the metadata for all drivers of a pipeline.
+     *
+     * @return the metadata for all drivers of a pipeline
+     */
     @JsonProperty
     public List<DriverStats> getDrivers()
     {

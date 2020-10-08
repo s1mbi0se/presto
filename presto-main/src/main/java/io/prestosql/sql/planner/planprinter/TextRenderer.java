@@ -141,6 +141,13 @@ public class TextRenderer
         return output.toString();
     }
 
+    /**
+     * Prints some statistics about the processed data for a node in the SQL plan tree.
+     *
+     * @param output an object used to build the final string to be printed
+     * @param stats an object with statistics about processed data for a node in
+     * SQL plan tree
+     */
     private void printDistributions(StringBuilder output, PlanNodeStats stats)
     {
         Map<String, Double> inputAverages = stats.getOperatorInputPositionsAverages();
@@ -310,6 +317,12 @@ public class TextRenderer
         return DataSize.succinctBytes(Math.round(value)).toString();
     }
 
+    /**
+     * Gets a double value with two decimal fields.
+     *
+     * @param value the double value to be formatted
+     * @return a double value with two decimal fields
+     */
     static String formatDouble(double value)
     {
         if (isFinite(value)) {
@@ -372,6 +385,19 @@ public class TextRenderer
             this.nextLinesPrefix = nextLinesPrefix;
             this.hasChildren = hasChildren;
         }
+
+        /**
+         * Gets the indentation level for a node in the SQL query tree.
+         * <p>
+         * Used to construct the visual representation of a
+         * query tree.
+         *
+         * @param last a flag which indicates if the node is the last in
+         * query tree
+         * @param hasChildren a flag which indicates if the node has some
+         * children
+         * @return the indentation level for a node in SQL query tree
+         */
 
         public Indent forChild(boolean last, boolean hasChildren)
         {

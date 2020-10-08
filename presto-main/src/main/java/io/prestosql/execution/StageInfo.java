@@ -101,6 +101,11 @@ public class StageInfo
         return plan;
     }
 
+    /**
+     * Gets the type of columns that can be returned by the stage.
+     *
+     * @return the type of columns that can be returned by the stage
+     */
     @JsonProperty
     public List<Type> getTypes()
     {
@@ -125,6 +130,11 @@ public class StageInfo
         return subStages;
     }
 
+    /**
+     * Gets the map of nodes in SQL plan tree and their respective table information.
+     *
+     * @return the map of nodes in SQL plan tree and their respective table information
+     */
     @JsonProperty
     public Map<PlanNodeId, TableInfo> getTables()
     {

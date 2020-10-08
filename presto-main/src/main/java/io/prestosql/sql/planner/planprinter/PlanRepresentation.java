@@ -56,6 +56,11 @@ class PlanRepresentation
         return totalCpuTime;
     }
 
+    /**
+     * Gets the total time spent in I/O tasks.
+     *
+     * @return the total time spent in I/O tasks
+     */
     public Optional<Duration> getTotalScheduledTime()
     {
         return totalScheduledTime;

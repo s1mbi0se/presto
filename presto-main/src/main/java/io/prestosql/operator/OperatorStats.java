@@ -289,12 +289,23 @@ public class OperatorStats
         return inputPositions;
     }
 
+    /**
+     * Gets the squared sum of all input positions.
+     *
+     * @return the squared sum of all input positions
+     */
     @JsonProperty
     public double getSumSquaredInputPositions()
     {
         return sumSquaredInputPositions;
     }
 
+    /**
+     * Gets the number of times that the method to get output buffer from an operator was called
+     *
+     * @return the number of times that the method to get output buffer
+     * from an operator was called
+     */
     @JsonProperty
     public long getGetOutputCalls()
     {
@@ -354,6 +365,11 @@ public class OperatorStats
         return finishCalls;
     }
 
+    /**
+     * Gets the duration time of all splits processing.
+     *
+     * @return the duration time of all splits processing
+     */
     @JsonProperty
     public Duration getFinishWall()
     {

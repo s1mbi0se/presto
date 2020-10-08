@@ -207,6 +207,14 @@ public class TaskStatus
         return memoryReservation;
     }
 
+    /**
+     * Gets the total memory used by the system in the task.
+     * <p>
+     * The system memory is the byproduct of processing user data,
+     * like created buffers and hash tables.
+     *
+     * @return the total memory used by the system in the task
+     */
     @JsonProperty
     public DataSize getSystemMemoryReservation()
     {
