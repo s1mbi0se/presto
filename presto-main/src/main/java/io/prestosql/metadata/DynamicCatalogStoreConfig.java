@@ -141,6 +141,16 @@ public class DynamicCatalogStoreConfig
         return this;
     }
 
+    /**
+     * Gets the directory where catalog files are stored.
+     *
+     * @return the directory where catalog files are stored
+     */
+    public File getCatalogConfigurationDir()
+    {
+        return this.catalogConfigurationDir;
+    }
+
     private Map<String, String> readConfigFile(String propertyFileName)
             throws IOException
     {
