@@ -302,10 +302,10 @@ public class OperatorStats
     }
 
     /**
-     * Gets the quantity of times that the method to get output buffer from a operator was called
+     * Gets the number of times that the method to get output buffer from an operator was called
      *
-     * @return the quantity of times that the method to get output buffer
-     * from a operator was called
+     * @return the number of times that the method to get output buffer
+     * from an operator was called
      */
     @JsonProperty
     public long getGetOutputCalls()
