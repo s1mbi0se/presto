@@ -315,9 +315,9 @@ public class PipelineStats
     }
 
     /**
-     * Gets the total time that drivers waiting when executing I/O tasks.
+     * Gets the total time that drivers waited when executing I/O tasks.
      *
-     * @return the total time that drivers waiting when executing I/O tasks
+     * @return the total time that drivers waited when executing I/O tasks
      */
     @JsonProperty
     public Duration getTotalScheduledTime()
