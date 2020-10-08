@@ -366,9 +366,9 @@ public class OperatorStats
     }
 
     /**
-     * Gets the time used to process all splits.
+     * Gets the duration time of all splits processing.
      *
-     * @return the time used to process all splits
+     * @return the duration time of all splits processing
      */
     @JsonProperty
     public Duration getFinishWall()
