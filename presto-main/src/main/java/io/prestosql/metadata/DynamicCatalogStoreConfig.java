@@ -35,8 +35,8 @@ import static com.google.common.collect.Maps.fromProperties;
 public class DynamicCatalogStoreConfig
 {
     private static final Splitter SPLITTER = Splitter.on(',').trimResults().omitEmptyStrings();
-    private static final String API_CONFIG_FILE = "api-config.properties";
-    private static final String SHANNONDB_CONFIG_FILE = "shannondb.properties";
+    protected static final String API_CONFIG_FILE = "api-config.properties";
+    protected static final String SHANNONDB_CONFIG_FILE = "shannondb.properties";
     protected static final String SHANNONDB_CONNECTOR_NAME = "shannondb";
     protected static DataConnection shannondbDataConnection;
     private File catalogConfigurationDir = new File("etc/catalog/");
