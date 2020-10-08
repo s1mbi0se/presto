@@ -63,10 +63,10 @@ public final class PlanNodeStatsSummarizer
     }
 
     /**
-     * Gets the metadata about the process of node in query plan.
+     * Gets the metadata about the node process in the query plan.
      *
      * @param taskStats an object that contains the metadata about a running task
-     * @return the metadata about the process of node in query plan
+     * @return the metadata about the node process in the query plan
      */
     private static List<PlanNodeStats> getPlanNodeStats(TaskStats taskStats)
     {
