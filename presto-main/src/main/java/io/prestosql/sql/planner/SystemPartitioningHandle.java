@@ -82,9 +82,9 @@ public final class SystemPartitioningHandle
     }
 
     /**
-     * Gets the type of used partition.
+     * Gets the type of the used partition.
      * <p>
-     * The type of partition shows if the fragment will be executed only
+     * The type of the partition shows if the fragment will be executed only
      * in one node or more than one.
      *
      * @return the type of partitioning
