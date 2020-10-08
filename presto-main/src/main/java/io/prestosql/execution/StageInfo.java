@@ -131,9 +131,9 @@ public class StageInfo
     }
 
     /**
-     * Gets the map of nodes in SQL plan tree and respective table to be applied.
+     * Gets the map of nodes in SQL plan tree and their respective table information.
      *
-     * @return the map of nodes in SQL plan tree and respective table to be applied
+     * @return the map of nodes in SQL plan tree and their respective table information
      */
     @JsonProperty
     public Map<PlanNodeId, TableInfo> getTables()
