@@ -85,6 +85,11 @@ public class PartitioningScheme
         return partitioning;
     }
 
+    /**
+     * Gets the type that the partition is represented.
+     *
+     * @return the type that the partition is represented
+     */
     @JsonProperty
     public List<Symbol> getOutputLayout()
     {
