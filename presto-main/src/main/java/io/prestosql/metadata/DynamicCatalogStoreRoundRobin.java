@@ -29,6 +29,13 @@ public class DynamicCatalogStoreRoundRobin
 
     private static Integer poolSize;
 
+    /**
+     * Gets the next API instance's IP where the server will make the next request.
+     * <p>
+     * Every time that the method is called, it returns an IP for a different instance.
+     *
+     * @return the next API instance's IP where the server will make the next request
+     */
     public String getServer()
     {
         String target = null;
@@ -43,6 +50,16 @@ public class DynamicCatalogStoreRoundRobin
         return target;
     }
 
+    /**
+     * Gets the quantity of running API instances.
+     * <p>
+     * Presto executes requests periodically to API to retrieve information about
+     * data connections(catalogs). If the instance that server executed the request is down,
+     * the server must execute the request to the next instance until the request is completed
+     * or the server tried to execute a request to all API instances.
+     *
+     * @return the quantity of running API instances
+     */
     public Integer getPoolSize()
     {
         return poolSize;

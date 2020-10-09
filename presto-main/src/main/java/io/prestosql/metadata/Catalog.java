@@ -55,6 +55,11 @@ public class Catalog
         return catalogName;
     }
 
+    /**
+     * Gets the catalog's name.
+     *
+     * @return the catalog's name
+     */
     public CatalogName getConnectorCatalogName()
     {
         return connectorCatalogName;
