@@ -56,6 +56,11 @@ public class OrderingScheme
         return orderBy;
     }
 
+    /**
+     * Gets the order of the columns in ORDER BY clause.
+     *
+     * @return the order of the columns in ORDER BY clause
+     */
     @JsonProperty
     public Map<Symbol, SortOrder> getOrderings()
     {
