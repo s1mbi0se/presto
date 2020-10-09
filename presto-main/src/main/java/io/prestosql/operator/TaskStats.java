@@ -457,6 +457,11 @@ public class TaskStats
         return physicalWrittenDataSize;
     }
 
+    /**
+     * Gets all pipelines executed by a task.
+     *
+     * @return all pipelines executed by a task
+     */
     @JsonProperty
     public List<PipelineStats> getPipelines()
     {
