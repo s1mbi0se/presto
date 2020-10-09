@@ -249,6 +249,14 @@ public final class HandleResolver
             return insertTableHandle;
         }
 
+        /**
+         * Gets the class used to tell the partition scheme of the query execution.
+         * <p>
+         * The partition scheme shows if the query must be executed by one node or must be
+         * distributed through the instances.
+         *
+         * @return the class used to tell the partition scheme of the query execution
+         */
         public Optional<Class<? extends ConnectorPartitioningHandle>> getPartitioningHandleClass()
         {
             return partitioningHandle;
