@@ -50,6 +50,11 @@ public class OrderingScheme
         this.orderings = ImmutableMap.copyOf(orderings);
     }
 
+    /**
+     * Gets the all ORDER BY clauses.
+     *
+     * @return all the defined ORDER BY clauses
+     */
     @JsonProperty
     public List<Symbol> getOrderBy()
     {
