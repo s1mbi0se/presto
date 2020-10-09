@@ -258,6 +258,11 @@ public class TaskStats
         return firstStartTime;
     }
 
+    /**
+     * Gets the time that the task started.
+     *
+     * @return the time that the task started
+     */
     @Nullable
     @JsonProperty
     public DateTime getLastStartTime()
