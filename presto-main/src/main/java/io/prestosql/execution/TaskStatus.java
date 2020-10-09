@@ -164,6 +164,11 @@ public class TaskStatus
         return completedDriverGroups;
     }
 
+    /**
+     * Gets all the failures that happened when task was executing.
+     *
+     * @return all the failures that happened when task was executing
+     */
     @JsonProperty
     public List<ExecutionFailureInfo> getFailures()
     {
