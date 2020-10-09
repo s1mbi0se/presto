@@ -100,6 +100,11 @@ public class StageExecutionDescriptor
                 ImmutableSet.copyOf(requireNonNull(groupedExecutionCapableScanNodes, "groupedExecutionScanNodes is null")));
     }
 
+    /**
+     * Gets all nodes in the sql plan tree to be executed.
+     *
+     * @return all nodes in the sql plan tree to be executed
+     */
     @JsonProperty("groupedExecutionScanNodes")
     public Set<PlanNodeId> getJsonSerializableGroupedExecutionScanNodes()
     {
