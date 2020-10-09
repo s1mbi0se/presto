@@ -356,6 +356,15 @@ public class CostCalculatorUsingExchanges
                     localCost);
         }
 
+        /**
+         * Gets the statistics about the returned data of a processed node.
+         * <p>
+         * The statistics are information about the high, low, mean and similar
+         * values.
+         *
+         * @param node the node in SQL plan tree to be executed
+         * @return the statistics about the returned data of a processed node
+         */
         private PlanNodeStatsEstimate getStats(PlanNode node)
         {
             return stats.getStats(node);
