@@ -193,6 +193,14 @@ public class SqlTask
         });
     }
 
+    /**
+     * Gets a flag which indicates that output buffer is full.
+     * <p>
+     * If a buffer is over utilized, it becomes blocked until
+     * it has available memory again.
+     *
+     * @return a flag which indicates that output buffer is full
+     */
     public boolean isOutputBufferOverutilized()
     {
         return outputBuffer.isOverutilized();
@@ -203,6 +211,11 @@ public class SqlTask
         return taskHolderReference.get().getIoStats();
     }
 
+    /**
+     * Gets the object with metadata about the task's identifier.
+     *
+     * @return the object with metadata about the task's identifier
+     */
     public TaskId getTaskId()
     {
         return taskStateMachine.getTaskId();
@@ -240,6 +253,11 @@ public class SqlTask
 
     /**
      * Gets the metadata about an executed task.
+     * <p>
+     * The metadata contains the information about:
+     * - The drivers that are being executed by the task;
+     * - The amount of data processed by the task;
+     * - The time that the task was stopped by full GC.
      *
      * @return the metadata about an executed task
      */
@@ -272,6 +290,16 @@ public class SqlTask
         taskStatusVersionChange.complete(null, taskNotificationExecutor);
     }
 
+    /**
+     * Gets an object with task metadata.
+     * <p>
+     * It will checks if the holder contains any executing task and will
+     * loads the information from the previous task. If the holder is empty
+     * it will create a task with empty parameters.
+     *
+     * @param taskHolder an object that holds a task
+     * @return an object with the task metadata
+     */
     private TaskStatus createTaskStatus(TaskHolder taskHolder)
     {
         // Obtain task status version before building actual TaskStatus object.
@@ -400,18 +428,6 @@ public class SqlTask
         // At this point taskHolderReference.get().isFinished() might become true. However notifyStatusChanged()
         // is synchronized therefore notification for new listener won't be lost.
         return Futures.transform(taskStatusVersionChange.createNewListener(), input -> getTaskStatus(), directExecutor());
-    }
-
-    public synchronized ListenableFuture<TaskInfo> getTaskInfo(long callersCurrentVersion)
-    {
-        if (callersCurrentVersion < taskStatusVersion.get() || taskHolderReference.get().isFinished()) {
-            // return immediately if caller has older task status version or final task info is available
-            return immediateFuture(getTaskInfo());
-        }
-
-        // At this point taskHolderReference.get().isFinished() might become true. However notifyStatusChanged()
-        // is synchronized therefore notification for new listener won't be lost.
-        return Futures.transform(taskStatusVersionChange.createNewListener(), input -> getTaskInfo(), directExecutor());
     }
 
     public TaskInfo updateTask(Session session, Optional<PlanFragment> fragment, List<TaskSource> sources, OutputBuffers outputBuffers, OptionalInt totalPartitions)

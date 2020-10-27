@@ -194,6 +194,11 @@ public class SqlTaskManager
                 localSpillManager.getSpillSpaceTracker());
     }
 
+    /**
+     * Overrides the {@link TaskManager#updateMemoryPoolAssignments(MemoryPoolAssignmentsRequest)}.
+     *
+     * @param assignments a list of queries and the memory pool they must use
+     */
     @Override
     public synchronized void updateMemoryPoolAssignments(MemoryPoolAssignmentsRequest assignments)
     {
@@ -350,6 +355,13 @@ public class SqlTaskManager
         return sqlTask.getTaskInstanceId();
     }
 
+    /**
+     * Overrides the {@link TaskManager#getTaskStatus(TaskId, TaskState)} method.
+     *
+     * @param taskId the task identifier
+     * @param currentState an object with metadata about the task's current state
+     * @return an object with metadata about a task
+     */
     @Override
     public ListenableFuture<TaskStatus> getTaskStatus(TaskId taskId, long currentVersion)
     {

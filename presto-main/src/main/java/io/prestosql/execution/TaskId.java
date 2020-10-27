@@ -62,6 +62,11 @@ public class TaskId
         this.fullId = fullId;
     }
 
+    /**
+     * Gets the identifier of query that the task is processing.
+     *
+     * @return the identifier of query that the task is processing
+     */
     public QueryId getQueryId()
     {
         return new QueryId(QueryId.parseDottedId(fullId, 3, "taskId").get(0));
