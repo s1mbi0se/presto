@@ -92,6 +92,12 @@ public class GroupProviderManager
         log.info("-- Loaded group provider %s --", name);
     }
 
+    /**
+     * Overrides the {@link GroupProvider#getGroups(String)} method.
+     *
+     * @param user the representation of a user executing a query in Presto
+     * @return all groups for a specific user
+     */
     @Override
     public Set<String> getGroups(String user)
     {
