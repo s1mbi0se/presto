@@ -78,6 +78,11 @@ public class TaskId
         return parseInt(QueryId.parseDottedId(fullId, 3, "taskId").get(2));
     }
 
+    /**
+     * Gets the task id string representation.
+     *
+     * @return the task id string representation
+     */
     @Override
     @JsonValue
     public String toString()
@@ -91,6 +96,12 @@ public class TaskId
         return Objects.hash(fullId);
     }
 
+    /**
+     * Checks if two tasks are equals.
+     *
+     * @param obj a generic object
+     * @return a flag which indicates if the two task ids are equals
+     */
     @Override
     public boolean equals(Object obj)
     {

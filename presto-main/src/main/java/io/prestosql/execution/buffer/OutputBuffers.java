@@ -248,9 +248,9 @@ public final class OutputBuffers
          * @param id the buffer identifier
          * @return the object with buffer metadata
          */
-        // this is needed by JAX-RS
         public static OutputBufferId fromString(String id)
         {
+            // this is needed by JAX-RS
             return new OutputBufferId(parseInt(id));
         }
 

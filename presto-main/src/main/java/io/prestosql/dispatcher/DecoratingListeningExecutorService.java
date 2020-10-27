@@ -47,6 +47,11 @@ public class DecoratingListeningExecutorService
         return delegate;
     }
 
+    /**
+     * Overrides the {@link ForwardingListeningExecutorService#execute(Runnable)}.
+     *
+     * @param command a generic thread
+     */
     @Override
     public void execute(Runnable command)
     {
