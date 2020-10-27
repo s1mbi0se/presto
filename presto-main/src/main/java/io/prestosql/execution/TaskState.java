@@ -59,6 +59,8 @@ public enum TaskState
 
     /**
      * Is this a terminal state.
+     *
+     * @return a flag which indicates that the task is in terminal state
      */
     public boolean isDone()
     {

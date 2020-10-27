@@ -341,6 +341,11 @@ public final class DiscoveryNodeManager
         return activeNodesByCatalogName.get(catalogName);
     }
 
+    /**
+     * Overrides the {@link DiscoveryNodeManager#getCurrentNode()} method.
+     *
+     * @return an object with metadata about current node
+     */
     @Override
     public InternalNode getCurrentNode()
     {

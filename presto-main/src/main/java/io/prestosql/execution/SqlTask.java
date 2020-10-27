@@ -185,6 +185,14 @@ public class SqlTask
         });
     }
 
+    /**
+     * Gets a flag which indicates that output buffer is full.
+     * <p>
+     * If a buffer is over utilized, it becomes blocked until
+     * it has available memory again.
+     *
+     * @return a flag which indicates that output buffer is full
+     */
     public boolean isOutputBufferOverutilized()
     {
         return outputBuffer.isOverutilized();
@@ -195,6 +203,11 @@ public class SqlTask
         return taskHolderReference.get().getIoStats();
     }
 
+    /**
+     * Gets the object with metadata about the task's identifier.
+     *
+     * @return the object with metadata about the task's identifier
+     */
     public TaskId getTaskId()
     {
         return taskStateMachine.getTaskId();
@@ -232,6 +245,11 @@ public class SqlTask
 
     /**
      * Gets the metadata about an executed task.
+     * <p>
+     * The metadata contains the information about:
+     * - The drivers that are being executed by the task;
+     * - The amount of data processed by the task;
+     * - The time that the task was stopped by full GC.
      *
      * @return the metadata about an executed task
      */
@@ -242,6 +260,16 @@ public class SqlTask
         }
     }
 
+    /**
+     * Gets an object with task metadata.
+     * <p>
+     * It will checks if the holder contains any executing task and will
+     * loads the information from the previous task. If the holder is empty
+     * it will create a task with empty parameters.
+     *
+     * @param taskHolder an object that holds a task
+     * @return an object with the task metadata
+     */
     private TaskStatus createTaskStatus(TaskHolder taskHolder)
     {
         // Always return a new TaskInfo with a larger version number;
@@ -363,6 +391,17 @@ public class SqlTask
                 needsPlan.get());
     }
 
+    /**
+     * Gets the metadata about the task execution.
+     * <p>
+     * The metadata contains the information about:
+     * - The drivers that are being executed by the task;
+     * - The amount of data processed by the task;
+     * - The time that the task was stopped by full GC.
+     *
+     * @param callersCurrentState an object with metadata about the task execution
+     * @return an object with metadata about task status
+     */
     public ListenableFuture<TaskStatus> getTaskStatus(TaskState callersCurrentState)
     {
         requireNonNull(callersCurrentState, "callersCurrentState is null");
