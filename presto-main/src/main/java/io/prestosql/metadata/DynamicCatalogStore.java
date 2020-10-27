@@ -17,6 +17,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.Files;
 import io.airlift.discovery.client.Announcer;
 import io.airlift.discovery.client.ServiceAnnouncement;
 import io.airlift.http.client.HttpClient;
@@ -30,10 +31,12 @@ import org.joda.time.format.DateTimeFormatter;
 
 import javax.inject.Inject;
 
+import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,10 +49,13 @@ import java.util.stream.Collectors;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.json.JsonCodec.jsonCodec;
+import static io.prestosql.metadata.DynamicCatalogStoreConfig.API_CONFIG_FILE;
+import static io.prestosql.metadata.DynamicCatalogStoreConfig.SHANNONDB_CONFIG_FILE;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
@@ -74,6 +80,7 @@ public class DynamicCatalogStore
     private final JsonCodec<DataConnectionResponse> jsonCodec = jsonCodec(DataConnectionResponse.class);
     private final Announcer announcer;
     private final CatalogManager catalogManager;
+    private final File catalogConfigurationDir;
 
     @Inject
     public DynamicCatalogStore(ConnectorManager connectorManager, DynamicCatalogStoreConfig config,
@@ -86,7 +93,8 @@ public class DynamicCatalogStore
                 config.getDataConnectionsUrl(),
                 config.getDataConnectionsApiKey(),
                 config.getCryptoKey(),
-                firstNonNull(config.getDisabledCatalogs(), ImmutableList.of()), scheduler, announcer, catalogManager);
+                firstNonNull(config.getDisabledCatalogs(), ImmutableList.of()), scheduler, announcer, catalogManager,
+                config.getCatalogConfigurationDir());
     }
 
     public DynamicCatalogStore(
@@ -98,7 +106,8 @@ public class DynamicCatalogStore
             List<String> disabledCatalogs,
             CatalogDeltaRetrieverScheduler scheduler,
             Announcer announcer,
-            CatalogManager catalogManager)
+            CatalogManager catalogManager,
+            File catalogConfigurationDir)
     {
         this.connectorManager = connectorManager;
         this.dataConnectionEndpoint = requireNonNull(dataConnectionEndpoint, "dataConnectionEndpoint is null.");
@@ -110,6 +119,7 @@ public class DynamicCatalogStore
         this.httpClient = new JettyHttpClient();
         this.announcer = announcer;
         this.catalogManager = catalogManager;
+        this.catalogConfigurationDir = catalogConfigurationDir;
     }
 
     public void loadCatalogs()
@@ -118,6 +128,8 @@ public class DynamicCatalogStore
         if (!catalogsLoading.compareAndSet(false, true)) {
             return;
         }
+
+        loadCatalogsFromFiles();
 
         for (DataConnection dataConnection : listAllDataConnections()) {
             loadCatalog(dataConnection);
@@ -136,6 +148,74 @@ public class DynamicCatalogStore
                 e.printStackTrace();
             }
         }, 5);
+    }
+
+    /**
+     * Load catalogs from static files.
+     * <p>
+     * Presto allows to load catalogs dynamically from API and statically from
+     * properties files, like the standard behavior.
+     */
+    private void loadCatalogsFromFiles()
+    {
+        log.info("--Loading catalogs from files--");
+
+        for (File file : listFiles(catalogConfigurationDir)) {
+            boolean isPropertyFile = file.isFile() && file.getName().endsWith(".properties");
+            boolean isShannonOrApiFile = file.getName().equals(API_CONFIG_FILE) || file.getName().equals(SHANNONDB_CONFIG_FILE);
+
+            if (isPropertyFile && !isShannonOrApiFile) {
+                try {
+                    loadCatalog(file);
+                }
+                catch (Exception e) {
+                    log.error(e, "Error while loading catalog for file: %s", file.getName());
+                }
+            }
+        }
+    }
+
+    /**
+     * Loads a catalog from its configuration file.
+     *
+     * @param file the property file with a catalog's metadata
+     * @throws Exception if some error occurs when the servers tries to read
+     * the properties in configuration file
+     */
+    private void loadCatalog(File file)
+            throws Exception
+    {
+        String catalogName = Files.getNameWithoutExtension(file.getName());
+        if (disabledCatalogs.contains(catalogName)) {
+            log.info("Skipping disabled catalog %s", catalogName);
+            return;
+        }
+
+        log.info("-- Loading catalog %s --", file);
+        Map<String, String> properties = new HashMap<>(loadPropertiesFrom(file.getPath()));
+
+        String connectorName = properties.remove("connector.name");
+        checkState(connectorName != null, "Catalog configuration %s does not contain connector.name", file.getAbsoluteFile());
+
+        connectorManager.createCatalog(catalogName, connectorName, ImmutableMap.copyOf(properties));
+        log.info("-- Added catalog %s using connector %s --", catalogName, connectorName);
+    }
+
+    /**
+     * Gets all files that are inside a directory.
+     *
+     * @param genericDirectory a generic directory where the files will be listed
+     * @return all files that are inside a directory
+     */
+    private static List<File> listFiles(File genericDirectory)
+    {
+        if (genericDirectory != null && genericDirectory.isDirectory()) {
+            File[] files = genericDirectory.listFiles();
+            if (files != null) {
+                return ImmutableList.copyOf(files);
+            }
+        }
+        return ImmutableList.of();
     }
 
     /**

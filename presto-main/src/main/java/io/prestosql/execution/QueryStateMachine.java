@@ -944,6 +944,14 @@ public class QueryStateMachine
         return queryState.getStateChange(currentState);
     }
 
+    /**
+     * Records the last time that Presto act on the query.
+     * <p>
+     * As an example: every time that a request is executed to know the query status in Presto,
+     * the last heartbeat increases.
+     * If the time passed from last heartbeat is greater than the defined timeout, the query is
+     * abandoned by the sever.
+     */
     public void recordHeartbeat()
     {
         queryStateTimer.recordHeartbeat();
