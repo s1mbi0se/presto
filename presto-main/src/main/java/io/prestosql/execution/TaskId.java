@@ -31,6 +31,12 @@ import static java.lang.Integer.parseInt;
  */
 public class TaskId
 {
+    /**
+     * Creates a task from an identifier.
+     *
+     * @param taskId a task identifier
+     * @return an object with task metadata
+     */
     @JsonCreator
     public static TaskId valueOf(String taskId)
     {

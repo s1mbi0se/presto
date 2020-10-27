@@ -190,7 +190,15 @@ public class QueuedStatementResource
         // let authentication filter know that identity lifecycle has been handed off
         servletRequest.setAttribute(AUTHENTICATED_IDENTITY, null);
 
-        return Response.ok(query.getQueryResults(query.getLastToken(), uriInfo)).build();
+        final Response build = Response.ok(query.getQueryResults(query.getLastToken(), uriInfo)).build();
+
+        finishFlux();
+
+        return build;
+    }
+
+    private void finishFlux()
+    {
     }
 
     /**

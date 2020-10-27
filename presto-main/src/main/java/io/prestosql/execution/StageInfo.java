@@ -124,6 +124,11 @@ public class StageInfo
         return tasks;
     }
 
+    /**
+     * Gets all sub stages for a root stage.
+     *
+     * @return all sub stages for a root stage
+     */
     @JsonProperty
     public List<StageInfo> getSubStages()
     {

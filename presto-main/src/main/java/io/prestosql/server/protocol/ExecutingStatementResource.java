@@ -143,6 +143,17 @@ public class ExecutingStatementResource
         queryPurger.shutdownNow();
     }
 
+    /**
+     * Gets the results for a executing query.
+     *
+     * @param queryId the query's identifier
+     * @param slug a identifier for query in URI
+     * @param token a token used to create pagination in response
+     * @param maxWait the maximum time to wait query response
+     * @param targetResultSize the maximum size of the result
+     * @param uriInfo an object with URI's metadata
+     * @param asyncResponse an object used to construct the response asynchronously
+     */
     @ResourceSecurity(PUBLIC)
     @GET
     @Path("{queryId}/{slug}/{token}")
@@ -198,6 +209,16 @@ public class ExecutingStatementResource
         return query;
     }
 
+    /**
+     * Retrieves the query result asynchronously.
+     *
+     * @param query the query to be processed
+     * @param token a token used to create pagination in response
+     * @param maxWait the maximum time to wait query response
+     * @param targetResultSize the maximum size of the result
+     * @param uriInfo an object with URI's metadata
+     * @param asyncResponse an object used to construct the response asynchronously
+     */
     private void asyncQueryResults(
             Query query,
             long token,

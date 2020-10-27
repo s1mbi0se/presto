@@ -55,7 +55,7 @@ public class SqlCallFlowLoggingAspect
      * @return the same object that is returned by the method that is wrapped in this advice
      * @throws Throwable the same exception that is thrown by the method that is wrapped
      */
-    @Around(START_METHOD)
+//    @Around(START_METHOD)
     public Object startFlow(final ProceedingJoinPoint point)
             throws Throwable
     {
@@ -80,7 +80,7 @@ public class SqlCallFlowLoggingAspect
      * @return the same object that is returned by the method that is wrapped in this advice
      * @throws Throwable the same exception that is thrown by the method that is wrapped
      */
-    @Around(WHITE_AND_BLACK_LIST)
+//    @Around(WHITE_AND_BLACK_LIST)
     public Object around(final ProceedingJoinPoint point)
             throws Throwable
     {
@@ -103,7 +103,7 @@ public class SqlCallFlowLoggingAspect
      * @return the same object that is returned by the method that is wrapped in this advice
      * @throws Throwable the same exception that is thrown by the method that is wrapped
      */
-    @Around(FINISH_METHOD)
+//    @Around(FINISH_METHOD)
     public Object finishFlow(final ProceedingJoinPoint point)
             throws Throwable
     {

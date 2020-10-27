@@ -290,11 +290,24 @@ public final class SessionRepresentation
         return queryRequestMetadata;
     }
 
+    /**
+     * Gets the metadata about the presto's session
+     *
+     * @param sessionPropertyManager an object with metadata about the Presto session
+     * @return the metadata about the presto's session
+     */
     public Session toSession(SessionPropertyManager sessionPropertyManager)
     {
         return toSession(sessionPropertyManager, emptyMap());
     }
 
+    /**
+     * Gets the metadata about the presto's session.
+     *
+     * @param sessionPropertyManager an object with metadata about the Presto session
+     * @param extraCredentials an object with metadata about user's credentials
+     * @return the metadata about the presto's session
+     */
     public Session toSession(SessionPropertyManager sessionPropertyManager, Map<String, String> extraCredentials)
     {
         return new Session(
