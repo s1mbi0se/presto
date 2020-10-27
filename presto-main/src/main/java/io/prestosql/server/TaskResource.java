@@ -266,6 +266,13 @@ public class TaskResource
         return taskInfo;
     }
 
+    /**
+     * @param taskId the task identifier
+     * @param bufferId the buffer identifier
+     * @param token a
+     * @param maxSize
+     * @param asyncResponse
+     */
     @ResourceSecurity(INTERNAL_ONLY)
     @GET
     @Path("{taskId}/results/{bufferId}/{token}")
