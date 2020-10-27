@@ -326,13 +326,7 @@ public class QueuedStatementResource
      * @param queuedTime the time the query waited to be executed
      * @return an object with all query's metadata
      */
-    private static QueryResults createQueryResults(
-            QueryId queryId,
-            URI nextUri,
-            Optional<QueryError> queryError,
-            UriInfo uriInfo,
-            Duration elapsedTime,
-            Duration queuedTime)
+    private static QueryResults createQueryResults(QueryId queryId, URI nextUri, Optional<QueryError> queryError, UriInfo uriInfo, Duration elapsedTime, Duration queuedTime)
     {
         QueryState state = queryError.map(error -> FAILED).orElse(QUEUED);
         return new QueryResults(
