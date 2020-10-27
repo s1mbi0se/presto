@@ -203,6 +203,15 @@ public class PartitionedOutputBuffer
         dereferencePages(serializedPageReferences, onPagesReleased);
     }
 
+    /**
+     * Overrides the {@link OutputBuffer#get(OutputBufferId, long, DataSize)} method.
+     *
+     * @param outputBufferId the unique identifier for the buffer that the system needs to retrieve
+     * the pages
+     * @param startingSequenceId the identifier for a request
+     * @param maxSize the max size of data returned by the buffer
+     * @return a list with buffer results
+     */
     @Override
     public ListenableFuture<BufferResult> get(OutputBufferId outputBufferId, long startingSequenceId, DataSize maxSize)
     {
