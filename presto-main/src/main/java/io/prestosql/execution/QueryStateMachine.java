@@ -948,7 +948,7 @@ public class QueryStateMachine
      * Records the last time that Presto act on the query.
      * <p>
      * As an example: every time that a request is executed to know the query status in Presto,
-     * the last heartbeat is increases.
+     * the last heartbeat increases.
      * If the time passed from last heartbeat is greater than the defined timeout, the query is
      * abandoned by the sever.
      */
