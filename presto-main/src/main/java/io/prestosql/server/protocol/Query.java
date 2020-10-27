@@ -321,6 +321,15 @@ class Query
         return clearTransactionId;
     }
 
+    /**
+     * Wait for results of te query processing.
+     *
+     * @param token a token used to create pagination in response
+     * @param wait the maximum time to wait query response
+     * @param targetResultSize the maximum size of the result
+     * @param uriInfo an object with URI's metadata
+     * @return a future that contains the query result
+     */
     public synchronized ListenableFuture<QueryResults> waitForResults(long token, UriInfo uriInfo, Duration wait, DataSize targetResultSize)
     {
         // before waiting, check if this request has already been processed and cached
@@ -340,6 +349,11 @@ class Query
         return Futures.transform(futureStateChange, ignored -> getNextResult(token, uriInfo, targetResultSize), resultsProcessorExecutor);
     }
 
+    /**
+     * Gets the result of the query processing.
+     *
+     * @return the result of query processing
+     */
     private synchronized ListenableFuture<?> getFutureStateChange()
     {
         // if the exchange client is open, wait for data

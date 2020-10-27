@@ -378,7 +378,9 @@ class ClientBuffer
     }
 
     /**
-     * Drops pages up to the specified sequence id
+     * Drops pages up to the specified sequence id.
+     *
+     * @param sequenceId the page's id
      */
     public void acknowledgePages(long sequenceId)
     {
@@ -462,6 +464,11 @@ class ClientBuffer
             return maxSize;
         }
 
+        /**
+         * Gets the buffers pages with the query result.
+         *
+         * @return the buffers pages with the process result
+         */
         public SettableFuture<BufferResult> getResultFuture()
         {
             return resultFuture;

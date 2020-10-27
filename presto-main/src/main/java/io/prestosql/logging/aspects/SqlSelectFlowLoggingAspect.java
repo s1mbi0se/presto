@@ -29,15 +29,15 @@ public class SqlSelectFlowLoggingAspect
     private static final String FLOW_NAME = "SqlSelectFlow";
 
     private static final String START_METHOD =
-            "execution(* io.prestosql.dispatcher.DispatchInfo"
-                    + ".getQueuedTime(..))";
+            "execution(* io.prestosql.dispatcher.QueuedStatementResource"
+                    + ".postStatement(..))";
 
     private static final String WHITE_AND_BLACK_LIST =
             "execution(* io.prestosql..*(..)) && " +
                     "!within(io.prestosql.logging..*)";
 
     private static final String FINISH_METHOD =
-            "execution(* io.prestosql.execution.TaskInfo.isNeedsPlan())";
+            "execution(* io.prestosql.dispatcher.QueuedStatementResource.finishFlux())";
 
     protected final Map<Long, Integer> threadIdToStep = new ConcurrentHashMap<>();
     protected final Map<Long, Long> threadIdToDebugLogId = new ConcurrentHashMap<>();

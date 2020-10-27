@@ -242,6 +242,12 @@ public final class OutputBuffers
 
     public static class OutputBufferId
     {
+        /**
+         * Creates an output buffer from an identifier.
+         *
+         * @param id the buffer identifier
+         * @return the object with buffer metadata
+         */
         // this is needed by JAX-RS
         public static OutputBufferId fromString(String id)
         {
@@ -270,6 +276,11 @@ public final class OutputBuffers
             return id == that.id;
         }
 
+        /**
+         * Gets the buffer's unique identifier.
+         *
+         * @return the buffer's identifier
+         */
         @JsonValue
         public int getId()
         {
