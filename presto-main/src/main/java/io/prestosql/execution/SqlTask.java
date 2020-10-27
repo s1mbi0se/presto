@@ -431,6 +431,14 @@ public class SqlTask
         return getTaskInfo();
     }
 
+    /**
+     * Retrieves the list with the task response buffers.
+     *
+     * @param bufferId the id of the buffer that contains the response data
+     * @param startingSequenceId the user request identifier
+     * @param maxSize the max size of the returned data
+     * @return a list with the response's buffers
+     */
     public ListenableFuture<BufferResult> getTaskResults(OutputBufferId bufferId, long startingSequenceId, DataSize maxSize)
     {
         requireNonNull(bufferId, "bufferId is null");
