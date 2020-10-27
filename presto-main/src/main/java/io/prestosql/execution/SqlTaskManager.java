@@ -336,6 +336,12 @@ public class SqlTaskManager
         return sqlTask.getTaskInfo(currentVersion);
     }
 
+    /**
+     * Gets the task instance id parameter.
+     *
+     * @param taskId the task identifier
+     * @return the task instance id as string
+     */
     @Override
     public String getTaskInstanceId(TaskId taskId)
     {
@@ -389,6 +395,21 @@ public class SqlTaskManager
         return sqlTask.updateTask(session, fragment, sources, outputBuffers, totalPartitions);
     }
 
+    /**
+     * Gets results from a task either immediately or in the future.
+     * <p>
+     * If the task or buffer has not been created yet, an uninitialized task is
+     * created and a future is returned.
+     * <p>
+     * NOTE: this design assumes that only tasks and buffers that will
+     * eventually exist are queried.
+     *
+     * @param taskId the task identifier
+     * @param bufferId the buffer identifier
+     * @param startingSequenceId the request unique identifier
+     * @param maxSize the max size of the returned data
+     * @return a list with buffers results
+     */
     @Override
     public ListenableFuture<BufferResult> getTaskResults(TaskId taskId, OutputBufferId bufferId, long startingSequenceId, DataSize maxSize)
     {

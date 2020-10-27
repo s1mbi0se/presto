@@ -208,6 +208,11 @@ public class SqlTask
         return taskStateMachine.getTaskId();
     }
 
+    /**
+     * Gets the task unique identifier.
+     *
+     * @return the task unique identifier
+     */
     public String getTaskInstanceId()
     {
         return taskInstanceId;
