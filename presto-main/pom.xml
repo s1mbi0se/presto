@@ -556,6 +556,11 @@
         </profile>
 
         <profile>
+            <!--
+                This profile is used to activate aspects when building presto source code
+                to activate the profile, just needs to add "-P aspectj-compiler" when compiling
+                the project.
+            -->
             <id>aspectj-compiler</id>
             <build>
                 <plugins>
