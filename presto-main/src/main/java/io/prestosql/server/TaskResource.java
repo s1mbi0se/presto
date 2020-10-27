@@ -371,6 +371,12 @@ public class TaskResource
         return uriInfo.getQueryParameters().containsKey("summarize");
     }
 
+    /**
+     * Gets a random time between the max wait time and half of the value.
+     *
+     * @param waitTime the max time to wait query to be processed
+     * @return a time between the max wait time and the half of value
+     */
     private static Duration randomizeWaitTime(Duration waitTime)
     {
         // Randomize in [T/2, T], so wait is not near zero and the client-supplied max wait time is respected

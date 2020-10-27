@@ -90,6 +90,11 @@ public class TaskId
         return fullId;
     }
 
+    /**
+     * Gets a unique identifier for a task.
+     *
+     * @return a unique identifier for a task
+     */
     @Override
     public int hashCode()
     {
