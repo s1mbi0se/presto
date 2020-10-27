@@ -144,6 +144,9 @@ public class LocalDispatchQuery
         });
     }
 
+    /**
+     * Overrides the {@link DispatchQuery#recordHeartbeat()} method.
+     */
     @Override
     public void recordHeartbeat()
     {
@@ -156,6 +159,11 @@ public class LocalDispatchQuery
         return stateMachine.getLastHeartbeat();
     }
 
+    /**
+     * Gets the futures that represent the query dispatch operation to be executed
+     *
+     * @return future that represents the query dispatch operation to be executed
+     */
     @Override
     public ListenableFuture<?> getDispatchedFuture()
     {
