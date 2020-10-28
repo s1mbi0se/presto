@@ -139,7 +139,12 @@ public class SqlTask
         taskStateMachine = new TaskStateMachine(taskId, taskNotificationExecutor);
     }
 
-    // this is a separate method to ensure that the `this` reference is not leaked during construction
+    /**
+     * Initializes a task.
+     *
+     * @param onDone a function to be executed over task when it is finished
+     * @param failedTasks an object that counts the number of failed tasks
+     */
     private void initialize(Function<SqlTask, ?> onDone, CounterStat failedTasks)
     {
         requireNonNull(onDone, "onDone is null");
