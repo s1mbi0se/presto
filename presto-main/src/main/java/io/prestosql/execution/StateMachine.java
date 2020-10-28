@@ -291,6 +291,12 @@ public class StateMachine<T>
         safeExecute(() -> stateChangeListener.stateChanged(currentState));
     }
 
+    /**
+     * Gets a flag which indicates that a state is terminal.
+     *
+     * @param state an object with state metadata
+     * @return a flag which indicates if the state is a terminal state
+     */
     @VisibleForTesting
     boolean isTerminalState(T state)
     {
@@ -316,6 +322,14 @@ public class StateMachine<T>
         return get().toString();
     }
 
+    /**
+     * Executes a generic thread.
+     * <p>
+     * It executes the thread and if the server is shutting down
+     * it throws an customized exception.
+     *
+     * @param command a generic thread to be executed
+     */
     private void safeExecute(Runnable command)
     {
         try {
