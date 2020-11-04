@@ -268,7 +268,7 @@ public class SqlTask
     /**
      * Gets an object with task metadata.
      * <p>
-     * It will checks if the holder contains any executing task and will
+     * Checks if the holder contains any executing task and will
      * loads the information from the previous task. If the holder is empty
      * it will create a task with empty parameters.
      *
