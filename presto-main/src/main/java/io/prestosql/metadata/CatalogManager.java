@@ -44,6 +44,11 @@ public class CatalogManager
                 .map(Catalog::getConnectorCatalogName);
     }
 
+    /**
+     * Gets the list of all existing catalogs inside the server.
+     *
+     * @return the list of all existing catalogs inside the server
+     */
     public List<Catalog> getCatalogs()
     {
         return ImmutableList.copyOf(catalogs.values());

@@ -22,8 +22,21 @@ public interface LocationFactory
 {
     URI createQueryLocation(QueryId queryId);
 
+    /**
+     * Gets the URI where is possible to retrieve the task's metadata.
+     *
+     * @param taskId the task identifier
+     * @return the URI where is possible to retrieve the task's metadata
+     */
     URI createLocalTaskLocation(TaskId taskId);
 
+    /**
+     * Gets the URI where is possible to retrieve the task's metadata.
+     *
+     * @param taskId the task identifier
+     * @param node the object with metadata about the node instance
+     * @return the URI where is possible to retrieve the task's metadata
+     */
     URI createTaskLocation(InternalNode node, TaskId taskId);
 
     URI createMemoryInfoLocation(InternalNode node);

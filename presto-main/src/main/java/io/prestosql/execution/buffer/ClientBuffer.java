@@ -167,11 +167,26 @@ class ClientBuffer
         bufferedBytes.addAndGet(bytesAdded);
     }
 
+    /**
+     * Gets the pages with the query result.
+     *
+     * @param sequenceId the id of next page to be retrieved
+     * @param maxSize the max size of returned data
+     * @return a list of buffers with data result
+     */
     public ListenableFuture<BufferResult> getPages(long sequenceId, DataSize maxSize)
     {
         return getPages(sequenceId, maxSize, Optional.empty());
     }
 
+    /**
+     * Gets the pages with the query result.
+     *
+     * @param sequenceId the id of next page to be retrieved
+     * @param maxSize the max size of returned data
+     * @param pagesSupplier a generic supplier to perform some action over the page
+     * @return a list of buffers with data result
+     */
     public ListenableFuture<BufferResult> getPages(long sequenceId, DataSize maxSize, Optional<PagesSupplier> pagesSupplier)
     {
         // acknowledge pages first, out side of locks to not trigger callbacks while holding the lock
@@ -370,7 +385,9 @@ class ClientBuffer
     }
 
     /**
-     * Drops pages up to the specified sequence id
+     * Drops pages up to the specified sequence id.
+     *
+     * @param sequenceId the page's id
      */
     public void acknowledgePages(long sequenceId)
     {
@@ -450,6 +467,11 @@ class ClientBuffer
             return maxSize;
         }
 
+        /**
+         * Gets the buffers pages with the query result.
+         *
+         * @return the buffers pages with the process result
+         */
         public SettableFuture<BufferResult> getResultFuture()
         {
             return resultFuture;

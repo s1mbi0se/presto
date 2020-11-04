@@ -66,6 +66,14 @@ public class PlanNodeStats
         this.operatorInputStats = requireNonNull(operatorInputStats, "operatorInputStats is null");
     }
 
+    /**
+     * Gets the standard deviation of the input position values.
+     *
+     * @param sumSquared the squared sum of the input position values
+     * @param sum the sum of the input position values
+     * @param n the number of the input position values
+     * @return the standard deviation of the input position values
+     */
     private static double computedStdDev(double sumSquared, double sum, long n)
     {
         double average = sum / n;

@@ -63,6 +63,11 @@ public class InternalNode
         return getInternalUri();
     }
 
+    /**
+     * Gets the URI to access the node's endpoints.
+     *
+     * @return the URI to access the node's endpoints
+     */
     public URI getInternalUri()
     {
         return internalUri;

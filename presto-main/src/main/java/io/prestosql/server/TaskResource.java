@@ -252,6 +252,21 @@ public class TaskResource
         return taskInfo;
     }
 
+    /**
+     * Gets all results for a task.
+     * <p>
+     * The results are stored inside a buffer, that contains the returned
+     * rows and its metadata.
+     * The endpoint can only be accessed by an internal request, that is made
+     * by a Presto instance.
+     *
+     * @param taskId the task identifier
+     * @param bufferId the buffer identifier
+     * @param token a request identifier
+     * @param maxSize the maximum of bytes that response can contains
+     * @param asyncResponse an object used to build the response in
+     * asynchronous way
+     */
     @ResourceSecurity(INTERNAL_ONLY)
     @GET
     @Path("{taskId}/results/{bufferId}/{token}")
@@ -357,6 +372,12 @@ public class TaskResource
         return uriInfo.getQueryParameters().containsKey("summarize");
     }
 
+    /**
+     * Gets a random time between the max wait time and half of the value.
+     *
+     * @param waitTime the max time to wait for the query to be processed
+     * @return a time between the max wait time and the half of value
+     */
     private static Duration randomizeWaitTime(Duration waitTime)
     {
         // Randomize in [T/2, T], so wait is not near zero and the client-supplied max wait time is respected

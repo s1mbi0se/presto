@@ -221,11 +221,11 @@ public class DynamicCatalogStore
     /**
      * Get the name and id of the catalog     *
      * <p>
-     * This method gets the name of the catalog received by the api
-     * </p>     *
+     * The catalog's name is the data connection's name concatenated
+     * with its id by an underscore.
      *
-     * @param dataConnection a object received by the api
-     * @return a String as the name of the catalog
+     * @param dataConnection an object with data connection's metadata
+     * @return the name of the catalog from the data connection's metadata
      * @see DataConnection
      */
     public static String getCatalogName(DataConnection dataConnection)
@@ -235,6 +235,13 @@ public class DynamicCatalogStore
         return String.join("_", catalogName, id.toString());
     }
 
+    /**
+     * Extracts the catalog metadata from the a API's data connection.
+     *
+     * @param dataConnection an object with metadata about a API's data connection
+     * @throws Exception if something wrong occurs when Presto tries to load metadata
+     * from the API
+     */
     public void loadCatalog(DataConnection dataConnection)
             throws Exception
     {
@@ -255,6 +262,15 @@ public class DynamicCatalogStore
         log.info("-- Added catalog %s using connector %s --", catalogName, connectorName);
     }
 
+    /**
+     * Updates the catalogs metadata inside the server.
+     * <p>
+     * Presto loads catalogs metadata from the API periodically,
+     * executing requests to the data connection endpoint.
+     *
+     * @throws Exception if something wrong occurs when the Presto is trying
+     * to update catalog information
+     */
     private void updateCatalogDelta()
             throws Exception
     {
@@ -281,6 +297,12 @@ public class DynamicCatalogStore
         updateConnectorIds(announcer, catalogManager);
     }
 
+    /**
+     * Updates the metadata about the catalogs inside a node instance.
+     *
+     * @param announcer an object with metadata about a node's server instance
+     * @param metadata the object with metadata about all catalogs inside the server
+     */
     private static void updateConnectorIds(Announcer announcer, CatalogManager metadata)
     {
         // get existing announcement
@@ -306,6 +328,12 @@ public class DynamicCatalogStore
         }
     }
 
+    /**
+     * Gets the object used by the instance to send heartbeats with others in the cluster.
+     *
+     * @param announcements all objects used by the instances to send heartbeats each other
+     * @return the object used by the instance to send heartbeats with others in the cluster
+     */
     private static ServiceAnnouncement getPrestoAnnouncement(Set<ServiceAnnouncement> announcements)
     {
         for (ServiceAnnouncement announcement : announcements) {
@@ -322,6 +350,14 @@ public class DynamicCatalogStore
         return getDataConnections(dataConnectionEndpoint, "?status=active");
     }
 
+    /**
+     * Gets the list of data connections(catalogs) that were created, updated, or deleted since the last request to the API.
+     * <p>
+     * Presto loads catalogs dynamically from the API, so it makes requests periodically to the API to update metadata about
+     * the catalogs.
+     *
+     * @return the list of data connections(catalogs) that were created, updated, or deleted since the last request to the API
+     */
     private List<DataConnection> listCatalogDelta()
     {
         ImmutableList.Builder<DataConnection> dataConnections = ImmutableList.builder();
@@ -331,6 +367,12 @@ public class DynamicCatalogStore
         return dataConnections.build();
     }
 
+    /**
+     * Gets the query parameters that are used to retrieve data connections that were deleted after the last request to the API.
+     *
+     * @return the query parameters that are used to retrieve data connections that were deleted after the last request
+     * to the API
+     */
     private String resolveDeletedQueryParameter()
     {
         if (lastCatalogDeltaDateTime == null) {
@@ -349,6 +391,12 @@ public class DynamicCatalogStore
         }
     }
 
+    /**
+     * Gets the query parameters that are used to retrieve data connections that were created or updated after the last request to the API.
+     *
+     * @return the query parameters that are used to retrieve data connections that were created or updated after the last request
+     * to the API
+     */
     private String resolveDeltaQueryParameter()
     {
         if (lastCatalogDeltaDateTime == null) {
@@ -367,6 +415,14 @@ public class DynamicCatalogStore
         }
     }
 
+    /**
+     * Gets a list of data connections from the API according to the given query parameters.
+     *
+     * @param dataConnectionEndpoint the API's endpoint where the server retrieves the data connections
+     * @param queryParameters a set of parameters used to filter the retrieved data connections from the
+     * API
+     * @return a list of data connections from the API according to the given query parameters
+     */
     private List<DataConnection> getDataConnections(String dataConnectionEndpoint, String queryParameters)
     {
         DataConnectionResponse response = null;
@@ -394,6 +450,12 @@ public class DynamicCatalogStore
         return getDataConnectionsFromResponse(response);
     }
 
+    /**
+     * Gets the list of data connections retrieved from the API.
+     *
+     * @param response the retrieved API's response
+     * @return the list of data connections retrieved from the API
+     */
     private List<DataConnection> getDataConnectionsFromResponse(DataConnectionResponse response)
     {
         if (response != null && response.getContent() != null && response.getContent().size() > 0) {
@@ -403,6 +465,14 @@ public class DynamicCatalogStore
         return ImmutableList.of();
     }
 
+    /**
+     * Gets the URI used to make requests to the API's data connection endpoint.
+     *
+     * @param dataConnectionUrl the IP of an API instance
+     * @param dataConnectionEndpoint the string of the data connection endpoint concatenated with
+     * the query parameters
+     * @return the URI used to make requests to the API's data connection endpoint
+     */
     private URI uriFor(String dataConnectionUrl, String dataConnectionEndpoint)
     {
         try {

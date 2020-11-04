@@ -191,6 +191,11 @@ public class SqlTaskManager
                 localSpillManager.getSpillSpaceTracker());
     }
 
+    /**
+     * Overrides the {@link TaskManager#updateMemoryPoolAssignments(MemoryPoolAssignmentsRequest)}.
+     *
+     * @param assignments a list of queries and the memory pool they must use
+     */
     @Override
     public synchronized void updateMemoryPoolAssignments(MemoryPoolAssignmentsRequest assignments)
     {
@@ -334,6 +339,12 @@ public class SqlTaskManager
         return sqlTask.getTaskInfo(currentState);
     }
 
+    /**
+     * Gets the task instance id parameter.
+     *
+     * @param taskId the task identifier
+     * @return the task instance id as string
+     */
     @Override
     public String getTaskInstanceId(TaskId taskId)
     {
@@ -342,6 +353,13 @@ public class SqlTaskManager
         return sqlTask.getTaskInstanceId();
     }
 
+    /**
+     * Overrides the {@link TaskManager#getTaskStatus(TaskId, TaskState)} method.
+     *
+     * @param taskId the task identifier
+     * @param currentState an object with metadata about the task's current state
+     * @return an object with metadata about a task
+     */
     @Override
     public ListenableFuture<TaskStatus> getTaskStatus(TaskId taskId, TaskState currentState)
     {
@@ -383,6 +401,21 @@ public class SqlTaskManager
         return sqlTask.updateTask(session, fragment, sources, outputBuffers, totalPartitions);
     }
 
+    /**
+     * Gets results from a task either immediately or in the future.
+     * <p>
+     * If the task or buffer has not been created yet, an uninitialized task is
+     * created and a future is returned.
+     * <p>
+     * NOTE: this design assumes that only tasks and buffers that will
+     * eventually exist are queried.
+     *
+     * @param taskId the task identifier
+     * @param bufferId the buffer identifier
+     * @param startingSequenceId the request unique identifier
+     * @param maxSize the max size of the returned data
+     * @return a list with buffers results
+     */
     @Override
     public ListenableFuture<BufferResult> getTaskResults(TaskId taskId, OutputBufferId bufferId, long startingSequenceId, DataSize maxSize)
     {

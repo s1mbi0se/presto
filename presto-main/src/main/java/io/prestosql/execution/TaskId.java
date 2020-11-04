@@ -31,6 +31,12 @@ import static java.lang.Integer.parseInt;
  */
 public class TaskId
 {
+    /**
+     * Creates a task from an identifier.
+     *
+     * @param taskId a task identifier
+     * @return an object with task metadata
+     */
     @JsonCreator
     public static TaskId valueOf(String taskId)
     {
@@ -56,6 +62,11 @@ public class TaskId
         this.fullId = fullId;
     }
 
+    /**
+     * Gets the identifier of query that the task is processing.
+     *
+     * @return the identifier of query that the task is processing
+     */
     public QueryId getQueryId()
     {
         return new QueryId(QueryId.parseDottedId(fullId, 3, "taskId").get(0));
@@ -72,6 +83,11 @@ public class TaskId
         return parseInt(QueryId.parseDottedId(fullId, 3, "taskId").get(2));
     }
 
+    /**
+     * Gets the task id string representation.
+     *
+     * @return the task id string representation
+     */
     @Override
     @JsonValue
     public String toString()
@@ -79,12 +95,23 @@ public class TaskId
         return fullId;
     }
 
+    /**
+     * Gets a unique identifier for a task.
+     *
+     * @return a unique identifier for a task
+     */
     @Override
     public int hashCode()
     {
         return Objects.hash(fullId);
     }
 
+    /**
+     * Checks if two tasks are equals.
+     *
+     * @param obj a generic object
+     * @return a flag which indicates if the two task ids are equals
+     */
     @Override
     public boolean equals(Object obj)
     {

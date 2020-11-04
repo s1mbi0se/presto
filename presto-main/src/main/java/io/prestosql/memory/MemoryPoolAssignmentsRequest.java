@@ -36,6 +36,14 @@ public class MemoryPoolAssignmentsRequest
         this.assignments = ImmutableList.copyOf(requireNonNull(assignments, "assignments is null"));
     }
 
+    /**
+     * Gets the coordinator identifier.
+     * <p>
+     * Used to discover which machine (node) is the
+     * coordinator inside the cluster.
+     *
+     * @return the coordinator identifier
+     */
     @JsonProperty
     public String getCoordinatorId()
     {

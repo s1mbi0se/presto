@@ -74,6 +74,10 @@ public interface TaskManager
      * <p>
      * NOTE: this design assumes that only tasks that will eventually exist are
      * queried.
+     *
+     * @param taskId the task identifier
+     * @param currentState an object with metadata about the task's current state
+     * @return an object with metadata about a task
      */
     ListenableFuture<TaskStatus> getTaskStatus(TaskId taskId, TaskState currentState);
 

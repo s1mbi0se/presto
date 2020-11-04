@@ -190,7 +190,15 @@ public class QueuedStatementResource
         // let authentication filter know that identity lifecycle has been handed off
         servletRequest.setAttribute(AUTHENTICATED_IDENTITY, null);
 
-        return Response.ok(query.getQueryResults(query.getLastToken(), uriInfo)).build();
+        final Response build = Response.ok(query.getQueryResults(query.getLastToken(), uriInfo)).build();
+
+        finishFlux();
+
+        return build;
+    }
+
+    private void finishFlux()
+    {
     }
 
     /**
@@ -318,13 +326,7 @@ public class QueuedStatementResource
      * @param queuedTime the time the query waited to be executed
      * @return an object with all query's metadata
      */
-    private static QueryResults createQueryResults(
-            QueryId queryId,
-            URI nextUri,
-            Optional<QueryError> queryError,
-            UriInfo uriInfo,
-            Duration elapsedTime,
-            Duration queuedTime)
+    private static QueryResults createQueryResults(QueryId queryId, URI nextUri, Optional<QueryError> queryError, UriInfo uriInfo, Duration elapsedTime, Duration queuedTime)
     {
         QueryState state = queryError.map(error -> FAILED).orElse(QUEUED);
         return new QueryResults(

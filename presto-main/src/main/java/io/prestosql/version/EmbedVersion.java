@@ -121,6 +121,12 @@ public class EmbedVersion
                 .ret(Object.class);
     }
 
+    /**
+     * Overrides the {@link EmbedVersion#embedVersion(Runnable)}
+     *
+     * @param runnable the object that will be modified
+     * @return an object with embedded version information in its class name
+     */
     @Override
     public Runnable embedVersion(Runnable runnable)
     {
@@ -134,6 +140,13 @@ public class EmbedVersion
         }
     }
 
+    /**
+     * Overrides the {@link EmbedVersion#embedVersion(Callable)}.
+     *
+     * @param callable the object that will be modified
+     * @param <T> the type of returned parameter when the callable is executed
+     * @return an object with embedded version information in its class name
+     */
     @Override
     public <T> Callable<T> embedVersion(Callable<T> callable)
     {

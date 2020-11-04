@@ -104,6 +104,11 @@ public class LazyOutputBuffer
         return outputBuffer.getUtilization();
     }
 
+    /**
+     * Overrides the {@link OutputBuffer#isOverutilized()} method.
+     *
+     * @return a flag which indicates if the buffer is blocking any process
+     */
     @Override
     public boolean isOverutilized()
     {
@@ -186,6 +191,15 @@ public class LazyOutputBuffer
         }
     }
 
+    /**
+     * Overrides the {@link OutputBuffer#get(OutputBufferId, long, DataSize)} method.
+     *
+     * @param bufferId the unique identifier for the buffer that the system needs to retrieve
+     * the pages
+     * @param token the identifier for a request
+     * @param maxSize the max size of data returned by the buffer
+     * @return a list with buffer results
+     */
     @Override
     public ListenableFuture<BufferResult> get(OutputBufferId bufferId, long token, DataSize maxSize)
     {

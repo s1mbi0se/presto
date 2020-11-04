@@ -88,16 +88,25 @@ public class SqlTask
     private final AtomicReference<TaskHolder> taskHolderReference = new AtomicReference<>(new TaskHolder());
     private final AtomicBoolean needsPlan = new AtomicBoolean(true);
 
-    public static SqlTask createSqlTask(
-            TaskId taskId,
-            URI location,
-            String nodeId,
-            QueryContext queryContext,
-            SqlTaskExecutionFactory sqlTaskExecutionFactory,
-            ExecutorService taskNotificationExecutor,
-            Function<SqlTask, ?> onDone,
-            DataSize maxBufferSize,
-            CounterStat failedTasks)
+    /**
+     * Creates a sql task.
+     * <p>
+     * Each task belongs to a stage and is processed
+     * inside the workers, not the coordinator.
+     *
+     * @param taskId the task's identifier
+     * @param location the URI where the metadata about the task is retrieved
+     * @param nodeId the node of the worker where task is executed
+     * @param queryContext an object with metadata about the environment where query
+     * is executed
+     * @param sqlTaskExecutionFactory the factory used to create the tasks
+     * @param taskNotificationExecutor the executor used to process a task
+     * @param onDone the function to be applied over task when they are done
+     * @param maxBufferSize the max size of the exchange buffer
+     * @param failedTasks an object that count the number of failed queries
+     * @return
+     */
+    public static SqlTask createSqlTask(TaskId taskId, URI location, String nodeId, QueryContext queryContext, SqlTaskExecutionFactory sqlTaskExecutionFactory, ExecutorService taskNotificationExecutor, Function<SqlTask, ?> onDone, DataSize maxBufferSize, CounterStat failedTasks)
     {
         SqlTask sqlTask = new SqlTask(taskId, location, nodeId, queryContext, sqlTaskExecutionFactory, taskNotificationExecutor, maxBufferSize);
         sqlTask.initialize(onDone, failedTasks);
@@ -133,7 +142,12 @@ public class SqlTask
         taskStateMachine = new TaskStateMachine(taskId, taskNotificationExecutor);
     }
 
-    // this is a separate method to ensure that the `this` reference is not leaked during construction
+    /**
+     * Initializes a task.
+     *
+     * @param onDone a function to be executed over task when it is finished
+     * @param failedTasks an object that counts the number of failed tasks
+     */
     private void initialize(Function<SqlTask, ?> onDone, CounterStat failedTasks)
     {
         requireNonNull(onDone, "onDone is null");
@@ -185,6 +199,14 @@ public class SqlTask
         });
     }
 
+    /**
+     * Gets a flag which indicates that output buffer is full.
+     * <p>
+     * If a buffer is over utilized, it becomes blocked until
+     * it has available memory again.
+     *
+     * @return a flag which indicates that output buffer is full
+     */
     public boolean isOutputBufferOverutilized()
     {
         return outputBuffer.isOverutilized();
@@ -195,16 +217,34 @@ public class SqlTask
         return taskHolderReference.get().getIoStats();
     }
 
+    /**
+     * Gets the object with metadata about the task's identifier.
+     *
+     * @return the object with metadata about the task's identifier
+     */
     public TaskId getTaskId()
     {
         return taskStateMachine.getTaskId();
     }
 
+    /**
+     * Gets the task unique identifier.
+     *
+     * @return the task unique identifier
+     */
     public String getTaskInstanceId()
     {
         return taskInstanceId;
     }
 
+    /**
+     * Records the last time that Presto act on the query.
+     * <p>
+     * As an example: every time that a request is executed to know the query status in Presto,
+     * the last heartbeat increases.
+     * If the time passed from last heartbeat is greater than the defined timeout, the query is
+     * abandoned by the sever.
+     */
     public void recordHeartbeat()
     {
         lastHeartbeat.set(DateTime.now());
@@ -219,6 +259,11 @@ public class SqlTask
 
     /**
      * Gets the metadata about an executed task.
+     * <p>
+     * The metadata contains the information about:
+     * - The drivers that are being executed by the task;
+     * - The amount of data processed by the task;
+     * - The time that the task was stopped by full GC.
      *
      * @return the metadata about an executed task
      */
@@ -229,6 +274,16 @@ public class SqlTask
         }
     }
 
+    /**
+     * Gets an object with task metadata.
+     * <p>
+     * Checks if the holder contains any executing task and will
+     * loads the information from the previous task. If the holder is empty
+     * it will create a task with empty parameters.
+     *
+     * @param taskHolder an object that holds a task
+     * @return an object with the task metadata
+     */
     private TaskStatus createTaskStatus(TaskHolder taskHolder)
     {
         // Always return a new TaskInfo with a larger version number;
@@ -350,6 +405,17 @@ public class SqlTask
                 needsPlan.get());
     }
 
+    /**
+     * Gets the metadata about the task execution.
+     * <p>
+     * The metadata contains the information about:
+     * - The drivers that are being executed by the task;
+     * - The amount of data processed by the task;
+     * - The time that the task was stopped by full GC.
+     *
+     * @param callersCurrentState an object with metadata about the task execution
+     * @return an object with metadata about task status
+     */
     public ListenableFuture<TaskStatus> getTaskStatus(TaskState callersCurrentState)
     {
         requireNonNull(callersCurrentState, "callersCurrentState is null");
@@ -418,6 +484,14 @@ public class SqlTask
         return getTaskInfo();
     }
 
+    /**
+     * Retrieves the list with the task response buffers.
+     *
+     * @param bufferId the id of the buffer that contains the response data
+     * @param startingSequenceId the user request identifier
+     * @param maxSize the max size of the returned data
+     * @return a list with the response's buffers
+     */
     public ListenableFuture<BufferResult> getTaskResults(OutputBufferId bufferId, long startingSequenceId, DataSize maxSize)
     {
         requireNonNull(bufferId, "bufferId is null");
@@ -518,6 +592,16 @@ public class SqlTask
             return taskExecution;
         }
 
+        /**
+         * Gets the metadata about the running task.
+         * <p>
+         * The metadata contains information about:
+         * - The processed plan tree nodes
+         * - The used buffers
+         * - Information about memory usage
+         *
+         * @return the metadata about the task
+         */
         @Nullable
         public TaskInfo getFinalTaskInfo()
         {

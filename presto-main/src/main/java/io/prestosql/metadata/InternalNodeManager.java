@@ -24,6 +24,16 @@ public interface InternalNodeManager
 
     Set<InternalNode> getActiveConnectorNodes(CatalogName catalogName);
 
+    /**
+     * Gets the object with the metadata about the current node.
+     * <p>
+     * The metadata contains the information about:
+     * - The node's unique identifier;
+     * - A flag that indicates if the node is the coordinator;
+     * - The URI's to access the node's endpoints.
+     *
+     * @return an object with metadata about current node
+     */
     InternalNode getCurrentNode();
 
     Set<InternalNode> getCoordinators();

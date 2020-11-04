@@ -15,5 +15,11 @@ package io.prestosql.sql.planner.planprinter;
 
 public interface Renderer<T>
 {
+    /**
+     * Gets the text representation of a fragment of the query plan tree.
+     *
+     * @param plan an object that contains metadata about a fragment of the query plan tree
+     * @return the text representation of a fragment of the query plan tree
+     */
     T render(PlanRepresentation plan);
 }

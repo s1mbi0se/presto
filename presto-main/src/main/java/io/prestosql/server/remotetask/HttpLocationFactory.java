@@ -56,12 +56,25 @@ public class HttpLocationFactory
                 .build();
     }
 
+    /**
+     * Overrides the {@link LocationFactory#createLocalTaskLocation(TaskId)} method.
+     *
+     * @param taskId the task identifier
+     * @return the URI where is possible to retrieve the task's metadata
+     */
     @Override
     public URI createLocalTaskLocation(TaskId taskId)
     {
         return createTaskLocation(nodeManager.getCurrentNode(), taskId);
     }
 
+    /**
+     * Overrides the {@link LocationFactory#createTaskLocation(InternalNode, TaskId)} method.
+     *
+     * @param taskId the task identifier
+     * @param node the object with metadata about the node instance
+     * @return the URI where is possible to retrieve the task's metadata
+     */
     @Override
     public URI createTaskLocation(InternalNode node, TaskId taskId)
     {

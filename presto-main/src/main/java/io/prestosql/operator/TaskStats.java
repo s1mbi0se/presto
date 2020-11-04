@@ -258,6 +258,11 @@ public class TaskStats
         return firstStartTime;
     }
 
+    /**
+     * Gets the time that the task started.
+     *
+     * @return the time that the task started
+     */
     @Nullable
     @JsonProperty
     public DateTime getLastStartTime()
@@ -457,6 +462,11 @@ public class TaskStats
         return physicalWrittenDataSize;
     }
 
+    /**
+     * Gets all pipelines executed by a task.
+     *
+     * @return all pipelines executed by a task
+     */
     @JsonProperty
     public List<PipelineStats> getPipelines()
     {

@@ -44,6 +44,13 @@ public abstract class PlanVisitor<R, C>
         return visitPlan(node, context);
     }
 
+    /**
+     * Applies a generic action on a query plan tree's node.
+     *
+     * @param node the node that represents the output of a query processing
+     * @param context an object with metadata about a query execution
+     * @return the result after applies a generic action on a query tree node
+     */
     public R visitOutput(OutputNode node, C context)
     {
         return visitPlan(node, context);

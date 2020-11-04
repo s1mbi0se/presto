@@ -86,10 +86,15 @@ public class StateMachine<T>
         this.terminalStates = ImmutableSet.copyOf(requireNonNull(terminalStates, "terminalStates is null"));
     }
 
-    // state changes are atomic and state is volatile, so a direct read is safe here
+    /**
+     * Gets the current query's state.
+     *
+     * @return the current state of the query
+     */
     @SuppressWarnings("FieldAccessNotGuarded")
     public T get()
     {
+        // state changes are atomic and state is volatile, so a direct read is safe here
         return state;
     }
 
@@ -291,6 +296,12 @@ public class StateMachine<T>
         safeExecute(() -> stateChangeListener.stateChanged(currentState));
     }
 
+    /**
+     * Gets a flag which indicates that a state is terminal.
+     *
+     * @param state an object with state metadata
+     * @return a flag which indicates if the state is a terminal state
+     */
     @VisibleForTesting
     boolean isTerminalState(T state)
     {
@@ -316,6 +327,14 @@ public class StateMachine<T>
         return get().toString();
     }
 
+    /**
+     * Executes a generic thread.
+     * <p>
+     * Executes the thread and if the server is shutting down
+     * it throws an customized exception.
+     *
+     * @param command a generic thread to be executed
+     */
     private void safeExecute(Runnable command)
     {
         try {
