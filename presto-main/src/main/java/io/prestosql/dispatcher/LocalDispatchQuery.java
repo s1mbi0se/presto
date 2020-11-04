@@ -174,7 +174,7 @@ public class LocalDispatchQuery
     }
 
     /**
-     * Gets the futures that represent the query dispatch operation to be executed
+     * Gets the futures that represent the query dispatch operation to be executed.
      *
      * @return future that represents the query dispatch operation to be executed
      */
