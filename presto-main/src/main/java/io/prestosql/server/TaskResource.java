@@ -267,11 +267,19 @@ public class TaskResource
     }
 
     /**
+     * Gets all results for a task.
+     * <p>
+     * The results are stored inside a buffer, that contains the returned
+     * rows and its metadata.
+     * The endpoint can only be accessed by an internal request, that is made
+     * by a Presto instance.
+     *
      * @param taskId the task identifier
      * @param bufferId the buffer identifier
-     * @param token a
-     * @param maxSize
-     * @param asyncResponse
+     * @param token a request identifier
+     * @param maxSize the maximum of bytes that response can contains
+     * @param asyncResponse an object used to build the response in
+     * asynchronous way
      */
     @ResourceSecurity(INTERNAL_ONLY)
     @GET
