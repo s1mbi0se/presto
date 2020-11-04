@@ -320,10 +320,10 @@ class Query
     }
 
     /**
-     * Wait for results of te query processing.
+     * Waits for results of the query processing.
      *
      * @param token a token used to create pagination in response
-     * @param wait the maximum time to wait query response
+     * @param wait the maximum time to wait for query response
      * @param targetResultSize the maximum size of the result
      * @param uriInfo an object with URI's metadata
      * @return a future that contains the query result
