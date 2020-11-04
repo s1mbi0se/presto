@@ -352,7 +352,7 @@ class Query
     /**
      * Gets the result of the query processing.
      *
-     * @return the result of query processing
+     * @return the result of the query processing
      */
     private synchronized ListenableFuture<?> getFutureStateChange()
     {
