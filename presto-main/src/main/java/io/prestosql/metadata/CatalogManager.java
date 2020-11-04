@@ -45,9 +45,9 @@ public class CatalogManager
     }
 
     /**
-     * Gets the list of all existed catalogs inside the server.
+     * Gets the list of all existing catalogs inside the server.
      *
-     * @return the list of all existed catalogs inside the server
+     * @return the list of all existing catalogs inside the server
      */
     public List<Catalog> getCatalogs()
     {
