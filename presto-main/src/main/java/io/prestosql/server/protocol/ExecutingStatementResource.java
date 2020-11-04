@@ -148,12 +148,12 @@ public class ExecutingStatementResource
     }
 
     /**
-     * Gets the results for a executing query.
+     * Gets the results for an executing query.
      *
      * @param queryId the query's identifier
      * @param slug a identifier for query in URI
      * @param token a token used to create pagination in response
-     * @param maxWait the maximum time to wait query response
+     * @param maxWait the maximum time to wait for query response
      * @param targetResultSize the maximum size of the result
      * @param uriInfo an object with URI's metadata
      * @param asyncResponse an object used to construct the response asynchronously
