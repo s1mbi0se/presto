@@ -52,6 +52,9 @@ public class OrderingScheme
 
     /**
      * Gets the all ORDER BY clauses.
+     * <p>
+     * In a query with this format `SELECT [column-list] from [table-name] ORDER BY [column-name, order(ASC|DESC)`
+     * this method will return all columns and orders defined after the ORDER BY operator.
      *
      * @return all the defined ORDER BY clauses
      */
@@ -62,9 +65,12 @@ public class OrderingScheme
     }
 
     /**
-     * Gets the order of the columns in ORDER BY clause.
+     * Gets the all ORDER BY clauses.
+     * <p>
+     * In a query with this format `SELECT [column-list] from [table-name] ORDER BY [column-name, order(ASC|DESC)`
+     * this method will return all columns and orders defined after the ORDER BY operator.
      *
-     * @return the order of the columns in ORDER BY clause
+     * @return all the defined ORDER BY clauses
      */
     @JsonProperty
     public Map<Symbol, SortOrder> getOrderings()
