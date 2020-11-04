@@ -214,7 +214,7 @@ public class ExecutingStatementResource
      *
      * @param query the query to be processed
      * @param token a token used to create pagination in response
-     * @param maxWait the maximum time to wait query response
+     * @param maxWait the maximum time to wait for query response
      * @param targetResultSize the maximum size of the result
      * @param uriInfo an object with URI's metadata
      * @param asyncResponse an object used to construct the response asynchronously
