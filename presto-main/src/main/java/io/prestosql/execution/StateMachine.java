@@ -86,10 +86,15 @@ public class StateMachine<T>
         this.terminalStates = ImmutableSet.copyOf(requireNonNull(terminalStates, "terminalStates is null"));
     }
 
-    // state changes are atomic and state is volatile, so a direct read is safe here
+    /**
+     * Gets the current query's state.
+     *
+     * @return the current state of the query
+     */
     @SuppressWarnings("FieldAccessNotGuarded")
     public T get()
     {
+        // state changes are atomic and state is volatile, so a direct read is safe here
         return state;
     }
 

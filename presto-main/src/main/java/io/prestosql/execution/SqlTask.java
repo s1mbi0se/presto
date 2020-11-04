@@ -90,6 +90,24 @@ public class SqlTask
     private final AtomicReference<TaskHolder> taskHolderReference = new AtomicReference<>(new TaskHolder());
     private final AtomicBoolean needsPlan = new AtomicBoolean(true);
 
+    /**
+     * Creates a sql task.
+     * <p>
+     * Each task belongs to a stage and is processed
+     * inside the workers, not the coordinator.
+     *
+     * @param taskId the task's identifier
+     * @param location the URI where the metadata about the task is retrieved
+     * @param nodeId the node of the worker where task is executed
+     * @param queryContext an object with metadata about the environment where query
+     * is executed
+     * @param sqlTaskExecutionFactory the factory used to create the tasks
+     * @param taskNotificationExecutor the executor used to process a task
+     * @param onDone the function to be applied over task when they are done
+     * @param maxBufferSize the max size of the exchange buffer
+     * @param failedTasks an object that count the number of failed queries
+     * @return
+     */
     public static SqlTask createSqlTask(
             TaskId taskId,
             URI location,
@@ -591,6 +609,16 @@ public class SqlTask
             return taskExecution;
         }
 
+        /**
+         * Gets the metadata about the running task.
+         * <p>
+         * The metadata contains information about:
+         * - The processed plan tree nodes
+         * - The used buffers
+         * - Information about memory usage
+         *
+         * @return the metadata about the task
+         */
         @Nullable
         public TaskInfo getFinalTaskInfo()
         {
