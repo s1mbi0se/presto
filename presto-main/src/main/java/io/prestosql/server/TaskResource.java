@@ -367,7 +367,7 @@ public class TaskResource
     /**
      * Gets a random time between the max wait time and half of the value.
      *
-     * @param waitTime the max time to wait query to be processed
+     * @param waitTime the max time to wait for the query to be processed
      * @return a time between the max wait time and the half of value
      */
     private static Duration randomizeWaitTime(Duration waitTime)
