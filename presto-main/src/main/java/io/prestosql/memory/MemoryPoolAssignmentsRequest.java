@@ -39,7 +39,7 @@ public class MemoryPoolAssignmentsRequest
     /**
      * Gets the coordinator identifier.
      * <p>
-     * It is used to discover which machine(node) is the
+     * Used to discover which machine (node) is the
      * coordinator inside the cluster.
      *
      * @return the coordinator identifier
