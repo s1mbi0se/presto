@@ -59,11 +59,24 @@ public class TaskStateMachine
         return createdTime;
     }
 
+    /**
+     * Gets the task's identifier that the state machine references.
+     *
+     * @return the task's identifier that the state machine references
+     */
     public TaskId getTaskId()
     {
         return taskId;
     }
 
+    /**
+     * Gets the task current state.
+     * <p>
+     * The state show if the task is planned,
+     * if it is running or if it already finished.
+     *
+     * @return the task current state
+     */
     public TaskState getState()
     {
         return taskState.get();

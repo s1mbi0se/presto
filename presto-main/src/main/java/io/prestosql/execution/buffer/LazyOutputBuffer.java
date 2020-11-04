@@ -104,6 +104,11 @@ public class LazyOutputBuffer
         return outputBuffer.getUtilization();
     }
 
+    /**
+     * Overrides the {@link OutputBuffer#isOverutilized()} method.
+     *
+     * @return a flag which indicates if the buffer is blocking any process
+     */
     @Override
     public boolean isOverutilized()
     {
