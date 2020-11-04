@@ -325,7 +325,7 @@ public class StateMachine<T>
     /**
      * Executes a generic thread.
      * <p>
-     * It executes the thread and if the server is shutting down
+     * Executes the thread and if the server is shutting down
      * it throws an customized exception.
      *
      * @param command a generic thread to be executed
