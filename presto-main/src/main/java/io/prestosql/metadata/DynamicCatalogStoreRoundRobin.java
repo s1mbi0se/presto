@@ -54,9 +54,9 @@ public class DynamicCatalogStoreRoundRobin
      * Gets the quantity of running API instances.
      * <p>
      * Presto executes requests periodically to API to retrieve information about
-     * data connections(catalogs). If the instance that server executed the request is down,
+     * data connections (catalogs). If the instance that server executed the request is down,
      * the server must execute the request to the next instance until the request is completed
-     * or the server tried to execute a request to all API instances.
+     * or if the server already tried to execute a request to all API instances.
      *
      * @return the quantity of running API instances
      */
