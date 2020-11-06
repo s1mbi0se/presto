@@ -122,6 +122,11 @@ public class ResourceSecurityDynamicFeature
             this.fallbackAuthenticationFilter = requireNonNull(fallbackAuthenticationFilter, "fallbackAuthenticationFilter is null");
         }
 
+        /**
+         * Overrides the {@link ContainerRequestFilter#filter(ContainerRequestContext)} method.
+         *
+         * @param request an object with HTTP request metadata
+         */
         @Override
         public void filter(ContainerRequestContext request)
         {

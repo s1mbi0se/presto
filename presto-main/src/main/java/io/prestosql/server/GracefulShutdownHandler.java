@@ -151,6 +151,14 @@ public class GracefulShutdownHandler
                 .collect(toImmutableList());
     }
 
+    /**
+     * Gets a flag that indicates if a shutdown command was requested.
+     * <p>
+     * When the server gets a shutdown command, it not process any more
+     * request.
+     *
+     * @return a flag that indicates if a shutdown command was requested
+     */
     public synchronized boolean isShutdownRequested()
     {
         return shutdownRequested;

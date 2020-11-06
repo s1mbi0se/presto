@@ -34,6 +34,11 @@ public final class InternalPrincipal
         return name;
     }
 
+    /**
+     * Overrides the {@link Principal#toString()} method.
+     *
+     * @return the object's string representation
+     */
     @Override
     public String toString()
     {

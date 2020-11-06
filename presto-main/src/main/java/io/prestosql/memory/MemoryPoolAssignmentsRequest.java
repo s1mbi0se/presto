@@ -70,6 +70,14 @@ public class MemoryPoolAssignmentsRequest
         return assignments;
     }
 
+    /**
+     * Overrides the {@link Object#toString()} method.
+     * <p>
+     * The string representation contains the assignment's version and
+     * the list of memory pool assignments.
+     *
+     * @return the object's string representation
+     */
     @Override
     public String toString()
     {

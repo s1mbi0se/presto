@@ -100,6 +100,11 @@ public class ServerInfoResource
         }
     }
 
+    /**
+     * Gets a flag that indicates if the node is up or shutting down.
+     *
+     * @return a flag that indicates if the node is up or shutting down
+     */
     @ResourceSecurity(PUBLIC)
     @GET
     @Path("state")
