@@ -19,7 +19,7 @@
         <dependency>
             <groupId>br.com.simbiose</groupId>
             <artifactId>debug_log</artifactId>
-            <version>0.0.4</version>
+            <version>0.0.6</version>
         </dependency>
 
         <dependency>
@@ -484,15 +484,13 @@
                                     <target>11</target>
                                     <complianceLevel>11</complianceLevel>
                                     <encoding>UTF-8</encoding>
-                                    <verbose>true</verbose>
                                     <weaveDependencies>
                                         <weaveDependency>
                                             <groupId>io.grpc</groupId>
                                             <artifactId>grpc-netty</artifactId>
                                         </weaveDependency>
                                     </weaveDependencies>
-                                    <showWeaveInfo>true</showWeaveInfo>
-                                    <XnoInline>true</XnoInline>
+                                    <proceedOnError>true</proceedOnError>
                                 </configuration>
                             </execution>
                         </executions>
