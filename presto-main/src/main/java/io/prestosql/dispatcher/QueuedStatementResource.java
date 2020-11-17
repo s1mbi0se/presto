@@ -192,13 +192,7 @@ public class QueuedStatementResource
 
         final Response build = Response.ok(query.getQueryResults(query.getLastToken(), uriInfo)).build();
 
-        finishFlux();
-
         return build;
-    }
-
-    private void finishFlux()
-    {
     }
 
     /**
