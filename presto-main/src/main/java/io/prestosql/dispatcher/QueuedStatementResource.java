@@ -197,13 +197,7 @@ public class QueuedStatementResource
         return createQueryResultsResponse(query.getQueryResults(query.getLastToken(), uriInfo), compressionEnabled);
         final Response build = Response.ok(createQueryResultsResponse(query.getQueryResults(query.getLastToken(), uriInfo), compressionEnabled);).build();
 
-        finishFlux();
-
         return build;
-    }
-
-    private void finishFlux()
-    {
     }
 
     /**
