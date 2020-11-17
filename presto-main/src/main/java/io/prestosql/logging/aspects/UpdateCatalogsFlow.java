@@ -33,13 +33,15 @@ public class UpdateCatalogsFlow
                     + ".updateCatalogDelta(..))";
 
     private static final String WHITE_AND_BLACK_LIST =
-            "execution(* io.prestosql.metadata..*(..)) && " +
+            "execution(* io.prestosql..*(..)) && " +
                     "!within(io.prestosql.logging.aspects..*) && " +
                     "!within(io.airlift..*)";
 
     private static final String FINISH_METHOD =
             "execution(* io.prestosql.metadata.DynamicCatalogStore"
                     + ".finishUpdateCatalogDelta(..))";
+
+    private static final String FLOW_DESCRIPTION = "updating the server's catalogs, based on API information";
 
     protected final Map<Long, Integer> threadIdToStep = new ConcurrentHashMap<>();
     protected final Map<Long, Long> threadIdToDebugLogId = new ConcurrentHashMap<>();
@@ -152,11 +154,22 @@ public class UpdateCatalogsFlow
      * <p>Each time that a Thread execute a flow, a new debug log id is created and represents that
      * execution cycle.
      *
-     * @return .
+     * @return a map from the thread to the respective log id.
      */
     @Override
     protected Map<Long, Long> getThreadIdToDebugLogId()
     {
         return this.threadIdToDebugLogId;
+    }
+
+    /**
+     * Gets the description of the current running flow.
+     *
+     * @return the description of the running flow
+     */
+    @Override
+    protected String getFlowDescription()
+    {
+        return FLOW_DESCRIPTION;
     }
 }
