@@ -56,6 +56,11 @@ public abstract class ForwardingAccessControl
         delegate().checkCanImpersonateUser(identity, userName);
     }
 
+    /**
+     * Overrides the {@link AccessControl#checkCanReadSystemInformation(Identity)} method.
+     *
+     * @param identity the metadata about the user's requester and its credentials
+     */
     @Override
     public void checkCanReadSystemInformation(Identity identity)
     {

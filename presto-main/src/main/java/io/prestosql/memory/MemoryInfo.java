@@ -75,6 +75,11 @@ public class MemoryInfo
         return pools;
     }
 
+    /**
+     * Overrides the {@link Object#toString()} method.
+     *
+     * @return the object's string representation
+     */
     @Override
     public String toString()
     {
