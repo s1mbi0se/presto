@@ -210,6 +210,12 @@ public class ResourceSecurityDynamicFeature
     private static class DisposeIdentityResponseFilter
             implements ContainerResponseFilter
     {
+        /**
+         * Overrides the {@link ContainerResponseFilter#filter(ContainerRequestContext, ContainerResponseContext)} method.
+         *
+         * @param request the object that contains metadata about the request being made
+         * @param response the object that contains the metadata about the response for the request
+         */
         @Override
         public void filter(ContainerRequestContext request, ContainerResponseContext response)
         {
