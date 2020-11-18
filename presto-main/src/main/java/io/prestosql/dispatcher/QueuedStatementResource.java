@@ -158,13 +158,20 @@ public class QueuedStatementResource
     }
 
     /**
-     * Receives POST requests that try to create new queries to be executed on the server.
+     * Receives POST requests that execute the queued query inside the server.
+     * <p>
+     * When the query is created, the server first puts it inside a queue, then
+     * when the request is made to this endpoint, the query starts to be executed.
+     * If the query returns a little amount of data, so the response
+     * already contains all information, otherwise, it is necessary to client continue to
+     * execute requisitions to {@link io.prestosql.server.protocol.ExecutingStatementResource}
+     * endpoints to retrieve the full available data.
      *
      * @param statement a SQL command
      * @param servletRequest an object that provides information about the HTTP request
      * @param httpHeaders an object containing information about the request headers
      * @param uriInfo an object containing metadata about the URI of the endpoint
-     * @return the result of the processed query
+     * @return the partial result of the processed query
      */
     @ResourceSecurity(AUTHENTICATED_USER)
     @POST
