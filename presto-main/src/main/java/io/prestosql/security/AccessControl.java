@@ -54,6 +54,7 @@ public interface AccessControl
      * service registry, thread stacks, etc.  This is typically allowed for administrators
      * and management tools.
      *
+     * @param identity the metadata about the user's requester and its credentials
      * @throws AccessDeniedException if not allowed
      */
     void checkCanReadSystemInformation(Identity identity);

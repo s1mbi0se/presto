@@ -227,6 +227,11 @@ public class AccessControlManager
         systemAuthorizationCheck(control -> control.checkCanSetUser(principal, userName));
     }
 
+    /**
+     * Overrides the {@link AccessControl#checkCanReadSystemInformation(Identity)} method.
+     *
+     * @param identity the metadata about the user's requester and its credentials
+     */
     @Override
     public void checkCanReadSystemInformation(Identity identity)
     {
