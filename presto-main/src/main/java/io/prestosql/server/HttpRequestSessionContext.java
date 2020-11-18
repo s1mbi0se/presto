@@ -191,6 +191,19 @@ public final class HttpRequestSessionContext
                 groupProvider);
     }
 
+    /**
+     * Checks if the user is allowed to execute the desired operations inside the server and gets its credentials.
+     * <p>
+     * The metadata about the user credentials is found in HTTP request headers when the user made the request
+     * to the server.
+     *
+     * @param optionalAuthenticatedIdentity the metadata about the user's requester and its credentials
+     * @param headers the metadata about all headers defined in the HTTP request
+     * @param accessControl the object used to check user permissions over the server
+     * @param groupProvider the object that contains the metadata about the resource groups
+     * @return the user and all credentials defined in the HTTP header request during query
+     * @throws AccessDeniedException if the user is not allowed to execute some operation
+     */
     public static Identity extractAuthorizedIdentity(Optional<Identity> optionalAuthenticatedIdentity, MultivaluedMap<String, String> headers, AccessControl accessControl, GroupProvider groupProvider)
             throws AccessDeniedException
     {

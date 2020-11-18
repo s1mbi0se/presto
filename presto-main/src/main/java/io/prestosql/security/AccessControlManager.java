@@ -211,6 +211,12 @@ public class AccessControlManager
         systemAuthorizationCheck(control -> control.checkCanImpersonateUser(new SystemSecurityContext(identity, Optional.empty()), userName));
     }
 
+    /**
+     * Overrides the {@link AccessControl#checkCanSetUser(Optional, String)} method.
+     *
+     * @param principal the metadata about the principal manager of the server
+     * @param userName the name of the user's requester
+     */
     @Override
     @Deprecated
     public void checkCanSetUser(Optional<Principal> principal, String userName)
