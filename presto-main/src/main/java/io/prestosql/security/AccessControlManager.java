@@ -928,6 +928,16 @@ public class AccessControlManager
         }
     }
 
+    /**
+     * Check if the operation being executed in Presto is allowed.
+     * <p>
+     * It will receive a lambda function, that contains a type of security check, then it will apply
+     * the check in all configuration metadata inside the server and if there is some operation
+     * there is not permitted, it will throw an exception.
+     *
+     * @param check a function to be applied in all system configurations inside the Presto, used to check
+     * something related to security permission
+     */
     private void systemAuthorizationCheck(Consumer<SystemAccessControl> check)
     {
         try {

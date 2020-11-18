@@ -51,6 +51,11 @@ public class AuthenticationFilter
         insecureAuthenticationOverHttpAllowed = requireNonNull(securityConfig, "securityConfig is null").isInsecureAuthenticationOverHttpAllowed();
     }
 
+    /**
+     * Overrides the {@link ContainerRequestFilter#filter(ContainerRequestContext)} method.
+     *
+     * @param request the object that contains the metadata about the request being made.
+     */
     @Override
     public void filter(ContainerRequestContext request)
     {
