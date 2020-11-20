@@ -154,11 +154,21 @@ public final class Session
         return queryId;
     }
 
+    /**
+     * Gets the user that is executing the operation in Presto.
+     *
+     * @return the user that is executing the operation in Presto
+     */
     public String getUser()
     {
         return identity.getUser();
     }
 
+    /**
+     * Gets the metadata about the user that executing the request and its credentials.
+     *
+     * @return the metadata about the user that executing the request and its credentials
+     */
     public Identity getIdentity()
     {
         return identity;
