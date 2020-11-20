@@ -204,6 +204,10 @@ public class QueuedStatementResource
 
     /**
      * Receives GET HTTP requests used to retrieve the query's execution status.
+     * <p>
+     * It will dispatch the queued query to be executed and will retrieve the first results
+     * of the query. If the results are not complete, the response will contains the URI that
+     * will allows the client to fetch the next data for the response.
      *
      * @param queryId the query's identifier
      * @param slug a identifier for the resource(query) and its state
