@@ -66,6 +66,11 @@ public final class TransactionId
         return Objects.equals(this.uuid, other.uuid);
     }
 
+    /**
+     * Overrides {@link Object#toString()} method.
+     *
+     * @return the object's string representation
+     */
     @Override
     @JsonValue
     public String toString()

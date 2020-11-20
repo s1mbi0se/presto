@@ -258,6 +258,17 @@ public class QueryStateMachine
         return queryId;
     }
 
+    /**
+     * Gets the object that contains the metadata about the request's session.
+     * <p>
+     * The session contains some properties, the important ones are:
+     * - The query's unique identifier.
+     * - The used source, catalog and schema.
+     * - The user requester metadata.
+     * - The query's request metadata.
+     *
+     * @return the object that contains the metadata about the request's session
+     */
     public Session getSession()
     {
         return session;

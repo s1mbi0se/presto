@@ -85,6 +85,11 @@ public final class SqlPath
         return Objects.hash(parsedPath);
     }
 
+    /**
+     * Gets the object string representation.
+     *
+     * @return the object's string representation
+     */
     @Override
     public String toString()
     {
