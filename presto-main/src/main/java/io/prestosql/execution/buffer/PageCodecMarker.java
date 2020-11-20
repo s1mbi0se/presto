@@ -36,6 +36,12 @@ public enum PageCodecMarker
         this.mask = (1 << (bit - 1));
     }
 
+    /**
+     * Checks if the page codec is defined for a flag.
+     *
+     * @param value a flag that represent a value for a PageCodecMarker
+     * @return a flag which indicates that the PageCodecMarker is defined
+     */
     public boolean isSet(byte value)
     {
         return (Byte.toUnsignedInt(value) & mask) == mask;
@@ -107,6 +113,11 @@ public enum PageCodecMarker
             markers = marker.unset(markers);
         }
 
+        /**
+         * Gets the byte that represents the defined codecs.
+         *
+         * @return the byte that represents the defined codecs
+         */
         public byte byteValue()
         {
             return markers;
