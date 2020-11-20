@@ -61,6 +61,17 @@ public enum PageCodecMarker
         return 0;
     }
 
+    /**
+     * Gets the string representation about the marker.
+     *
+     * The possible values to be returned are:
+     * - NONE
+     * - ENCRYPTED
+     * - COMPRESSED
+     *
+     * @param markers a byte that represents a {@link PageCodecMarker}
+     * @return the string representation about the marker
+     */
     public static String toSummaryString(byte markers)
     {
         if (markers == none()) {
