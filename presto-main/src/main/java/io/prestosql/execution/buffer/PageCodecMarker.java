@@ -103,6 +103,12 @@ public enum PageCodecMarker
             markers = marker.set(markers);
         }
 
+        /**
+         * Checks if the list of codecs contains the defined codec.
+         *
+         * @param marker an object with page codec metadata
+         * @return if the list of codecs contains the defined codec
+         */
         public boolean contains(PageCodecMarker marker)
         {
             return marker.isSet(markers);
