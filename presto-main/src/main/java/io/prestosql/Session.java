@@ -149,6 +149,11 @@ public final class Session
         checkArgument(catalog.isPresent() || schema.isEmpty(), "schema is set but catalog is not");
     }
 
+    /**
+     * Gets the query's identifier that the session belongs to.
+     *
+     * @return the query's identifier that the session belongs to
+     */
     public QueryId getQueryId()
     {
         return queryId;
@@ -224,6 +229,11 @@ public final class Session
         return clientTags;
     }
 
+    /**
+     * Gets the list of things that the client requester is allowed to execute.
+     *
+     * @return the list of things that the client requester is allowed to execute
+     */
     public Set<String> getClientCapabilities()
     {
         return clientCapabilities;

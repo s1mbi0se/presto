@@ -106,6 +106,12 @@ public final class SessionPropertyManager
         connectorSessionProperties.remove(catalogName);
     }
 
+    /**
+     * Gets a defined session property.
+     *
+     * @param name the name of defined session property
+     * @return the object with the metadata about the session property
+     */
     public Optional<PropertyMetadata<?>> getSystemSessionPropertyMetadata(String name)
     {
         requireNonNull(name, "name is null");
