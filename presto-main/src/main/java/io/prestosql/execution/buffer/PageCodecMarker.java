@@ -159,6 +159,11 @@ public enum PageCodecMarker
             return new MarkerSet(markers);
         }
 
+        /**
+         * Creates a new instance of the MarkerSer with no defined page codec.
+         *
+         * @return an object with no defined page codec
+         */
         public static MarkerSet empty()
         {
             return fromByteValue(PageCodecMarker.none());
