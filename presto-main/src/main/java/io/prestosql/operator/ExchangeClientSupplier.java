@@ -17,5 +17,11 @@ import io.prestosql.memory.context.LocalMemoryContext;
 
 public interface ExchangeClientSupplier
 {
+    /**
+     * Gets the object responsible to the process of data exchange between nodes instances.
+     *
+     * @param systemMemoryContext the object responsible to manage the node's used memory
+     * @return the object responsible to the process of data exchange between nodes instances
+     */
     ExchangeClient get(LocalMemoryContext systemMemoryContext);
 }

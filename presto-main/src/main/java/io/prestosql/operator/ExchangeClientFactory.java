@@ -121,6 +121,12 @@ public class ExchangeClientFactory
         return executorMBean;
     }
 
+    /**
+     * Gets the object responsible to the process of data exchange between nodes instances.
+     *
+     * @param systemMemoryContext the object responsible to manage the node's used memory
+     * @return the object responsible to the process of data exchange between nodes instances
+     */
     @Override
     public ExchangeClient get(LocalMemoryContext systemMemoryContext)
     {
