@@ -174,6 +174,13 @@ public class SqlQueryManager
         return queryTracker.getQuery(queryId).getQueryInfo();
     }
 
+    /**
+     * Overrides the {@link QueryManager#getQuerySession(QueryId)} method.
+     *
+     * @param queryId the query's identifier
+     * @return an object with metadata about the query's session
+     * @throws NoSuchElementException if there is no query with the defined id
+     */
     @Override
     public Session getQuerySession(QueryId queryId)
             throws NoSuchElementException

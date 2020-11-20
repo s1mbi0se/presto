@@ -52,6 +52,14 @@ public interface QueryExecution
 
     QueryInfo getQueryInfo();
 
+    /**
+     * Gets the object with metadata about the query's slug.
+     * <p>
+     * The slug is an identifier that contains the information about
+     * the query context(RUNNING or QUEUED) and the request's token.
+     *
+     * @return the object with metadata about the query's slug
+     */
     Slug getSlug();
 
     Duration getTotalCpuTime();

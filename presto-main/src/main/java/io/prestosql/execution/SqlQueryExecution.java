@@ -243,6 +243,11 @@ public class SqlQueryExecution
         return analysis;
     }
 
+    /**
+     * Overrides the {@link QueryExecution#getSlug()} method.
+     *
+     * @return the object with metadata about the query's slug
+     */
     @Override
     public Slug getSlug()
     {

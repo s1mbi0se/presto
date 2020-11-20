@@ -67,6 +67,10 @@ public interface QueryManager
             throws NoSuchElementException;
 
     /**
+     * Gets the object with metadata about the query's identifier.
+     *
+     * @param queryId the query's identifier
+     * @return an object with metadata about the query's session
      * @throws NoSuchElementException if query does not exist
      */
     Session getQuerySession(QueryId queryId);
