@@ -188,6 +188,12 @@ public class SqlQueryManager
         return queryTracker.getQuery(queryId).getSession();
     }
 
+    /**
+     * Overrides the {@link QueryManager#getQuerySlug(QueryId)}.
+     *
+     * @param queryId the query's identifier
+     * @return the object with metadata about the query's slug
+     */
     @Override
     public Slug getQuerySlug(QueryId queryId)
     {

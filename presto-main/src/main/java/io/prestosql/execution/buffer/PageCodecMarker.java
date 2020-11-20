@@ -52,7 +52,9 @@ public enum PageCodecMarker
     }
 
     /**
-     * The byte value of no {@link PageCodecMarker} values set to true
+     * The byte value of no {@link PageCodecMarker} values set to true.
+     *
+     * @return the byte value of no {@link PageCodecMarker} values set to true
      */
     public static byte none()
     {

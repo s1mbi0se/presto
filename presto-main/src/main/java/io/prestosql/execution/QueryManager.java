@@ -76,6 +76,13 @@ public interface QueryManager
     Session getQuerySession(QueryId queryId);
 
     /**
+     * Gets the object with metadata about the query's slug.
+     * <p>
+     * The slug is an identifier that contains the information about
+     * the query context(RUNNING or QUEUED) and the request's token.
+     *
+     * @param queryId the query's identifier
+     * @return the object with metadata about the query's slug
      * @throws NoSuchElementException if query does not exist
      */
     Slug getQuerySlug(QueryId queryId);
