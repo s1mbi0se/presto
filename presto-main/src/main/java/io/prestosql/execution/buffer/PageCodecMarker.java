@@ -63,7 +63,7 @@ public enum PageCodecMarker
 
     /**
      * Gets the string representation about the marker.
-     *
+     * <p>
      * The possible values to be returned are:
      * - NONE
      * - ENCRYPTED
@@ -112,6 +112,11 @@ public enum PageCodecMarker
             return markers;
         }
 
+        /**
+         * Overrides the {@link Object#toString()} method.
+         *
+         * @return the object's string representation
+         */
         @Override
         public String toString()
         {
@@ -143,6 +148,12 @@ public enum PageCodecMarker
             return fromByteValue(marker.set(PageCodecMarker.none()));
         }
 
+        /**
+         * Creates a new instance of MarkerSet with a defined list of page codecs.
+         *
+         * @param markers a flag that contains a list of PageCodecs
+         * @return an object that holds a list of page codec
+         */
         public static MarkerSet fromByteValue(byte markers)
         {
             return new MarkerSet(markers);
