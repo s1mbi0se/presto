@@ -140,6 +140,16 @@ public class QueryTracker<T extends TrackedQuery>
         return ImmutableList.copyOf(queries.values());
     }
 
+    /**
+     * Gets a dispatched query by its id.
+     * <p>
+     * The method only returns the query if it is already dispatched,
+     * if it is queued or finished, it will not be found.
+     *
+     * @param queryId the query's identifier
+     * @return an object with the query's metadata
+     * @throws NoSuchElementException if there is none dispatched query with this id
+     */
     public T getQuery(QueryId queryId)
             throws NoSuchElementException
     {
@@ -148,7 +158,10 @@ public class QueryTracker<T extends TrackedQuery>
     }
 
     /**
-     * Gets a query by its id
+     * Gets a query by its id.
+     * <p>
+     * The method only returns the query if it is already dispatched,
+     * if it is queued or finished, it will not be found.
      *
      * @param queryId the query's identifier
      * @return an object with the query metadata
