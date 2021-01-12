@@ -50,7 +50,6 @@ import static io.prestosql.testing.TestingAccessControlManager.TestingPrivilegeT
 import static io.prestosql.testing.TestingAccessControlManager.TestingPrivilegeType.SHOW_CREATE_TABLE;
 import static io.prestosql.testing.TestingAccessControlManager.privilege;
 import static io.prestosql.testing.TestingSession.TESTING_CATALOG;
->>>>>>> feat: implements query request metadata and fix catalog store for testing
 import static io.prestosql.testing.assertions.Assert.assertEquals;
 import static io.prestosql.tests.QueryTemplate.parameter;
 import static io.prestosql.tests.QueryTemplate.queryTemplate;

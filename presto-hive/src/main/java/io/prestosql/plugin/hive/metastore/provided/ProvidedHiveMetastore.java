@@ -21,6 +21,7 @@ import io.prestosql.plugin.hive.HiveBucketProperty;
 import io.prestosql.plugin.hive.HiveStorageFormat;
 import io.prestosql.plugin.hive.HiveType;
 import io.prestosql.plugin.hive.PartitionStatistics;
+import io.prestosql.plugin.hive.acid.AcidTransaction;
 import io.prestosql.plugin.hive.authentication.HiveIdentity;
 import io.prestosql.plugin.hive.metastore.Column;
 import io.prestosql.plugin.hive.metastore.Database;
@@ -37,6 +38,7 @@ import io.prestosql.plugin.hive.metastore.Table;
 import io.prestosql.plugin.hive.metastore.thrift.ThriftMetastoreUtil;
 import io.prestosql.plugin.hive.util.HiveBucketing;
 import io.prestosql.spi.PrestoException;
+import io.prestosql.spi.predicate.TupleDomain;
 import io.prestosql.spi.security.RoleGrant;
 import io.prestosql.spi.session.metadata.BucketMetadata;
 import io.prestosql.spi.session.metadata.ColumnMetadata;
@@ -95,6 +97,24 @@ public class ProvidedHiveMetastore
         return Optional.of(Database.builder()
                 .setDatabaseName(Database.DEFAULT_DATABASE_NAME)
                 .build());
+    }
+
+    @Override
+    public void setTableOwner(HiveIdentity identity, String databaseName, String tableName, HivePrincipal principal)
+    {
+        throw new PrestoException(NOT_SUPPORTED, "setTableOwner");
+    }
+
+    @Override
+    public void commentColumn(HiveIdentity identity, String databaseName, String tableName, String columnName, Optional<String> comment)
+    {
+        throw new PrestoException(NOT_SUPPORTED, "commentColumn");
+    }
+
+    @Override
+    public void updateTableStatistics(HiveIdentity identity, String databaseName, String tableName, Function<PartitionStatistics, PartitionStatistics> update, AcidTransaction transaction)
+    {
+        throw new PrestoException(NOT_SUPPORTED, "updateTableStatistics");
     }
 
     @Override
@@ -306,12 +326,6 @@ public class ProvidedHiveMetastore
     }
 
     @Override
-    public void updateTableStatistics(HiveIdentity identity, String databaseName, String tableName, Function<PartitionStatistics, PartitionStatistics> update)
-    {
-        throw new PrestoException(NOT_SUPPORTED, "updateTableStatistics");
-    }
-
-    @Override
     public void updatePartitionStatistics(HiveIdentity identity, Table table, String partitionName, Function<PartitionStatistics, PartitionStatistics> update)
     {
         throw new PrestoException(NOT_SUPPORTED, "updatePartitionStatistics");
@@ -414,20 +428,14 @@ public class ProvidedHiveMetastore
     }
 
     @Override
-    public Optional<List<String>> getPartitionNames(HiveIdentity identity, String databaseName, String tableName)
-    {
-        throw new PrestoException(NOT_SUPPORTED, "getPartitionNames");
-    }
-
-    @Override
-    public Optional<List<String>> getPartitionNamesByParts(HiveIdentity identity, String databaseName, String tableName, List<String> parts)
+    public Optional<List<String>> getPartitionNamesByFilter(HiveIdentity identity, String databaseName, String tableName, List<String> columnNames, TupleDomain<String> partitionKeysFilter)
     {
         Optional<QueryRequestMetadata> metadata = identity.getMetadata();
         TableMetadata tableMetadata = metadata.get().getMetadata().stream().filter(f -> f.getName().equals(tableName)).collect(MoreCollectors.onlyElement());
 
         List<PartitionMetadata> partitions = tableMetadata.getPartitions().get().stream()
                 .filter(partition -> partition.getInfos().stream().map(PartitionInfo::getValues).flatMap(f -> f.stream())
-                        .anyMatch(p -> emptyParts(parts) || parts.contains(p)))
+                        .anyMatch(p -> emptyParts(columnNames) || columnNames.contains(p)))
                 .collect(Collectors.toList());
 
         ImmutableList.Builder<String> builder = new ImmutableList.Builder<>();
@@ -439,7 +447,7 @@ public class ProvidedHiveMetastore
                 ColumnMetadata column = columns.get(i);
 
                 List<PartitionInfo> infos = partitionMetadata.getInfos().stream().filter(f ->
-                        f.getValues().stream().anyMatch(a -> emptyParts(parts) || parts.contains(a))).collect(Collectors.toList());
+                        f.getValues().stream().anyMatch(a -> emptyParts(columnNames) || columnNames.contains(a))).collect(Collectors.toList());
                 int infoSize = infos.size();
                 for (int j = 0; j < infoSize; j++) {
                     PartitionInfo info = infos.get(j);
